@@ -14,7 +14,17 @@
       "WebFetch(domain:ui.shadcn.com)",
       "Bash(bunx shadcn@latest init -d -y)",
       "Bash(bunx shadcn@latest add card badge skeleton -y)",
-      "Bash(git -c user.name=tomy -c user.email=yitom486@gmail.com commit -q -m 'feat: add shadcn/ui with button, card, badge, skeleton *)"
+      "Bash(git -c user.name=tomy -c user.email=yitom486@gmail.com commit -q -m 'feat: add shadcn/ui with button, card, badge, skeleton *)",
+      "Bash(bun run *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:5173/anime)",
+      "Bash(curl -s http://localhost:5173/anime)",
+      "Bash(curl -s http://localhost:5173/anime -o /tmp/anime.html)",
+      "Read(//tmp/**)",
+      "WebFetch(domain:github.com)",
+      "Bash(curl -s -A \"yhang/anime-site \\(https://github.com/yhang\\)\" https://raw.githubusercontent.com/bangumi/api/master/open-api/api.yml -o bgm-api.yml)",
+      "Bash(grep -nE '\\\\$ref|\\\\.yml|\\\\.yaml|paths:' bgm-api.yml)",
+      "Bash(curl -s -A \"yhang/anime-site \\(https://github.com/yhang\\)\" https://raw.githubusercontent.com/bangumi/server/master/openapi/v0.yaml -o bgm-v0.yaml)",
+      "WebFetch(domain:www.comicat.org)"
     ]
   }
 }
