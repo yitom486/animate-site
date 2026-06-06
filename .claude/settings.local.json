@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(pnpm -v)",
+      "Bash(bun -v)",
+      "WebSearch",
+      "Bash(bunx create-react-router@latest --help)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git -c user.name=tomy -c user.email=yitom486@gmail.com commit -q -m 'chore: scaffold React Router v7 project with Bun *)"
+    ]
+  }
+}
