@@ -8,7 +8,13 @@
       "Bash(bunx create-react-router@latest --help)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git -c user.name=tomy -c user.email=yitom486@gmail.com commit -q -m 'chore: scaffold React Router v7 project with Bun *)"
+      "Bash(git -c user.name=tomy -c user.email=yitom486@gmail.com commit -q -m 'chore: scaffold React Router v7 project with Bun *)",
+      "WebFetch(domain:bangumi.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(bunx shadcn@latest init -d -y)",
+      "Bash(bunx shadcn@latest add card badge skeleton -y)",
+      "Bash(git -c user.name=tomy -c user.email=yitom486@gmail.com commit -q -m 'feat: add shadcn/ui with button, card, badge, skeleton *)"
     ]
   }
 }
