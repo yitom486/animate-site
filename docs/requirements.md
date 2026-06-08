@@ -17,34 +17,36 @@
 | **acgrip bbs.acgrip.com** | 字幕 | **跳转链接** | 🟢 |
 | **B站 bilibili.com** | 在线观看 | **仅跳转链接** `search.bilibili.com/...?keyword=` | 🟢 |
 | **资讯源（待定）** | 今日亚文化资讯 | 用某个 RSS（不限 B站）| 🟡 待选 |
+| **AniList / MAL(Jikan) / Kitsu** | 多源评分 | 免费免鉴权 JSON API | 🟢 详见 [external-ratings.md](./external-ratings.md) |
 
 > ⚠️ 决策：B站**不爬内容，只做跳转链接**；资讯改用 RSS，避开 B站反爬。
+> ⚠️ 决策（已定）：本站是**纯只读信息站**，无收藏/登录/增删改。
+> → **完全不使用任何需要鉴权(🔒)的接口**：无 OAuth、无 token、无 session、无用户系统。
+> → 只用公开 GET：`/calendar`、`/v0/subjects[/{id}][/persons]`、`/v0/episodes`、`/v0/search/subjects`。
+> → loader 里裸 `fetch` + User-Agent 即可，Cloudflare 部署无需密钥。
 
 ## 3. 首页布局（三栏）
 
-### 顶部
-- 站名「亚域空间」（点击回首页）
-- 「Ctrl+D 收藏本站」——纯文字提示，无交互
+> 设计已迭代为 **顶栏 + 主从(master-detail) 三段式布局**（替代早期三栏 + comicat 表格方案）。
 
-### 左栏
-- **分类导航「AC空间」**（默认展开）：国创动画 / **日本动画(默认选中)** / 欧美动画 / 轻小说
-- **「今日亚文化资讯」**：资讯列表（来源用 RSS，不限 B站）
+### 顶栏
+- 站名「亚域空间」（渐变文字，点击回 `/anime`）
+- **分类导航**：用 shadcn **Navigation Menu** 组件，按**类型轴**：**动画(type=2，默认) / 游戏(type=4)**
+  - 切换分类 = `/anime?type=N`；只有 type 变化时才重拉列表（`shouldRevalidate`）
+- 「Ctrl+D 收藏本站」纯文字提示
 
-### 中栏
-- **季度选择器**：2026年1月 / 2025年10月 / 2025年7月 / … （季度 = q1/q4/q3/q2）
-- **番剧表**：按星期分组（星期天→星期六…），每条目显示
-  `标题（集数/总集数 状态）`，状态 = 完结 / 连载中 / 停更，用颜色区分
-- 排版参考：`comicat.org/addon.php?r=bangumi/table&bgm_id=2026q1`
+### 主体：三段式 master-detail（用 `grid-template-columns` 的 `fr` 过渡做挤压动画）
+1. **仅网格**（`/anime`）：封面卡片网格铺满，每张含封面 + 评分徽章 + 标题（来自 `/v0/subjects?type=N&sort=rank`，列表项已自带 images/rating）
+2. **网格 + 详情**（`/anime/:id`）：点卡片 → 详情面板从右滑出，挤压网格（`1.6fr 1fr`）
+3. **详情全屏**（展开态）：点"展开详情"/封面 → 详情占满全屏（`0fr 1fr`），显示简介 + 章节列表
+   - 展开态用**局部 state**经 `<Outlet context>` 下发；切换番剧自动收起
 
-### 右栏（选中番剧详情）
-- 评分（星级 + 数字，来自 Bangumi）
-- 封面图
-- 中文名 / 原名 / 话数 / 放送开始时间 / 原作 / 制作 / 监督
-- 标签 ×6（取 Bangumi tags 前 6）
-- 作品状态（连载中等）
-- **在线链接**：B站跳转链接；无则显示"暂时没有在线链接"，可点刷新
-- **下载链接**：漫猫跳转链接
-- **字幕网站**：acgrip 跳转链接
+### 详情面板内容
+- 评分（★ + 数字 + 排名/人数，来自 `rating`）
+- 封面 / 中文名 / 原名 / 话数 / 放送开始 / 原作 / 制作 / 监督 / 标签 ×6
+- **跳转链接**（拼 URL，不爬）：在线=B站搜索、下载=漫猫搜索、字幕=acgrip 搜索
+- 全屏态额外：简介 `summary` + 章节列表（`/v0/episodes`，取 type=0 本篇）
+- 局部 `ErrorBoundary`：坏 id 只在右栏报错
 
 ## 4. 功能难度评估
 
@@ -78,13 +80,15 @@
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| P0 | 脚手架 + shadcn + `/calendar` demo | ✅ 已完成 |
-| **P1** | 首页三栏布局骨架（静态结构 + 导航 + 季度选择）| ⏭️ 下一步 |
-| P2 | 番剧表接 Bangumi（按季度/星期）| |
-| P3 | 右栏详情面板（评分/制作/标签/状态）| |
-| P4 | `集数/总集数 状态` 推导 | |
-| P5 | 跳转链接（漫猫/acgrip/B站）+ 资讯 RSS | |
-| P6 | 部署 Cloudflare + KV 缓存 | |
+| P0 | 脚手架 + shadcn + `/calendar` demo | ✅ |
+| P1 | 顶栏(NavigationMenu) + master-detail 三段式布局 | ✅ |
+| P2 | 列表接 Bangumi（类型/排序/每日放送/搜索/分页）| ✅ |
+| P3 | 详情面板（评分/封面/制作/标签 + 全屏视图 + 章节）| ✅ |
+| P4 | API 路由 + `lib/bangumi` + 缓存 + 骨架屏 | ✅ |
+| **P5** | **多源评分**（AniList / MAL / Kitsu）→ `lib/ratings` | ⏭️ 下一步 |
+| P6 | `集数/总集数 状态` 推导 | |
+| P7 | 跳转链接完善 + 资讯 RSS | |
+| P8 | 部署 Cloudflare + KV 缓存 | |
 
 ## 7. 待定决策
 
