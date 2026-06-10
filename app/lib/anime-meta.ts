@@ -21,20 +21,29 @@ function isV0Medium(url: string): boolean {
   return url.includes("/r/800/");
 }
 
+/** 强制将 HTTP 协议升级为 HTTPS，避免浏览器产生 307 重定向 */
+export function toHttps(url?: string): string | undefined {
+  if (!url) return undefined;
+  return url.replace(/^http:\/\//, "https://");
+}
+
 /** 列表封面：优先 v0 medium；Legacy 日历接口则改用 large */
 export function getCoverUrl(
   images?: AnimeCardData["images"],
 ): string | undefined {
   if (!images) return undefined;
 
+  let url: string | undefined;
   if (images.medium && isV0Medium(images.medium)) {
-    return images.medium;
+    url = images.medium;
+  } else if (images.large) {
+    // /calendar 返回的 medium 很小，large 才是清晰封面
+    url = images.large;
+  } else {
+    url = images.medium || images.common || images.grid;
   }
 
-  // /calendar 返回的 medium 很小，large 才是清晰封面
-  if (images.large) return images.large;
-
-  return images.medium || images.common || images.grid;
+  return toHttps(url);
 }
 
 export function getYear(date?: string, airDate?: string): string {

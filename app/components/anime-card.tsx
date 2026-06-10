@@ -8,9 +8,10 @@ type AnimeCardProps = {
   item: AnimeCardData;
   to: string;
   active?: boolean;
+  priority?: boolean;
 };
 
-export function AnimeCard({ item, to, active }: AnimeCardProps) {
+export function AnimeCard({ item, to, active, priority }: AnimeCardProps) {
   const { title, subtitle, score } = buildCardMeta(item);
   const cover = getCoverUrl(item.images);
 
@@ -29,6 +30,7 @@ export function AnimeCard({ item, to, active }: AnimeCardProps) {
         <AnimeCover
           url={cover}
           alt={title}
+          priority={priority}
           className="transition-transform duration-300 group-hover:scale-[1.03]"
         />
 

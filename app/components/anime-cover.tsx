@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 
@@ -6,21 +6,26 @@ type AnimeCoverProps = {
   url?: string;
   alt: string;
   className?: string;
+  priority?: boolean;
 };
 
 /**
- * 封面异步加载：SSR 只输出占位符，客户端挂载后并发拉取图片。
- * HTML 里不会嵌入图片二进制，只有 hydrate 后浏览器才发起 img 请求。
+ * 封面加载组件：
+ * 支持服务端直接渲染 <img> 标签以激活浏览器 Preload Scanner。
+ * 根据 priority 决定使用原生 lazy-load 还是高优先级 eager 加载。
  */
-export function AnimeCover({ url, alt, className }: AnimeCoverProps) {
-  const [src, setSrc] = useState<string | null>(null);
+export function AnimeCover({ url, alt, className, priority }: AnimeCoverProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
+  // 监听 url 变化或挂载事件，重置加载状态并检查缓存情况
   useEffect(() => {
     setLoaded(false);
     setError(false);
-    setSrc(url ?? null);
+    if (imgRef.current?.complete) {
+      setLoaded(true);
+    }
   }, [url]);
 
   if (!url) {
@@ -42,20 +47,21 @@ export function AnimeCover({ url, alt, className }: AnimeCoverProps) {
         <Skeleton className="absolute inset-0 rounded-none" />
       ) : null}
 
-      {src && !error ? (
-        <img
-          src={src}
-          alt={alt}
-          referrerPolicy="no-referrer"
-          decoding="async"
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
-          className={cn(
-            "size-full object-cover transition-opacity duration-300",
-            loaded ? "opacity-100" : "opacity-0",
-          )}
-        />
-      ) : null}
+      <img
+        ref={imgRef}
+        src={url}
+        alt={alt}
+        referrerPolicy="no-referrer"
+        decoding="async"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "low"}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        className={cn(
+          "size-full object-cover transition-opacity duration-300",
+          loaded ? "opacity-100" : "opacity-0",
+        )}
+      />
 
       {error ? (
         <div className="flex size-full items-center justify-center text-[10px] text-muted-foreground">

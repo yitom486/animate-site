@@ -213,12 +213,13 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
               </p>
             ) : (
               <div className="grid grid-cols-3 gap-3 p-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-                {items.map((it) => (
+                {items.map((it, idx) => (
                   <AnimeCard
                     key={it.id}
                     item={it}
                     to={buildDetailUrl(it.id, listParams)}
                     active={params.id === String(it.id)}
+                    priority={idx < 10}
                   />
                 ))}
               </div>
