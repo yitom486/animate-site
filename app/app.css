@@ -8,6 +8,8 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Noto Serif SC", "Songti SC", serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", monospace;
 }
 
 html,
@@ -63,38 +65,38 @@ body {
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: oklch(0.982 0.02 188);
+  --foreground: oklch(0.236 0.034 243);
+  --card: oklch(1 0 0 / 72%);
+  --card-foreground: oklch(0.236 0.034 243);
+  --popover: oklch(1 0 0 / 94%);
+  --popover-foreground: oklch(0.236 0.034 243);
+  --primary: oklch(0.56 0.13 194);
+  --primary-foreground: oklch(0.99 0.01 190);
+  --secondary: oklch(0.92 0.036 190);
+  --secondary-foreground: oklch(0.32 0.07 196);
+  --muted: oklch(0.94 0.026 190);
+  --muted-foreground: oklch(0.48 0.032 240);
+  --accent: oklch(0.93 0.048 178);
+  --accent-foreground: oklch(0.32 0.075 184);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: oklch(0.85 0.035 190 / 72%);
+  --input: oklch(0.92 0.028 190 / 78%);
+  --ring: oklch(0.66 0.12 192);
+  --chart-1: oklch(0.63 0.14 193);
+  --chart-2: oklch(0.67 0.12 165);
+  --chart-3: oklch(0.78 0.14 80);
+  --chart-4: oklch(0.62 0.16 20);
+  --chart-5: oklch(0.5 0.09 250);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.97 0.018 190 / 86%);
+  --sidebar-foreground: oklch(0.236 0.034 243);
+  --sidebar-primary: oklch(0.56 0.13 194);
+  --sidebar-primary-foreground: oklch(0.99 0.01 190);
+  --sidebar-accent: oklch(0.92 0.036 190);
+  --sidebar-accent-foreground: oklch(0.32 0.07 196);
+  --sidebar-border: oklch(0.85 0.035 190 / 72%);
+  --sidebar-ring: oklch(0.66 0.12 192);
 }
 
 .dark {
@@ -136,9 +138,75 @@ body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background:
+      linear-gradient(135deg, #e0f7f9 0%, #f5fffd 42%, #dff3ef 100%);
+    min-height: 100vh;
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .celadon-page {
+    background:
+      radial-gradient(ellipse at top, rgba(6, 182, 212, 0.09), transparent 58%),
+      linear-gradient(135deg, #e0f7f9 0%, #f8fffd 48%, #dcefeb 100%);
+  }
+
+  .celadon-glass {
+    background: rgba(255, 255, 255, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.76);
+    box-shadow: 0 16px 40px -28px rgba(15, 118, 110, 0.42);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .celadon-glass-strong {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(207, 250, 254, 0.9);
+    box-shadow: 0 18px 45px -30px rgba(15, 118, 110, 0.5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .celadon-soft-border {
+    border-color: rgba(165, 243, 252, 0.72);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes spin-very-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer utilities {
+  .animate-float-slow {
+    animation: float-slow 7s ease-in-out infinite;
+  }
+
+  .animate-spin-very-slow {
+    animation: spin-very-slow 36s linear infinite;
   }
 }

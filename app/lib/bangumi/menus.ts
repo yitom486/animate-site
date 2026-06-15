@@ -6,7 +6,6 @@ import {
   Gamepad2,
   Music,
   Sparkles,
-  Tag,
   TrendingUp,
   Tv,
 } from "lucide-react";
@@ -25,18 +24,6 @@ export type MenuGroup = {
   label: string;
   links: MenuLink[];
 };
-
-/** 常用动画标签（Bangumi 无标签列表 API，维护热门词） */
-export const POPULAR_ANIME_TAGS = [
-  "科幻",
-  "日常",
-  "奇幻",
-  "恋爱",
-  "战斗",
-  "搞笑",
-  "悬疑",
-  "治愈",
-] as const;
 
 const now = new Date();
 const CURRENT_YEAR = String(now.getFullYear());
@@ -87,15 +74,6 @@ function animeLinks(): MenuLink[] {
       title: label,
       desc: "分类浏览",
       icon: Clapperboard,
-    });
-  }
-
-  for (const tag of POPULAR_ANIME_TAGS) {
-    links.push({
-      to: `/anime?type=${SUBJECT_TYPE.anime}&view=tag&tag=${encodeURIComponent(tag)}`,
-      title: tag,
-      desc: "标签",
-      icon: Tag,
     });
   }
 

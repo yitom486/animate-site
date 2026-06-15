@@ -1,4 +1,5 @@
 export * from "./constants";
+export * from "./urls";
 export * from "./types";
 export * from "./types-detail";
 export * from "./client";

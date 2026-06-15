@@ -1,31 +1,85 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
-import { Clock, Star } from "lucide-react";
+import { Link, useSearchParams } from "react-router";
+import { CalendarDays, Clock, Star, Tv } from "lucide-react";
+import { AnimeCalendarPicker } from "~/components/anime-calendar-picker";
+import { AnimeWeekOverview } from "~/components/anime-week-overview";
 import { cn } from "~/lib/utils";
 import { AnimeCover } from "~/components/anime-cover";
-import type { AnimeCardData } from "~/lib/anime-meta";
-import { getCoverUrl } from "~/lib/anime-meta";
+import { buildCardMeta, getCoverUrl, type AnimeCardData } from "~/lib/anime-meta";
 import {
+  buildDetailUrl,
+  formatAirDate,
   formatCurrentDateTime,
   getBangumiWeekdayId,
-  buildDetailUrl,
+  getWeekdayLabel,
   type CalendarDayGroup,
 } from "~/lib/bangumi";
 
-/** Bangumi 官网列顺序：日 → 一 → … → 六 */
-const COLUMN_ORDER = [7, 1, 2, 3, 4, 5, 6] as const;
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 7] as const;
 
-const DAY_HEADER_CLASS: Record<number, string> = {
-  7: "bg-red-500",
-  1: "bg-orange-500",
-  2: "bg-amber-400 text-amber-950",
-  3: "bg-green-600",
-  4: "bg-emerald-500",
-  5: "bg-sky-500",
-  6: "bg-blue-600",
-};
+type CalendarMode = "day" | "overview";
 
-function CurrentTimeBar() {
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function parseDateParam(value: string | null): Date | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function formatDateParam(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatDisplayDate(date: Date): string {
+  const wd = getWeekdayLabel(getBangumiWeekdayId(date)).replace("星期", "周");
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${wd}`;
+}
+
+function dateForWeekday(baseDate: Date, weekdayId: number): Date {
+  const currentWeekdayId = getBangumiWeekdayId(baseDate);
+  const next = new Date(baseDate);
+  next.setDate(baseDate.getDate() + (weekdayId - currentWeekdayId));
+  return startOfDay(next);
+}
+
+function CurrentTimeBar({
+  totalCount,
+  selectedCount,
+  selectedDate,
+  mode,
+  onOpenPicker,
+  onShowDay,
+  onShowOverview,
+}: {
+  totalCount: number;
+  selectedCount: number;
+  selectedDate: Date;
+  mode: CalendarMode;
+  onOpenPicker: () => void;
+  onShowDay: () => void;
+  onShowOverview: () => void;
+}) {
   const [now, setNow] = useState(formatCurrentDateTime);
 
   useEffect(() => {
@@ -34,11 +88,58 @@ function CurrentTimeBar() {
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
-        <Clock className="size-4 shrink-0 text-primary" />
-        <span className="text-muted-foreground">当前时间</span>
-        <time className="font-medium tabular-nums">{now}</time>
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-cyan-100 bg-white/62 p-4 shadow-sm">
+      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-cyan-200 bg-cyan-50 text-cyan-700 shadow-inner">
+        <CalendarDays className="size-5" />
+      </div>
+      <div className="min-w-[220px] flex-1">
+        <span className="block font-serif text-sm font-bold text-slate-800">
+          日历新番星历
+        </span>
+        <time className="mt-0.5 block truncate font-mono text-[11px] font-semibold text-cyan-700">
+          {now}
+        </time>
+        <span className="mt-1 block font-mono text-[11px] text-slate-500">
+          当前选择：{formatDisplayDate(selectedDate)}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onOpenPicker}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-cyan-100 bg-white/80 px-3 text-xs font-bold text-cyan-800 shadow-sm transition-colors hover:bg-white"
+        >
+          <CalendarDays className="size-3.5" />
+          选择日期
+        </button>
+        <button
+          type="button"
+          onClick={mode === "overview" ? onShowDay : onShowOverview}
+          className={cn(
+            "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold shadow-sm transition-colors",
+            mode === "overview"
+              ? "border border-cyan-100 bg-white/80 text-cyan-800 hover:bg-white"
+              : "bg-gradient-to-r from-cyan-600 to-teal-500 text-white hover:from-cyan-500 hover:to-teal-400",
+          )}
+        >
+          {mode === "overview" ? "单日视图" : "周总览"}
+        </button>
+
+        <div className="grid grid-cols-2 gap-2 text-center">
+          <div className="rounded-lg border border-cyan-100 bg-white/72 px-3 py-2">
+            <span className="block font-mono text-sm font-bold text-cyan-800">
+              {selectedCount}
+            </span>
+            <span className="text-[10px] text-slate-500">选日放送</span>
+          </div>
+          <div className="rounded-lg border border-teal-100 bg-white/72 px-3 py-2">
+            <span className="block font-mono text-sm font-bold text-teal-800">
+              {totalCount}
+            </span>
+            <span className="text-[10px] text-slate-500">本周收录</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -55,43 +156,82 @@ function ScheduleCard({
   listParams: URLSearchParams;
   active?: boolean;
 }) {
-  const title = item.name_cn || item.name;
+  const { title, subtitle, score, ratingTotal } = buildCardMeta(item);
   const cover = getCoverUrl(item.images);
-  const score = item.rating?.score;
+  const tags = (item.tags ?? []).slice(0, 3);
+  const airDate = formatAirDate(item.air_date || item.date);
 
   return (
     <Link
       to={buildDetailUrl(item.id, listParams)}
       prefetch="viewport"
-      title={title}
+      title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
-        "group relative block overflow-hidden rounded-md ring-1 ring-border/50 transition-all",
-        "hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/40",
-        active && "ring-2 ring-primary shadow-md",
+        "group relative flex flex-col gap-4 overflow-hidden rounded-lg border border-white/85 bg-white/56 p-4 shadow-sm transition-all duration-300 sm:flex-row",
+        "hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-white/86 hover:shadow-md",
+        active && "border-cyan-400 bg-white shadow-md ring-2 ring-cyan-500/25",
       )}
     >
-      <div className="relative aspect-[2/3] overflow-hidden bg-muted">
+      <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg border border-cyan-100 bg-cyan-50 sm:w-28 md:w-32">
         <AnimeCover
           url={cover}
           alt={title}
-          className="transition-transform duration-300 group-hover:scale-[1.04]"
+          className="transition-transform duration-700 group-hover:scale-105"
         />
-
-        <span className="absolute top-1 left-1 rounded bg-black/65 px-1 py-px text-[9px] font-bold text-white">
+        <div className="absolute inset-0 bg-cyan-600/5 mix-blend-overlay" />
+        <span className="absolute top-2 left-2 rounded-md border border-cyan-200 bg-white/90 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-800 backdrop-blur-sm">
           #{rank}
         </span>
-
         {score != null ? (
-          <div className="absolute top-1 right-1 flex items-center gap-0.5 rounded bg-black/70 px-1 py-px text-[9px] font-semibold text-orange-400">
-            <Star className="size-2.5 fill-orange-400" />
+          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md border border-amber-200 bg-white/92 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-600 backdrop-blur-sm">
+            <Star className="size-3 fill-amber-500 text-amber-500" />
             {score}
-          </div>
+          </span>
         ) : null}
+      </div>
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-1.5 pt-6 pb-1.5">
-          <p className="line-clamp-2 text-[10px] leading-snug font-medium text-white">
-            {title}
-          </p>
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 py-1">
+        <div>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="line-clamp-2 font-serif text-base font-bold leading-snug text-slate-800 transition-colors group-hover:text-cyan-700">
+              {title}
+            </h3>
+            {airDate ? (
+              <span className="hidden shrink-0 rounded-full border border-cyan-100 bg-cyan-50 px-2.5 py-1 font-mono text-[10px] font-semibold text-cyan-700 md:inline-flex">
+                {airDate}
+              </span>
+            ) : null}
+          </div>
+
+          {subtitle ? (
+            <p className="mt-1 truncate font-mono text-xs font-semibold text-slate-500">
+              {subtitle}
+            </p>
+          ) : null}
+
+          {tags.length ? (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <span
+                  key={tag.name}
+                  className="rounded-full border border-cyan-100 bg-cyan-50 px-2 py-0.5 font-mono text-[10px] text-cyan-700"
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-cyan-100 pt-3">
+          <span className="font-mono text-[10px] font-semibold text-slate-500">
+            {ratingTotal
+              ? `${ratingTotal.toLocaleString()} 人评分`
+              : item.platform || "Bangumi Calendar"}
+          </span>
+          <span className="rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm">
+            查看详情
+          </span>
         </div>
       </div>
     </Link>
@@ -104,14 +244,27 @@ type AnimeScheduleProps = {
   listParams: URLSearchParams;
 };
 
-export function AnimeSchedule({ schedule, activeId, listParams }: AnimeScheduleProps) {
+export function AnimeSchedule({
+  schedule,
+  activeId,
+  listParams,
+}: AnimeScheduleProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const todayId = getBangumiWeekdayId();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const todayColRef = useRef<HTMLDivElement>(null);
+  const selectedButtonRef = useRef<HTMLButtonElement>(null);
+
+  const selectedDate = useMemo(
+    () => parseDateParam(searchParams.get("date")) ?? startOfDay(new Date()),
+    [searchParams],
+  );
+  const selectedDayId = getBangumiWeekdayId(selectedDate);
+  const mode: CalendarMode =
+    searchParams.get("calendar") === "overview" ? "overview" : "day";
 
   const orderedDays = useMemo(() => {
     const map = new Map(schedule.map((d) => [d.weekday.id, d]));
-    return COLUMN_ORDER.map((id) => map.get(id)).filter(
+    return WEEKDAY_ORDER.map((id) => map.get(id)).filter(
       (d): d is CalendarDayGroup => d != null,
     );
   }, [schedule]);
@@ -120,89 +273,148 @@ export function AnimeSchedule({ schedule, activeId, listParams }: AnimeScheduleP
     () => schedule.reduce((n, d) => n + d.items.length, 0),
     [schedule],
   );
-  const todayCount =
-    schedule.find((d) => d.weekday.id === todayId)?.items.length ?? 0;
+  const selectedDay =
+    orderedDays.find((d) => d.weekday.id === selectedDayId) ?? orderedDays[0];
+  const selectedCount = selectedDay?.items.length ?? 0;
+
+  const routedListParams = useMemo(() => {
+    const params = new URLSearchParams(listParams);
+    params.set("date", formatDateParam(selectedDate));
+    if (mode === "overview") params.set("calendar", "overview");
+    else params.delete("calendar");
+    return params;
+  }, [listParams, mode, selectedDate]);
+
+  function setCalendarParams(next: { date?: Date; mode?: CalendarMode }) {
+    const params = new URLSearchParams(searchParams);
+    params.set("type", listParams.get("type") ?? "2");
+    params.set("view", "calendar");
+    params.delete("page");
+
+    if (next.date) params.set("date", formatDateParam(next.date));
+
+    if (next.mode === "overview") params.set("calendar", "overview");
+    if (next.mode === "day") params.delete("calendar");
+
+    setSearchParams(params, { preventScrollReset: true });
+  }
+
+  function selectDay(dayId: number) {
+    setCalendarParams({
+      date: dateForWeekday(selectedDate, dayId),
+      mode: "day",
+    });
+  }
 
   useEffect(() => {
-    todayColRef.current?.scrollIntoView({
+    selectedButtonRef.current?.scrollIntoView({
       behavior: "smooth",
       inline: "center",
       block: "nearest",
     });
-  }, []);
+  }, [selectedDayId]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-      <div className="shrink-0 space-y-2">
-        <p className="text-xs text-muted-foreground">
-          本季共 {totalCount} 部 · 今日 {todayCount} 部 · 组内按评分排序
-        </p>
-        <CurrentTimeBar />
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-5 p-4">
+      <CurrentTimeBar
+        totalCount={totalCount}
+        selectedCount={selectedCount}
+        selectedDate={selectedDate}
+        mode={mode}
+        onOpenPicker={() => setPickerOpen(true)}
+        onShowDay={() => setCalendarParams({ mode: "day" })}
+        onShowOverview={() => setCalendarParams({ mode: "overview" })}
+      />
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-auto pb-2">
-        <div className="grid min-w-[840px] grid-cols-7 gap-2 lg:min-w-0">
+      {mode === "day" ? (
+        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto rounded-lg border border-white/80 bg-white/42 p-1.5 shadow-inner">
           {orderedDays.map((day) => {
-            const isToday = day.weekday.id === todayId;
-            const headerClass =
-              DAY_HEADER_CLASS[day.weekday.id] ?? "bg-muted-foreground";
+            const isActive = selectedDay?.weekday.id === day.weekday.id;
+            const isToday = todayId === day.weekday.id;
 
             return (
-              <div
+              <button
                 key={day.weekday.id}
-                ref={isToday ? todayColRef : undefined}
-                id={`weekday-${day.weekday.id}`}
+                ref={isActive ? selectedButtonRef : undefined}
+                type="button"
+                onClick={() => selectDay(day.weekday.id)}
                 className={cn(
-                  "flex min-w-0 flex-col rounded-lg",
-                  isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                  "relative flex min-w-[82px] flex-1 flex-col items-center justify-center gap-1 rounded-lg border px-4 py-3 font-serif text-xs font-bold tracking-wider transition-all duration-300",
+                  isActive
+                    ? "border-cyan-300 bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-md"
+                    : "border-white/70 bg-white/55 text-slate-600 hover:border-cyan-200 hover:text-cyan-700",
                 )}
               >
-                <header
-                  className={cn(
-                    "rounded-t-lg px-2 py-2 text-center text-white shadow-sm",
-                    headerClass,
-                  )}
-                >
-                  <div className="text-xs font-bold leading-tight">
-                    {day.weekday.cn}
-                    {isToday ? (
-                      <span className="ml-1 text-[10px] font-normal opacity-90">
-                        今天
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="text-[10px] uppercase opacity-85">
-                    {day.weekday.en}
-                  </div>
-                </header>
-
-                <div
-                  className={cn(
-                    "flex flex-1 flex-col gap-1.5 rounded-b-lg border border-t-0 border-border/60 p-1.5",
-                    isToday ? "bg-primary/5" : "bg-muted/25",
-                  )}
-                >
-                  {day.items.length === 0 ? (
-                    <p className="py-8 text-center text-[10px] text-muted-foreground">
-                      暂无
-                    </p>
-                  ) : (
-                    day.items.map((item, i) => (
-                      <ScheduleCard
-                        key={item.id}
-                        item={item}
-                        rank={i + 1}
-                        listParams={listParams}
-                        active={activeId === String(item.id)}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
+                <span>
+                  {day.weekday.cn.replace("星期", "周")}
+                  {isToday ? (
+                    <span className="ml-1 font-mono text-[10px] opacity-80">
+                      今天
+                    </span>
+                  ) : null}
+                </span>
+                <span className="flex items-center gap-1 font-mono text-[10px] font-semibold opacity-85">
+                  {day.items.length} 部
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      isActive
+                        ? "bg-white"
+                        : isToday
+                          ? "bg-cyan-500"
+                          : "bg-slate-300",
+                    )}
+                  />
+                </span>
+              </button>
             );
           })}
         </div>
-      </div>
+      ) : null}
+
+      {mode === "overview" ? (
+        <AnimeWeekOverview
+          schedule={schedule}
+          activeId={activeId}
+          listParams={routedListParams}
+          todayId={todayId}
+          selectedDayId={selectedDayId}
+          onSelectDay={selectDay}
+        />
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {selectedDay && selectedDay.items.length > 0 ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {selectedDay.items.map((item, i) => (
+                <ScheduleCard
+                  key={item.id}
+                  item={item}
+                  rank={i + 1}
+                  listParams={routedListParams}
+                  active={activeId === String(item.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-cyan-200 bg-white/42 py-14 text-center shadow-inner">
+              <Tv className="mx-auto size-8 text-cyan-500/35" />
+              <p className="mt-3 font-serif text-sm font-semibold text-slate-500">
+                本日暂无新番放送
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <AnimeCalendarPicker
+        open={pickerOpen}
+        selectedDate={selectedDate}
+        onSelect={(date) => {
+          setCalendarParams({ date, mode: "day" });
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { bgmGet } from "./client";
+import { BGM_API_ROUTES } from "./urls";
 import { LIST_PAGE_SIZE } from "./constants";
 import { trimSubjects } from "./trim";
 import type { AnimeCardData } from "~/lib/anime-meta";
@@ -18,7 +19,7 @@ type BrowseParams = {
 export async function fetchSubjectsBrowse(
   params: BrowseParams,
 ): Promise<{ items: AnimeCardData[]; total: number }> {
-  const body = await bgmGet<SubjectListResponse>("/subjects", {
+  const body = await bgmGet<SubjectListResponse>(BGM_API_ROUTES.subjects(), {
     type: params.type,
     sort: params.sort ?? "rank",
     cat: params.cat,
@@ -60,6 +61,8 @@ export async function fetchSubjectsList(
   return fetchSubjectsBrowse({
     type,
     sort,
+    year: year || undefined,
+    month: month || undefined,
     limit: LIST_PAGE_SIZE,
     offset,
   });

@@ -35,7 +35,7 @@ function pageRange(current: number, total: number): (number | "…")[] {
 }
 
 const navBtnClass =
-  "inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-8 items-center gap-1 rounded-lg border border-cyan-100 bg-white/70 px-2.5 text-sm font-bold text-cyan-800 shadow-sm transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-40";
 
 export function AnimePagination({
   page,
@@ -53,7 +53,7 @@ export function AnimePagination({
   return (
     <nav
       aria-label="分页"
-      className="flex flex-wrap items-center justify-center gap-1 border-t border-border/50 px-4 py-4"
+      className="flex flex-wrap items-center justify-center gap-1 border-t border-cyan-100/80 px-4 py-4"
     >
       {page > 1 ? (
         <Link to={prevUrl} prefetch="intent" className={navBtnClass}>
@@ -82,10 +82,10 @@ export function AnimePagination({
               to={buildPageUrl(baseParams, p)}
               prefetch="intent"
               className={cn(
-                "inline-flex size-8 items-center justify-center rounded-md text-xs font-medium transition-colors",
+                "inline-flex size-8 items-center justify-center rounded-lg font-mono text-xs font-bold transition-colors",
                 p === page
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-white/70 hover:text-cyan-700",
               )}
               aria-current={p === page ? "page" : undefined}
             >
@@ -107,7 +107,7 @@ export function AnimePagination({
         </span>
       )}
 
-      <span className="w-full text-center text-[11px] text-muted-foreground sm:w-auto sm:pl-2">
+      <span className="w-full text-center font-mono text-[11px] text-slate-500 sm:w-auto sm:pl-2">
         第 {page} / {totalPages} 页 · 共 {total} 条
       </span>
     </nav>

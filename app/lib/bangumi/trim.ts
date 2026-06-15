@@ -18,7 +18,13 @@ export function trimSubject(raw: RawSubject): AnimeCardData {
           grid: raw.images.grid,
         }
       : undefined,
-    rating: raw.rating ? { score: raw.rating.score } : undefined,
+    rating: raw.rating
+      ? {
+          score: raw.rating.score,
+          rank: raw.rating.rank,
+          total: raw.rating.total,
+        }
+      : undefined,
     tags: raw.tags?.slice(0, 1),
   };
 }

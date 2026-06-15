@@ -61,8 +61,9 @@ export function buildCardMeta(item: AnimeCardData) {
   const platform = item.platform ?? "";
   const genre = getFirstTag(item.tags);
   const score = item.rating?.score;
+  const ratingTotal = item.rating?.total;
 
   const subtitle = [year, platform, genre].filter(Boolean).join(" · ");
 
-  return { title, subtitle, score };
+  return { title, subtitle, score, ratingTotal };
 }

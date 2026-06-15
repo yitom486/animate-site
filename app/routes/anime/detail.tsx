@@ -16,6 +16,7 @@ import {
 } from "~/lib/bangumi";
 import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
+import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<DetailPayload>();
@@ -68,21 +69,21 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
   const eps = subject.total_episodes || subject.eps || "—";
   const tags = (subject.tags ?? []).slice(0, 6);
 
-  const kw = encodeURIComponent(title);
   const links = {
-    online: `https://search.bilibili.com/all?keyword=${kw}`,
-    download: `https://www.comicat.org/search.php?keyword=${kw}`,
-    subtitle: `https://bbs.acgrip.com/search.php?mod=forum&srchtxt=${kw}`,
+    bangumi: BGM_WEB_ROUTES.subject(subject.id),
+    online: THIRD_PARTY_SEARCH.online.build(title),
+    download: THIRD_PARTY_SEARCH.download.build(title),
+    subtitle: THIRD_PARTY_SEARCH.subtitle.build(title),
   };
 
   return (
     <div className="flex h-full flex-col">
       {/* 操作条 */}
-      <div className="flex items-center justify-between gap-2 border-b border-border/50 p-3">
+      <div className="flex items-center justify-between gap-2 border-b border-cyan-100/80 bg-white/45 p-3 backdrop-blur-md">
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-3 py-1.5 text-sm font-bold text-white shadow-sm transition-colors hover:from-cyan-500 hover:to-teal-400"
         >
           {expanded ? (
             <>
@@ -96,7 +97,7 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
         </button>
         <Link
           to={listBackUrl}
-          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="rounded-lg border border-cyan-100 bg-white/70 p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-cyan-700"
           aria-label="关闭"
         >
           <X className="size-4" />
@@ -149,17 +150,20 @@ function CompactView({
   return (
     <div className="space-y-4">
       {subject.rating?.score ? (
-        <div className="flex items-center gap-2">
+        <div className="rounded-lg border border-cyan-100 bg-white/64 p-4 shadow-sm">
+          <div className="flex items-center gap-2">
           <Stars score={subject.rating.score} />
-          <span className="text-2xl font-bold text-orange-500">
+          <span className="font-mono text-2xl font-bold text-amber-500">
             {subject.rating.score}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-slate-500">
             #{subject.rating.rank} · {subject.rating.total} 人
           </span>
+          </div>
         </div>
       ) : null}
 
+      <div className="rounded-lg border border-white/75 bg-white/58 p-3 shadow-sm">
       <div className="flex gap-3">
         {subject.images?.large ? (
           <button type="button" onClick={onExpand} className="shrink-0">
@@ -167,11 +171,11 @@ function CompactView({
               src={subject.images.large}
               alt={title}
               referrerPolicy="no-referrer"
-              className="h-44 w-32 rounded object-cover ring-1 ring-border transition-transform hover:scale-[1.03]"
+              className="h-44 w-32 rounded-lg border border-cyan-100 object-cover shadow-sm transition-transform hover:scale-[1.03]"
             />
           </button>
         ) : null}
-        <dl className="space-y-1 text-xs">
+        <dl className="space-y-1.5 text-xs">
           <Row k="中文名" v={subject.name_cn} />
           <Row k="原名" v={subject.name} />
           <Row k="话数" v={String(eps)} />
@@ -181,11 +185,16 @@ function CompactView({
           <Row k="监督" v={staff.监督} />
         </dl>
       </div>
+      </div>
 
       {tags.length ? (
         <div className="flex flex-wrap gap-1">
           {tags.map((t) => (
-            <Badge key={t.name} variant="secondary">
+            <Badge
+              key={t.name}
+              variant="secondary"
+              className="border border-cyan-100 bg-cyan-50 text-cyan-700"
+            >
               {t.name}
             </Badge>
           ))}
@@ -218,32 +227,35 @@ function FullView({
   const mainEps = episodes.filter((e) => e.type === 0);
   return (
     <div className="mx-auto max-w-5xl space-y-6">
+      <div className="rounded-lg border border-white/75 bg-white/58 p-4 shadow-sm">
       <div className="flex flex-col gap-6 md:flex-row">
         {subject.images?.large ? (
           <img
             src={subject.images.large}
             alt={title}
             referrerPolicy="no-referrer"
-            className="h-72 w-52 shrink-0 self-start rounded-xl object-cover shadow-lg ring-1 ring-border"
+            className="h-72 w-52 shrink-0 self-start rounded-lg border border-cyan-100 object-cover shadow-md"
           />
         ) : null}
         <div className="min-w-0 flex-1 space-y-3">
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <h1 className="font-serif text-2xl font-bold text-slate-800">
+            {title}
+          </h1>
           {subject.name_cn && subject.name !== subject.name_cn ? (
-            <p className="text-sm text-muted-foreground">{subject.name}</p>
+            <p className="font-mono text-sm text-slate-500">{subject.name}</p>
           ) : null}
           {subject.rating?.score ? (
             <div className="flex items-center gap-2">
               <Stars score={subject.rating.score} />
-              <span className="text-3xl font-bold text-orange-500">
+              <span className="font-mono text-3xl font-bold text-amber-500">
                 {subject.rating.score}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-slate-500">
                 #{subject.rating.rank} · {subject.rating.total} 人评分
               </span>
             </div>
           ) : null}
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
             <Row k="话数" v={String(eps)} />
             <Row k="放送开始" v={subject.date} />
             <Row k="原作" v={staff.原作} />
@@ -254,7 +266,11 @@ function FullView({
           {tags.length ? (
             <div className="flex flex-wrap gap-1">
               {tags.map((t) => (
-                <Badge key={t.name} variant="secondary">
+                <Badge
+                  key={t.name}
+                  variant="secondary"
+                  className="border border-cyan-100 bg-cyan-50 text-cyan-700"
+                >
                   {t.name}
                 </Badge>
               ))}
@@ -263,35 +279,38 @@ function FullView({
           <JumpLinks links={links} />
         </div>
       </div>
+      </div>
 
       {subject.summary ? (
-        <section>
-          <h2 className="mb-2 text-lg font-semibold">简介</h2>
-          <p className="text-sm leading-relaxed whitespace-pre-line text-foreground/80">
+        <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
+          <h2 className="mb-2 font-serif text-lg font-bold text-slate-800">
+            简介
+          </h2>
+          <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-slate-700">
             {subject.summary}
           </p>
         </section>
       ) : null}
 
       {mainEps.length ? (
-        <section>
-          <h2 className="mb-2 text-lg font-semibold">
-            章节 <span className="text-sm text-muted-foreground">({mainEps.length})</span>
+        <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
+          <h2 className="mb-3 font-serif text-lg font-bold text-slate-800">
+            章节 <span className="font-mono text-sm text-slate-500">({mainEps.length})</span>
           </h2>
           <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
             {mainEps.map((e) => (
               <li
                 key={e.id}
-                className="flex items-baseline gap-2 rounded px-2 py-1 text-sm hover:bg-muted"
+                className="flex items-baseline gap-2 rounded-lg border border-transparent px-2 py-1.5 text-sm transition-colors hover:border-cyan-100 hover:bg-white/72"
               >
-                <span className="w-8 shrink-0 text-right font-mono text-muted-foreground">
+                <span className="w-8 shrink-0 text-right font-mono text-slate-400">
                   {e.sort}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
                   {e.name_cn || e.name || "—"}
                 </span>
                 {e.airdate ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 font-mono text-xs text-cyan-700">
                     {e.airdate}
                   </span>
                 ) : null}
@@ -304,23 +323,26 @@ function FullView({
   );
 }
 
-/* ───────── 小组件 ───────── */
 function JumpLinks({ links }: { links: Record<string, string> }) {
   const labels: Record<string, string> = {
-    online: "在线链接",
-    download: "下载链接",
-    subtitle: "字幕网站",
+    bangumi: "官方页面",
+    online: THIRD_PARTY_SEARCH.online.label,
+    download: THIRD_PARTY_SEARCH.download.label,
+    subtitle: THIRD_PARTY_SEARCH.subtitle.label,
   };
   return (
-    <div className="space-y-2 border-t border-border/50 pt-3 text-sm">
+    <div className="space-y-2 border-t border-cyan-100 pt-3 text-sm">
       {Object.entries(links).map(([k, href]) => (
-        <div key={k} className="flex items-center justify-between gap-2">
-          <span className="text-muted-foreground">{labels[k]}</span>
+        <div
+          key={k}
+          className="flex items-center justify-between gap-2 rounded-lg border border-cyan-100 bg-white/58 px-3 py-2"
+        >
+          <span className="text-slate-500">{labels[k] || k}</span>
           <a
             href={href}
             target="_blank"
             rel="noreferrer"
-            className="text-primary hover:underline"
+            className="font-bold text-cyan-700 hover:underline"
           >
             前往 →
           </a>
@@ -334,8 +356,8 @@ function Row({ k, v }: { k: string; v?: string }) {
   if (!v) return null;
   return (
     <div className="flex gap-2">
-      <dt className="shrink-0 text-muted-foreground">{k}:</dt>
-      <dd className="min-w-0 break-words">{v}</dd>
+      <dt className="shrink-0 text-slate-500">{k}:</dt>
+      <dd className="min-w-0 break-words text-slate-800">{v}</dd>
     </div>
   );
 }
@@ -343,7 +365,7 @@ function Row({ k, v }: { k: string; v?: string }) {
 function Stars({ score }: { score: number }) {
   const full = Math.round(score / 2); // 10 分制 → 5 星
   return (
-    <span className="text-lg text-orange-400">
+    <span className="text-lg text-amber-400">
       {"★".repeat(full)}
       {"☆".repeat(5 - full)}
     </span>
@@ -356,8 +378,8 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     ? `${error.status} ${error.statusText}`
     : "加载详情失败";
   return (
-    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-      <p>😢 {msg}</p>
+    <div className="flex h-full items-center justify-center text-sm text-slate-500">
+      <p>{msg}</p>
     </div>
   );
 }

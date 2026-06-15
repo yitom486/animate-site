@@ -1,4 +1,5 @@
 import { bgmGetLegacy } from "./client";
+import { BGM_API_ROUTES } from "./urls";
 import { trimSubjects } from "./trim";
 import type { CalendarDayGroup } from "./types";
 import type { RawSubject } from "./types";
@@ -13,7 +14,7 @@ export async function fetchCalendarSchedule(): Promise<{
   schedule: CalendarDayGroup[];
   total: number;
 }> {
-  const cal = await bgmGetLegacy<CalendarResponse>("/calendar");
+  const cal = await bgmGetLegacy<CalendarResponse>(BGM_API_ROUTES.calendar());
 
   const schedule = cal.map((day) => ({
     weekday: day.weekday,

@@ -1,9 +1,11 @@
 import { bgmPost } from "./client";
+import { BGM_API_ROUTES } from "./urls";
 import { BGM_SEARCH_PAGE_SIZE } from "./constants";
 import { getCurrentAnimeSeasonAirDateFilter } from "./season";
 import { trimSubjects } from "./trim";
 import type { AnimeCardData } from "~/lib/anime-meta";
 import type { ListQuery, SearchSubjectsBody, SubjectListResponse } from "./types";
+
 
 /**
  * POST /v0/search/subjects — 近期注目 / 标签 / 关键词搜索
@@ -41,7 +43,7 @@ export async function fetchSearchList(
   }
 
   const res = await bgmPost<SubjectListResponse>(
-    "/search/subjects",
+    BGM_API_ROUTES.searchSubjects(),
     { keyword, sort, filter },
     {
       limit: BGM_SEARCH_PAGE_SIZE,

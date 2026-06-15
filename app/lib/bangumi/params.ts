@@ -20,6 +20,12 @@ const LIST_PARAM_KEYS = [
   "month",
 ] as const;
 
+const DETAIL_BACK_PARAM_KEYS = [
+  ...LIST_PARAM_KEYS,
+  "date",
+  "calendar",
+] as const;
+
 export function getDefaultView(type: SubjectTypeValue): ListView {
   return type === SUBJECT_TYPE.anime ? "calendar" : "";
 }
@@ -99,7 +105,7 @@ export function listParamsFromSearch(
   searchParams: URLSearchParams,
 ): URLSearchParams {
   const params = new URLSearchParams();
-  for (const key of LIST_PARAM_KEYS) {
+  for (const key of DETAIL_BACK_PARAM_KEYS) {
     const v = searchParams.get(key);
     if (v) params.set(key, v);
   }
@@ -161,7 +167,15 @@ export function getViewLabel(query: ListQuery): string {
         : query.year
           ? `${query.year}年`
           : "季度浏览";
+    case "links":
+      return "外链入口";
     default:
+      if (query.sort === "rank" && query.year) {
+        return `${query.year}年排行榜`;
+      }
+      if (query.sort === "date" && query.year) {
+        return `${query.year}年最新发布`;
+      }
       return query.sort === "date" ? "最新发布" : "排行榜";
   }
 }

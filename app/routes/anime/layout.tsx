@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, Outlet, useNavigation, useParams } from "react-router";
-import { Search } from "lucide-react";
+import { Link, Outlet, useNavigation, useParams } from "react-router";
+import { CalendarDays, Sparkles } from "lucide-react";
 import type { Route } from "./+types/layout";
 import { AnimeCard } from "~/components/anime-card";
 import { AnimeSchedule } from "~/components/anime-schedule";
 import { AnimeListSkeleton } from "~/components/anime-list-skeleton";
 import { AnimePagination } from "~/components/anime-pagination";
+import { AnimeRankFilter } from "~/components/anime-rank-filter";
+import { SiteNav } from "~/components/site-nav";
 import { cn } from "~/lib/utils";
 import {
-  BGM_MENUS,
   buildDetailUrl,
   createCache,
   listCacheKey,
@@ -16,14 +17,6 @@ import {
   mergeListParams,
   type AnimeListResult,
 } from "~/lib/bangumi";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "~/components/ui/navigation-menu";
 
 const clientCache = createCache<AnimeListResult>();
 
@@ -62,81 +55,10 @@ export type AnimeOutletContext = {
   setExpanded: (v: boolean) => void;
 };
 
-function AnimeHeader({ type }: { type: string }) {
-  return (
-    <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-border/60 bg-background/70 px-6 py-3 backdrop-blur-xl">
-      <Link
-        to="/anime"
-        prefetch="intent"
-        className="shrink-0 bg-gradient-to-r from-pink-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-2xl font-black tracking-tight text-transparent"
-      >
-        亚域空间
-      </Link>
-
-      <NavigationMenu>
-        <NavigationMenuList>
-          {BGM_MENUS.map((m) => (
-            <NavigationMenuItem key={m.type}>
-              <NavigationMenuTrigger
-                className={cn(
-                  type === m.type && "text-primary",
-                  "data-[active]:text-primary",
-                )}
-              >
-                {m.label}
-              </NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid max-h-[min(70vh,480px)] w-[300px] gap-1 overflow-y-auto p-2 sm:w-[320px]">
-                  {m.links.map(({ to, title, desc, icon: Icon }) => (
-                    <li key={to}>
-                      <NavigationMenuLink
-                        render={<Link to={to} prefetch="intent" />}
-                        className="flex-col items-start gap-0.5"
-                      >
-                        <span className="flex items-center gap-2 text-sm font-medium">
-                          <Icon className="size-4 shrink-0 text-primary" />
-                          {title}
-                        </span>
-                        {desc ? (
-                          <span className="pl-6 text-xs text-muted-foreground">
-                            {desc}
-                          </span>
-                        ) : null}
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          ))}
-        </NavigationMenuList>
-      </NavigationMenu>
-
-      <Form
-        method="get"
-        action="/anime"
-        className="ml-auto flex max-w-xs flex-1 items-center gap-1.5"
-      >
-        <input type="hidden" name="type" value={type} />
-        <input type="hidden" name="view" value="search" />
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            name="q"
-            type="search"
-            placeholder="搜索…"
-            className="h-8 w-full rounded-lg border border-border bg-background py-1 pr-2 pl-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-          />
-        </div>
-      </Form>
-    </header>
-  );
-}
-
 export function HydrateFallback() {
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-background via-background to-muted/40">
-      <AnimeHeader type="2" />
+    <div className="celadon-page flex h-screen flex-col">
+      <SiteNav activeType="2" searchType="2" />
       <div className="grid min-h-0 flex-1 grid-cols-[1fr_0fr] overflow-hidden">
         <AnimeListSkeleton />
       </div>
@@ -155,6 +77,8 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     baseParams,
     typeLabel,
     viewLabel,
+    sort,
+    view,
   } = loaderData;
   const params = useParams();
   const navigation = useNavigation();
@@ -176,21 +100,49 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const listParams = mergeListParams(baseParams, page);
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-background via-background to-muted/40">
-      <AnimeHeader type={type} />
+    <div className="celadon-page flex h-screen flex-col text-slate-800">
+      <SiteNav activeType={type} searchType={type} />
 
       <div
-        className="grid min-h-0 flex-1 overflow-hidden transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="grid min-h-0 flex-1 overflow-hidden p-3 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{ gridTemplateColumns: cols }}
       >
-        <section className="flex min-w-0 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-baseline gap-2 px-4 pt-4">
-            <h2 className="text-lg font-bold">{typeLabel}</h2>
-            <span className="text-sm text-muted-foreground">· {viewLabel}</span>
+        <section className="celadon-glass flex min-w-0 flex-col overflow-hidden rounded-lg">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-cyan-100/80 px-4 py-4">
+            <div>
+              <span className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-cyan-600">
+                <Sparkles className="size-3.5" />
+                Bangumi Archive
+              </span>
+              <div className="mt-1 flex items-baseline gap-2">
+                <h2 className="font-serif text-xl font-bold text-slate-800">
+                  {typeLabel}
+                </h2>
+                <span className="text-sm text-slate-500">· {viewLabel}</span>
+              </div>
+            </div>
             {isLoading ? (
-              <span className="animate-pulse text-xs text-muted-foreground">
+              <span className="rounded-full border border-cyan-100 bg-white/70 px-3 py-1 font-mono text-xs text-cyan-700">
                 加载中…
               </span>
+            ) : null}
+            {schedule?.length ? (
+              <Link
+                to="/anime?type=2&view=calendar&calendar=overview"
+                prefetch="intent"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-100 bg-white/70 px-3 py-2 text-xs font-bold text-cyan-800 shadow-sm transition-colors hover:bg-white"
+              >
+                <CalendarDays className="size-3.5" />
+                周总览
+              </Link>
+            ) : null}
+            {!schedule?.length ? (
+              <AnimeRankFilter
+                type={type}
+                sort={sort}
+                view={view}
+                year={baseParams.year}
+              />
             ) : null}
           </div>
 
@@ -212,7 +164,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                 暂无结果
               </p>
             ) : (
-              <div className="grid grid-cols-3 gap-3 p-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+              <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
                 {items.map((it, idx) => (
                   <AnimeCard
                     key={it.id}
@@ -220,6 +172,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                     to={buildDetailUrl(it.id, listParams)}
                     active={params.id === String(it.id)}
                     priority={idx < 10}
+                    rank={(page - 1) * pageSize + idx + 1}
                   />
                 ))}
               </div>
@@ -236,7 +189,12 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
           </div>
         </section>
 
-        <section className="min-w-0 overflow-hidden border-l border-border/50 bg-background/40 backdrop-blur">
+        <section
+          className={cn(
+            "min-w-0 overflow-hidden rounded-lg border border-white/75 bg-white/48 backdrop-blur-xl",
+            hasDetail && "ml-3",
+          )}
+        >
           <Outlet
             context={{ expanded, setExpanded } satisfies AnimeOutletContext}
           />

@@ -1,4 +1,5 @@
 import { bgmGet } from "./client";
+import { BGM_API_ROUTES } from "./urls";
 import type { Episode, Person, SubjectDetail } from "./types-detail";
 import { createCache } from "./cache";
 import { CACHE_TTL_DETAIL_MS } from "./constants";
@@ -16,12 +17,12 @@ export const serverDetailCache = createCache<DetailPayload>(CACHE_TTL_DETAIL_MS)
 
 /** GET /v0/subjects/{id} — 条目详情 */
 export async function fetchSubjectDetail(id: string): Promise<SubjectDetail> {
-  return bgmGet<SubjectDetail>(`/subjects/${id}`);
+  return bgmGet<SubjectDetail>(BGM_API_ROUTES.subjectDetail(id));
 }
 
 /** GET /v0/subjects/{id}/persons — 制作人员 / 声优 */
 export async function fetchSubjectPersons(id: string): Promise<Person[]> {
-  return bgmGet<Person[]>(`/subjects/${id}/persons`);
+  return bgmGet<Person[]>(BGM_API_ROUTES.subjectPersons(id));
 }
 
 /** GET /v0/episodes — 章节列表 */
@@ -29,7 +30,7 @@ export async function fetchSubjectEpisodes(
   id: string,
   limit = 100,
 ): Promise<Episode[]> {
-  const res = await bgmGet<{ data: Episode[] }>("/episodes", {
+  const res = await bgmGet<{ data: Episode[] }>(BGM_API_ROUTES.episodes(), {
     subject_id: id,
     limit,
   });

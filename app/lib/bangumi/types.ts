@@ -35,7 +35,8 @@ export type ListView =
   | "cat"
   | "tag"
   | "search"
-  | "season";
+  | "season"
+  | "links";
 
 export type ListQuery = {
   type: SubjectTypeValue;
