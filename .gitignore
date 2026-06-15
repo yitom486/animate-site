@@ -5,3 +5,6 @@
 # React Router
 /.react-router/
 /build/
+
+# Cloudflare Wrangler 本地运行时状态/缓存
+/.wrangler/
