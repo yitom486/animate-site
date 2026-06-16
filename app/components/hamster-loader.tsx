@@ -1,3 +1,5 @@
+import "./hamster-loader.css";
+
 type HamsterLoaderProps = {
   show: boolean;
 };
