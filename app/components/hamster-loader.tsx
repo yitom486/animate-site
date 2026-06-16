@@ -6,225 +6,156 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
   if (!show) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-900/15 px-4 backdrop-blur-[2px]">
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-950/15 px-4 backdrop-blur-[4px] transition-all duration-300">
       <div
-        className="rounded-2xl border border-rose-100/80 bg-white/90 p-6 text-center shadow-2xl shadow-rose-950/10 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
+        className="relative overflow-hidden rounded-2xl border border-white/40 bg-white/70 px-8 py-8 text-center shadow-2xl shadow-rose-950/10 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-300"
+        style={{
+          boxShadow: "0 20px 50px -12px rgba(244, 63, 94, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.6)",
+        }}
         role="status"
         aria-live="polite"
       >
+        {/* Decorative ambient background glows */}
+        <div className="absolute -left-12 -top-12 h-24 w-24 rounded-full bg-rose-400/20 blur-2xl" />
+        <div className="absolute -right-12 -bottom-12 h-24 w-24 rounded-full bg-sky-400/20 blur-2xl" />
+
         {/* SVG Inline Styles */}
         <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes svg-wheel-spin {
+          @keyframes magic-spin-clockwise {
             to { transform: rotate(360deg); }
           }
-          @keyframes svg-hamster-bob {
-            0%, 100% {
-              transform: translate(5px, 2px) scale(1) rotate(-0.5deg);
-            }
-            50% {
-              transform: translate(7px, -1px) scale(1.03, 0.97) rotate(1deg);
-            }
+          @keyframes magic-spin-counter {
+            to { transform: rotate(-360deg); }
           }
-          @keyframes svg-paw-run-front {
-            0%, 100% { transform: translate(0, 0) rotate(15deg); }
-            25% { transform: translate(3px, -3px) rotate(40deg); }
-            50% { transform: translate(-1px, -1px) rotate(-10deg); }
-            75% { transform: translate(-3px, 1px) rotate(-25deg); }
+          @keyframes magic-pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+            50% { transform: scale(1.06) rotate(180deg); opacity: 1; }
           }
-          @keyframes svg-paw-run-back {
-            0%, 100% { transform: translate(0, 0) rotate(-15deg); }
-            25% { transform: translate(-3px, 1px) rotate(-35deg); }
-            50% { transform: translate(-1px, -1px) rotate(10deg); }
-            75% { transform: translate(3px, -3px) rotate(35deg); }
-          }
-          @keyframes svg-tail-wig {
-            0% { transform: rotate(-15deg); }
-            100% { transform: rotate(20deg); }
-          }
-          @keyframes svg-ear-twitch {
-            0%, 90%, 100% { transform: rotate(0deg); }
-            93%, 97% { transform: rotate(-10deg) skewX(2deg); }
-            95% { transform: rotate(8deg) skewX(-2deg); }
-          }
-          @keyframes svg-eye-blink {
-            0%, 90%, 100% { transform: scaleY(1); }
-            95% { transform: scaleY(0.15); }
-          }
-          @keyframes svg-sniff {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15) translateY(-0.2px); }
+          @keyframes text-shine {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
           }
 
-          .svg-wheel-rotate {
-            transform-origin: 100px 95px;
-            animation: svg-wheel-spin 1.1s linear infinite;
+          .magic-ring-outer {
+            transform-origin: 50px 50px;
+            animation: magic-spin-clockwise 14s linear infinite;
           }
-          .svg-hamster-group {
-            transform-origin: 112px 135px;
-            animation: svg-hamster-bob 500ms ease-in-out infinite;
+          .magic-ring-middle {
+            transform-origin: 50px 50px;
+            animation: magic-spin-counter 9s linear infinite;
           }
-          .svg-hamster-paw-front {
-            transform-origin: 125px 153px;
-            animation: svg-paw-run-front 250ms linear infinite;
+          .magic-orbit-1 {
+            transform-origin: 50px 50px;
+            animation: magic-spin-clockwise 3.5s linear infinite;
           }
-          .svg-hamster-paw-back {
-            transform-origin: 102px 153px;
-            animation: svg-paw-run-back 250ms linear infinite;
-            animation-delay: -125ms;
+          .magic-core {
+            transform-origin: 50px 50px;
+            animation: magic-pulse 5s ease-in-out infinite;
           }
-          .svg-hamster-tail {
-            transform-origin: 96px 142px;
-            animation: svg-tail-wig 180ms ease-in-out infinite alternate;
-          }
-          .svg-hamster-ear-front {
-            transform-origin: 118px 121px;
-            animation: svg-ear-twitch 3.8s ease-in-out infinite;
-          }
-          .svg-hamster-eye-group {
-            transform-origin: 127px 128px;
-            animation: svg-eye-blink 3.5s ease-in-out infinite;
-          }
-          .svg-hamster-nose {
-            transform-origin: 135px 133px;
-            animation: svg-sniff 150ms ease-in-out infinite;
+          .magic-text-shine {
+            animation: text-shine 2s ease-in-out infinite;
           }
         `}} />
 
-        <div className="relative mx-auto h-36 w-36" aria-hidden="true">
+        <div className="relative mx-auto h-28 w-28" aria-hidden="true">
           <svg
-            viewBox="0 0 200 200"
+            viewBox="0 0 100 100"
             className="h-full w-full"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* 1. Wheel Support Stand (Metallic/Clean) */}
-            <path
-              d="M100 95 C100 130, 82 172, 55 175 M100 95 C100 130, 118 172, 145 175 M40 175 L160 175"
-              stroke="#e2e8f0"
-              strokeWidth="4"
-              strokeLinecap="round"
+            <defs>
+              {/* Premium Glow Filter */}
+              <filter id="magic-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.8" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+
+              {/* Curated Soft Color Gradients */}
+              <linearGradient id="magic-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fb7185" />
+                <stop offset="50%" stopColor="#ec4899" />
+                <stop offset="100%" stopColor="#38bdf8" />
+              </linearGradient>
+              <linearGradient id="magic-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#a855f7" />
+                <stop offset="100%" stopColor="#06b6d4" />
+              </linearGradient>
+            </defs>
+
+            {/* Static outer thin orbit ring */}
+            <circle cx="50" cy="50" r="46" stroke="url(#magic-grad-1)" strokeWidth="0.5" fill="none" opacity="0.15" />
+
+            {/* 1. Outer Ring (Clockwise, Runic dashed style) */}
+            <circle
+              cx="50"
+              cy="50"
+              r="43"
+              stroke="url(#magic-grad-1)"
+              strokeWidth="0.8"
+              strokeDasharray="4 6 12 6 2 6"
               fill="none"
+              className="magic-ring-outer"
+              filter="url(#magic-glow)"
             />
 
-            {/* 2. Rotating Wheel Group */}
-            <g className="svg-wheel-rotate">
-              {/* Outer Rim Shadow/Ring */}
-              <circle cx="100" cy="95" r="68" stroke="#fda4af" strokeWidth="1.5" fill="none" opacity="0.6" />
-              {/* Outer Rim */}
-              <circle cx="100" cy="95" r="65" stroke="#fecdd3" strokeWidth="5.5" fill="none" />
-              {/* Inner Grips / Dashed running track */}
-              <circle cx="100" cy="95" r="61.5" stroke="#ffe4e6" strokeWidth="2.5" strokeDasharray="3 8" fill="none" />
-              
-              {/* Wheel Spokes */}
-              <line x1="100" y1="95" x2="100" y2="30" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="100" y2="160" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="35" y2="95" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="165" y2="95" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="54" y2="49" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="146" y2="141" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="54" y2="141" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="146" y2="49" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+            {/* 2. Middle Ring (Counter-clockwise, Fine dotted style) */}
+            <circle
+              cx="50"
+              cy="50"
+              r="35"
+              stroke="url(#magic-grad-2)"
+              strokeWidth="1.2"
+              strokeDasharray="1 3.5"
+              fill="none"
+              className="magic-ring-middle"
+              opacity="0.8"
+            />
+
+            {/* 3. Outer Orbiting Light Node */}
+            <g className="magic-orbit-1">
+              {/* Outer soft glow ring */}
+              <circle cx="50" cy="15" r="4.5" fill="#38bdf8" opacity="0.25" filter="url(#magic-glow)" />
+              {/* Sharp inner core orb */}
+              <circle cx="50" cy="15" r="2" fill="#e0f2fe" filter="url(#magic-glow)" />
             </g>
 
-            {/* 3. Wheel Axle Hub (static, sits on top) */}
-            <circle cx="100" cy="95" r="6" fill="#fb7185" stroke="#ffffff" strokeWidth="2.5" />
-
-            {/* 4. Cute Hamster Group */}
-            <g className="svg-hamster-group">
-              {/* Little Pink Tail */}
-              <path
-                d="M96 142 C92 143, 90 148, 93 150 C95 151, 97 148, 96 142"
-                fill="#fda4af"
-                stroke="#c2410c"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                className="svg-hamster-tail"
-              />
-
-              {/* Back Foot (drawn under body) */}
-              <path
-                d="M102 153 C100 157, 96 156, 95 153"
-                stroke="#f43f5e"
-                strokeWidth="3"
-                strokeLinecap="round"
-                fill="none"
-                className="svg-hamster-paw-back"
-              />
-
-              {/* Front Foot (drawn under body) */}
-              <path
-                d="M125 153 C127 157, 131 156, 132 153"
-                stroke="#f43f5e"
-                strokeWidth="3"
-                strokeLinecap="round"
-                fill="none"
-                className="svg-hamster-paw-front"
-              />
-
-              {/* Back Ear */}
-              <path
-                d="M110 122 C107 116, 113 111, 116 115 Z"
-                fill="#fdba74"
-                stroke="#c2410c"
-                strokeWidth="1.5"
-              />
-
-              {/* Hamster Main Body */}
-              <path
-                d="M98 144 C90 134, 102 120, 118 120 C130 120, 136 128, 134 138 C132 146, 122 150, 110 150 C102 150, 100 147, 98 144 Z"
-                fill="#fed7aa"
-                stroke="#c2410c"
-                strokeWidth="2.2"
-                strokeLinejoin="round"
-              />
-
-              {/* Lighter White/Cream Chest/Belly */}
-              <path
-                d="M112 150 C120 150, 132 147, 133 138 C134 133, 126 128, 120 132 C116 135, 110 142, 112 150 Z"
-                fill="#fff7ed"
-              />
-
-              {/* Front Ear (with twitching animation) */}
-              <g className="svg-hamster-ear-front">
-                <path
-                  d="M118 121 C117 113, 124 109, 128 114 C130 117, 125 122, 118 121 Z"
-                  fill="#ffd8aa"
-                  stroke="#c2410c"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M120 120 C119 116, 123 113, 126 116 C127 118, 124 121, 120 120 Z"
-                  fill="#fda4af"
-                />
-              </g>
-
-              {/* Blinking Eye Group */}
-              <g className="svg-hamster-eye-group">
-                <circle cx="127" cy="128" r="2.8" fill="#3f2d2d" />
-                <circle cx="128.2" cy="126.8" r="0.8" fill="#ffffff" />
-              </g>
-
-              {/* Rosy Cheek */}
-              <ellipse cx="124" cy="135" rx="3.8" ry="2.2" fill="#fecdd3" opacity="0.85" />
-
-              {/* Sniffing Nose */}
+            {/* 4. Magic Hexagram/Core (Pulsing and rotating slowly) */}
+            <g className="magic-core">
+              {/* Outer core circle ring */}
+              <circle cx="50" cy="50" r="23" stroke="url(#magic-grad-2)" strokeWidth="0.5" fill="none" opacity="0.3" />
+              
+              {/* Upward Triangle */}
               <polygon
-                points="134,133 136,132 135,135"
-                fill="#f43f5e"
-                className="svg-hamster-nose"
+                points="50,30 65,56 35,56"
+                stroke="url(#magic-grad-1)"
+                strokeWidth="0.8"
+                fill="none"
+                opacity="0.8"
+              />
+              {/* Downward Triangle */}
+              <polygon
+                points="50,70 65,44 35,44"
+                stroke="url(#magic-grad-1)"
+                strokeWidth="0.8"
+                fill="none"
+                opacity="0.8"
               />
 
-              {/* Cute Whisker Lines */}
-              <line x1="133" y1="135" x2="139" y2="136" stroke="#c2410c" strokeWidth="1" strokeLinecap="round" />
-              <line x1="132" y1="137" x2="137" y2="140" stroke="#c2410c" strokeWidth="1" strokeLinecap="round" />
+              {/* Inner glowing core center */}
+              <circle cx="50" cy="50" r="3" fill="url(#magic-grad-2)" filter="url(#magic-glow)" />
+              <circle cx="50" cy="50" r="5" fill="url(#magic-grad-2)" opacity="0.4" filter="url(#magic-glow)" />
             </g>
           </svg>
         </div>
 
-        <p className="mt-5 font-serif text-sm font-bold text-slate-700">
-          小仓鼠正在搬运番剧资料
+        <p className="magic-text-shine mt-4 font-serif text-xs font-bold tracking-widest text-slate-700">
+          正在召唤番剧资料
         </p>
-        <p className="mt-1 font-mono text-[11px] font-semibold text-rose-500">
-          loading...
+        <p className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-rose-500">
+          loading archive
         </p>
       </div>
     </div>
