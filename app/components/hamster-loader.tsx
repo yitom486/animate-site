@@ -20,6 +20,7 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
             <span />
           </div>
           <div className="hamster-body">
+            <div className="hamster-tail" />
             <div className="hamster-ear" />
             <div className="hamster-face">
               <span className="hamster-eye" />

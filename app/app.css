@@ -212,20 +212,79 @@ body {
 @keyframes hamster-bob {
   0%,
   100% {
-    transform: translateY(0) rotate(-2deg);
+    transform: translateY(0) scale(1, 1) rotate(-1deg);
   }
   50% {
-    transform: translateY(-3px) rotate(2deg);
+    transform: translateY(-4px) scale(1.03, 0.97) rotate(2deg);
   }
 }
 
-@keyframes hamster-paw-run {
-  0%,
-  100% {
-    transform: rotate(22deg) translateX(0);
+@keyframes hamster-paw-run-front {
+  0%, 100% {
+    transform: translate(0, 0) rotate(15deg);
+  }
+  25% {
+    transform: translate(2px, -3px) rotate(40deg);
   }
   50% {
-    transform: rotate(-34deg) translateX(2px);
+    transform: translate(-1px, -1px) rotate(-10deg);
+  }
+  75% {
+    transform: translate(-3px, 1px) rotate(-25deg);
+  }
+}
+
+@keyframes hamster-paw-run-back {
+  0%, 100% {
+    transform: translate(0, 0) rotate(-15deg);
+  }
+  25% {
+    transform: translate(-3px, 1px) rotate(-30deg);
+  }
+  50% {
+    transform: translate(-1px, -1px) rotate(10deg);
+  }
+  75% {
+    transform: translate(2px, -3px) rotate(35deg);
+  }
+}
+
+@keyframes hamster-tail-wag {
+  0% {
+    transform: rotate(-15deg);
+  }
+  100% {
+    transform: rotate(15deg);
+  }
+}
+
+@keyframes hamster-blink {
+  0%, 90%, 100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.15);
+  }
+}
+
+@keyframes hamster-ear-twitch {
+  0%, 80%, 100% {
+    transform: rotate(0deg);
+  }
+  85%, 90% {
+    transform: rotate(-12deg) skewX(5deg);
+  }
+  88% {
+    transform: rotate(12deg) skewX(-5deg);
+  }
+}
+
+@keyframes hamster-sniff {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18) translateY(-0.3px);
   }
 }
 
@@ -280,6 +339,21 @@ body {
     animation: hamster-wheel-spin 900ms linear infinite;
   }
 
+  .hamster-wheel::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1rem;
+    height: 1rem;
+    background: #fb7185;
+    border: 0.18rem solid #ffffff;
+    border-radius: 9999px;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 4px rgba(190, 83, 132, 0.2);
+    z-index: 5;
+  }
+
   .hamster-wheel span {
     position: absolute;
     top: 50%;
@@ -324,6 +398,19 @@ body {
     animation: hamster-bob 520ms ease-in-out infinite;
   }
 
+  .hamster-tail {
+    position: absolute;
+    left: -0.28rem;
+    top: 1.5rem;
+    width: 0.52rem;
+    height: 0.52rem;
+    border-radius: 9999px;
+    background: #ffd8aa;
+    border: 0.12rem solid rgba(180, 83, 9, 0.2);
+    transform-origin: right center;
+    animation: hamster-tail-wag 200ms ease-in-out infinite alternate;
+  }
+
   .hamster-ear {
     position: absolute;
     top: -0.45rem;
@@ -333,6 +420,8 @@ body {
     border-radius: 9999px;
     background: #ffd8aa;
     border: 0.14rem solid rgba(180, 83, 9, 0.2);
+    transform-origin: bottom center;
+    animation: hamster-ear-twitch 4s ease-in-out infinite;
   }
 
   .hamster-ear::after {
@@ -364,6 +453,18 @@ body {
     width: 0.24rem;
     height: 0.24rem;
     background: #3f2d2d;
+    animation: hamster-blink 3.5s ease-in-out infinite;
+  }
+
+  .hamster-eye::after {
+    content: "";
+    position: absolute;
+    top: 0.04rem;
+    left: 0.04rem;
+    width: 0.08rem;
+    height: 0.08rem;
+    border-radius: 9999px;
+    background: #ffffff;
   }
 
   .hamster-nose {
@@ -372,6 +473,8 @@ body {
     width: 0.22rem;
     height: 0.18rem;
     background: #8a4a4a;
+    transform-origin: center;
+    animation: hamster-sniff 150ms ease-in-out infinite;
   }
 
   .hamster-blush {
@@ -400,15 +503,16 @@ body {
     border-radius: 9999px;
     background: #f59e6f;
     transform-origin: 0.16rem 50%;
-    animation: hamster-paw-run 260ms ease-in-out infinite;
   }
 
   .hamster-paw-front {
     right: 0.7rem;
+    animation: hamster-paw-run-front 260ms linear infinite;
   }
 
   .hamster-paw-back {
     left: 0.78rem;
+    animation: hamster-paw-run-back 260ms linear infinite;
     animation-delay: 130ms;
   }
 }
