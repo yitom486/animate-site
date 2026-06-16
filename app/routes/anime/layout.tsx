@@ -7,7 +7,6 @@ import { AnimeSchedule } from "~/components/anime-schedule";
 import { AnimeListSkeleton } from "~/components/anime-list-skeleton";
 import { AnimePagination } from "~/components/anime-pagination";
 import { AnimeRankFilter } from "~/components/anime-rank-filter";
-import { HamsterLoader } from "~/components/hamster-loader";
 import { SiteNav } from "~/components/site-nav";
 import { cn } from "~/lib/utils";
 import {
@@ -103,7 +102,6 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   return (
     <div className="celadon-page flex h-screen flex-col text-slate-800">
       <SiteNav activeType={type} searchType={type} />
-      <HamsterLoader show={isLoading} />
 
       <div
         className="grid min-h-0 flex-1 overflow-hidden p-3 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"

@@ -5,9 +5,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { HamsterLoader } from "./components/hamster-loader";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
@@ -31,7 +33,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const navigation = useNavigation();
+  const isLoading = navigation.state !== "idle";
+
+  return (
+    <>
+      <Outlet />
+      <HamsterLoader show={isLoading} />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
