@@ -88,15 +88,15 @@ function CurrentTimeBar({
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-cyan-100 bg-white/62 p-4 shadow-sm">
-      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-cyan-200 bg-cyan-50 text-cyan-700 shadow-inner">
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-rose-100 bg-white/62 p-4 shadow-sm">
+      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-inner">
         <CalendarDays className="size-5" />
       </div>
       <div className="min-w-[220px] flex-1">
         <span className="block font-serif text-sm font-bold text-slate-800">
           日历新番星历
         </span>
-        <time className="mt-0.5 block truncate font-mono text-[11px] font-semibold text-cyan-700">
+        <time className="mt-0.5 block truncate font-mono text-[11px] font-semibold text-rose-700">
           {now}
         </time>
         <span className="mt-1 block font-mono text-[11px] text-slate-500">
@@ -108,7 +108,7 @@ function CurrentTimeBar({
         <button
           type="button"
           onClick={onOpenPicker}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-cyan-100 bg-white/80 px-3 text-xs font-bold text-cyan-800 shadow-sm transition-colors hover:bg-white"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-100 bg-white/80 px-3 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
         >
           <CalendarDays className="size-3.5" />
           选择日期
@@ -119,22 +119,22 @@ function CurrentTimeBar({
           className={cn(
             "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold shadow-sm transition-colors",
             mode === "overview"
-              ? "border border-cyan-100 bg-white/80 text-cyan-800 hover:bg-white"
-              : "bg-gradient-to-r from-cyan-600 to-teal-500 text-white hover:from-cyan-500 hover:to-teal-400",
+              ? "border border-rose-100 bg-white/80 text-rose-800 hover:bg-white"
+              : "bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 hover:from-rose-200 hover:to-sky-200",
           )}
         >
           {mode === "overview" ? "单日视图" : "周总览"}
         </button>
 
         <div className="grid grid-cols-2 gap-2 text-center">
-          <div className="rounded-lg border border-cyan-100 bg-white/72 px-3 py-2">
-            <span className="block font-mono text-sm font-bold text-cyan-800">
+          <div className="rounded-lg border border-rose-100 bg-white/72 px-3 py-2">
+            <span className="block font-mono text-sm font-bold text-rose-800">
               {selectedCount}
             </span>
             <span className="text-[10px] text-slate-500">选日放送</span>
           </div>
-          <div className="rounded-lg border border-teal-100 bg-white/72 px-3 py-2">
-            <span className="block font-mono text-sm font-bold text-teal-800">
+          <div className="rounded-lg border border-sky-100 bg-white/72 px-3 py-2">
+            <span className="block font-mono text-sm font-bold text-sky-800">
               {totalCount}
             </span>
             <span className="text-[10px] text-slate-500">本周收录</span>
@@ -168,18 +168,18 @@ function ScheduleCard({
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
         "group relative flex flex-col gap-4 overflow-hidden rounded-lg border border-white/85 bg-white/56 p-4 shadow-sm transition-all duration-300 sm:flex-row",
-        "hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-white/86 hover:shadow-md",
-        active && "border-cyan-400 bg-white shadow-md ring-2 ring-cyan-500/25",
+        "hover:-translate-y-0.5 hover:border-rose-300 hover:bg-white/86 hover:shadow-md",
+        active && "border-rose-400 bg-white shadow-md ring-2 ring-rose-500/25",
       )}
     >
-      <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg border border-cyan-100 bg-cyan-50 sm:w-28 md:w-32">
+      <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg border border-rose-100 bg-rose-50 sm:w-28 md:w-32">
         <AnimeCover
           url={cover}
           alt={title}
           className="transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-cyan-600/5 mix-blend-overlay" />
-        <span className="absolute top-2 left-2 rounded-md border border-cyan-200 bg-white/90 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-800 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-rose-600/5 mix-blend-overlay" />
+        <span className="absolute top-2 left-2 rounded-md border border-rose-200 bg-white/90 px-2 py-0.5 font-mono text-[10px] font-bold text-rose-800 backdrop-blur-sm">
           #{rank}
         </span>
         {score != null ? (
@@ -193,11 +193,11 @@ function ScheduleCard({
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 py-1">
         <div>
           <div className="flex items-start justify-between gap-3">
-            <h3 className="line-clamp-2 font-serif text-base font-bold leading-snug text-slate-800 transition-colors group-hover:text-cyan-700">
+            <h3 className="line-clamp-2 font-serif text-base font-bold leading-snug text-slate-800 transition-colors group-hover:text-rose-700">
               {title}
             </h3>
             {airDate ? (
-              <span className="hidden shrink-0 rounded-full border border-cyan-100 bg-cyan-50 px-2.5 py-1 font-mono text-[10px] font-semibold text-cyan-700 md:inline-flex">
+              <span className="hidden shrink-0 rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 font-mono text-[10px] font-semibold text-rose-700 md:inline-flex">
                 {airDate}
               </span>
             ) : null}
@@ -214,7 +214,7 @@ function ScheduleCard({
               {tags.map((tag) => (
                 <span
                   key={tag.name}
-                  className="rounded-full border border-cyan-100 bg-cyan-50 px-2 py-0.5 font-mono text-[10px] text-cyan-700"
+                  className="rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 font-mono text-[10px] text-rose-700"
                 >
                   {tag.name}
                 </span>
@@ -223,13 +223,13 @@ function ScheduleCard({
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between border-t border-cyan-100 pt-3">
+        <div className="flex items-center justify-between border-t border-rose-100 pt-3">
           <span className="font-mono text-[10px] font-semibold text-slate-500">
             {ratingTotal
               ? `${ratingTotal.toLocaleString()} 人评分`
               : item.platform || "Bangumi Calendar"}
           </span>
-          <span className="rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm">
+          <span className="rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm">
             查看详情
           </span>
         </div>
@@ -341,8 +341,8 @@ export function AnimeSchedule({
                 className={cn(
                   "relative flex min-w-[82px] flex-1 flex-col items-center justify-center gap-1 rounded-lg border px-4 py-3 font-serif text-xs font-bold tracking-wider transition-all duration-300",
                   isActive
-                    ? "border-cyan-300 bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-md"
-                    : "border-white/70 bg-white/55 text-slate-600 hover:border-cyan-200 hover:text-cyan-700",
+                    ? "border-rose-300 bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 shadow-md"
+                    : "border-white/70 bg-white/55 text-slate-600 hover:border-rose-200 hover:text-rose-700",
                 )}
               >
                 <span>
@@ -361,7 +361,7 @@ export function AnimeSchedule({
                       isActive
                         ? "bg-white"
                         : isToday
-                          ? "bg-cyan-500"
+                          ? "bg-rose-500"
                           : "bg-slate-300",
                     )}
                   />
@@ -396,8 +396,8 @@ export function AnimeSchedule({
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-cyan-200 bg-white/42 py-14 text-center shadow-inner">
-              <Tv className="mx-auto size-8 text-cyan-500/35" />
+            <div className="rounded-lg border border-dashed border-rose-200 bg-white/42 py-14 text-center shadow-inner">
+              <Tv className="mx-auto size-8 text-rose-500/35" />
               <p className="mt-3 font-serif text-sm font-semibold text-slate-500">
                 本日暂无新番放送
               </p>

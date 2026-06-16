@@ -34,7 +34,7 @@ export function AnimeRankFilter({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="hidden items-center gap-1.5 rounded-lg border border-cyan-100 bg-white/60 px-3 py-2 text-xs font-bold text-cyan-800 shadow-sm sm:inline-flex">
+      <div className="hidden items-center gap-1.5 rounded-lg border border-rose-100 bg-white/60 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm sm:inline-flex">
         <Trophy className="size-3.5" />
         年份排行
       </div>
@@ -45,21 +45,21 @@ export function AnimeRankFilter({
         className={cn(
           "inline-flex h-9 items-center rounded-lg border px-3 text-xs font-bold shadow-sm transition-colors",
           !year
-            ? "border-cyan-300 bg-gradient-to-r from-cyan-600 to-teal-500 text-white"
-            : "border-cyan-100 bg-white/70 text-cyan-800 hover:bg-white",
+            ? "border-rose-300 bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700"
+            : "border-rose-100 bg-white/70 text-rose-800 hover:bg-white",
         )}
       >
         全部
       </Link>
 
       <div className="relative">
-        <CalendarDays className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-cyan-600" />
+        <CalendarDays className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-rose-600" />
         <select
           value={year || ""}
           onChange={(event) => {
             navigate(buildRankUrl(type, event.target.value || undefined));
           }}
-          className="h-9 rounded-lg border border-cyan-100 bg-white/75 pr-8 pl-8 text-xs font-bold text-cyan-800 shadow-sm outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-500/20"
+          className="h-9 rounded-lg border border-rose-100 bg-white/75 pr-8 pl-8 text-xs font-bold text-rose-800 shadow-sm outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-500/20"
         >
           <option value="">选择年份</option>
           {YEAR_OPTIONS.map((y) => (
@@ -71,7 +71,7 @@ export function AnimeRankFilter({
       </div>
 
       {year ? (
-        <span className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 font-mono text-xs font-bold text-cyan-700">
+        <span className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 font-mono text-xs font-bold text-rose-700">
           当前：{year} 年
         </span>
       ) : null}

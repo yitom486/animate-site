@@ -79,11 +79,11 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex h-full flex-col">
       {/* 操作条 */}
-      <div className="flex items-center justify-between gap-2 border-b border-cyan-100/80 bg-white/45 p-3 backdrop-blur-md">
+      <div className="flex items-center justify-between gap-2 border-b border-rose-100/80 bg-white/45 p-3 backdrop-blur-md">
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-3 py-1.5 text-sm font-bold text-white shadow-sm transition-colors hover:from-cyan-500 hover:to-teal-400"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-3 py-1.5 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:from-rose-200 hover:to-sky-200"
         >
           {expanded ? (
             <>
@@ -97,7 +97,7 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
         </button>
         <Link
           to={listBackUrl}
-          className="rounded-lg border border-cyan-100 bg-white/70 p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-cyan-700"
+          className="rounded-lg border border-rose-100 bg-white/70 p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-rose-700"
           aria-label="关闭"
         >
           <X className="size-4" />
@@ -150,7 +150,7 @@ function CompactView({
   return (
     <div className="space-y-4">
       {subject.rating?.score ? (
-        <div className="rounded-lg border border-cyan-100 bg-white/64 p-4 shadow-sm">
+        <div className="rounded-lg border border-rose-100 bg-white/64 p-4 shadow-sm">
           <div className="flex items-center gap-2">
           <Stars score={subject.rating.score} />
           <span className="font-mono text-2xl font-bold text-amber-500">
@@ -171,7 +171,7 @@ function CompactView({
               src={subject.images.large}
               alt={title}
               referrerPolicy="no-referrer"
-              className="h-44 w-32 rounded-lg border border-cyan-100 object-cover shadow-sm transition-transform hover:scale-[1.03]"
+              className="h-44 w-32 rounded-lg border border-rose-100 object-cover shadow-sm transition-transform hover:scale-[1.03]"
             />
           </button>
         ) : null}
@@ -193,7 +193,7 @@ function CompactView({
             <Badge
               key={t.name}
               variant="secondary"
-              className="border border-cyan-100 bg-cyan-50 text-cyan-700"
+              className="border border-rose-100 bg-rose-50 text-rose-700"
             >
               {t.name}
             </Badge>
@@ -234,7 +234,7 @@ function FullView({
             src={subject.images.large}
             alt={title}
             referrerPolicy="no-referrer"
-            className="h-72 w-52 shrink-0 self-start rounded-lg border border-cyan-100 object-cover shadow-md"
+            className="h-72 w-52 shrink-0 self-start rounded-lg border border-rose-100 object-cover shadow-md"
           />
         ) : null}
         <div className="min-w-0 flex-1 space-y-3">
@@ -269,7 +269,7 @@ function FullView({
                 <Badge
                   key={t.name}
                   variant="secondary"
-                  className="border border-cyan-100 bg-cyan-50 text-cyan-700"
+                  className="border border-rose-100 bg-rose-50 text-rose-700"
                 >
                   {t.name}
                 </Badge>
@@ -301,7 +301,7 @@ function FullView({
             {mainEps.map((e) => (
               <li
                 key={e.id}
-                className="flex items-baseline gap-2 rounded-lg border border-transparent px-2 py-1.5 text-sm transition-colors hover:border-cyan-100 hover:bg-white/72"
+                className="flex items-baseline gap-2 rounded-lg border border-transparent px-2 py-1.5 text-sm transition-colors hover:border-rose-100 hover:bg-white/72"
               >
                 <span className="w-8 shrink-0 text-right font-mono text-slate-400">
                   {e.sort}
@@ -310,7 +310,7 @@ function FullView({
                   {e.name_cn || e.name || "—"}
                 </span>
                 {e.airdate ? (
-                  <span className="shrink-0 font-mono text-xs text-cyan-700">
+                  <span className="shrink-0 font-mono text-xs text-rose-700">
                     {e.airdate}
                   </span>
                 ) : null}
@@ -331,18 +331,18 @@ function JumpLinks({ links }: { links: Record<string, string> }) {
     subtitle: THIRD_PARTY_SEARCH.subtitle.label,
   };
   return (
-    <div className="space-y-2 border-t border-cyan-100 pt-3 text-sm">
+    <div className="space-y-2 border-t border-rose-100 pt-3 text-sm">
       {Object.entries(links).map(([k, href]) => (
         <div
           key={k}
-          className="flex items-center justify-between gap-2 rounded-lg border border-cyan-100 bg-white/58 px-3 py-2"
+          className="flex items-center justify-between gap-2 rounded-lg border border-rose-100 bg-white/58 px-3 py-2"
         >
           <span className="text-slate-500">{labels[k] || k}</span>
           <a
             href={href}
             target="_blank"
             rel="noreferrer"
-            className="font-bold text-cyan-700 hover:underline"
+            className="font-bold text-rose-700 hover:underline"
           >
             前往 →
           </a>

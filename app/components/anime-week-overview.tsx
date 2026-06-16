@@ -41,7 +41,7 @@ export function AnimeWeekOverview({
               className={cn(
                 "overflow-hidden rounded-lg border bg-white/52 shadow-sm",
                 isSelected
-                  ? "border-cyan-300 ring-2 ring-cyan-500/15"
+                  ? "border-rose-300 ring-2 ring-rose-500/15"
                   : "border-white/80",
               )}
             >
@@ -51,8 +51,8 @@ export function AnimeWeekOverview({
                 className={cn(
                   "flex w-full items-center justify-between border-b px-4 py-3 text-left transition-colors",
                   isSelected
-                    ? "border-cyan-300 bg-gradient-to-r from-cyan-600 to-teal-500 text-white"
-                    : "border-cyan-100 bg-white/70 text-slate-700 hover:bg-cyan-50 hover:text-cyan-800",
+                    ? "border-rose-300 bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700"
+                    : "border-rose-100 bg-white/70 text-slate-700 hover:bg-rose-50 hover:text-rose-800",
                 )}
               >
                 <div>

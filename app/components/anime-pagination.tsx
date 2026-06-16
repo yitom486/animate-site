@@ -35,7 +35,7 @@ function pageRange(current: number, total: number): (number | "…")[] {
 }
 
 const navBtnClass =
-  "inline-flex h-8 items-center gap-1 rounded-lg border border-cyan-100 bg-white/70 px-2.5 text-sm font-bold text-cyan-800 shadow-sm transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-8 items-center gap-1 rounded-lg border border-rose-100 bg-white/70 px-2.5 text-sm font-bold text-rose-800 shadow-sm transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-40";
 
 export function AnimePagination({
   page,
@@ -53,7 +53,7 @@ export function AnimePagination({
   return (
     <nav
       aria-label="分页"
-      className="flex flex-wrap items-center justify-center gap-1 border-t border-cyan-100/80 px-4 py-4"
+      className="flex flex-wrap items-center justify-center gap-1 border-t border-rose-100/80 px-4 py-4"
     >
       {page > 1 ? (
         <Link to={prevUrl} prefetch="intent" className={navBtnClass}>
@@ -84,8 +84,8 @@ export function AnimePagination({
               className={cn(
                 "inline-flex size-8 items-center justify-center rounded-lg font-mono text-xs font-bold transition-colors",
                 p === page
-                  ? "bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-sm"
-                  : "text-slate-500 hover:bg-white/70 hover:text-cyan-700",
+                  ? "bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 shadow-sm"
+                  : "text-slate-500 hover:bg-white/70 hover:text-rose-700",
               )}
               aria-current={p === page ? "page" : undefined}
             >

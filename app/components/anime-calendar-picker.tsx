@@ -79,17 +79,17 @@ export function AnimeCalendarPicker({
         onClick={onClose}
       />
 
-      <section className="relative w-full max-w-md overflow-hidden rounded-lg border border-white/80 bg-white/92 shadow-2xl shadow-cyan-950/15 backdrop-blur-xl">
-        <header className="flex items-center justify-between border-b border-cyan-100 bg-cyan-50/60 px-4 py-3">
+      <section className="relative w-full max-w-md overflow-hidden rounded-lg border border-white/80 bg-white/92 shadow-2xl shadow-rose-950/10 backdrop-blur-xl">
+        <header className="flex items-center justify-between border-b border-rose-100 bg-rose-50/60 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-lg border border-cyan-200 bg-white text-cyan-700 shadow-inner">
+            <span className="flex size-9 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-700 shadow-inner">
               <CalendarDays className="size-4" />
             </span>
             <div>
               <h2 className="font-serif text-base font-bold text-slate-800">
                 选择放送日期
               </h2>
-              <p className="font-mono text-[10px] text-cyan-700">
+              <p className="font-mono text-[10px] text-rose-700">
                 按所选日期映射到对应星期放送表
               </p>
             </div>
@@ -97,7 +97,7 @@ export function AnimeCalendarPicker({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-cyan-100 bg-white/80 p-2 text-slate-500 transition-colors hover:text-cyan-700"
+            className="rounded-lg border border-rose-100 bg-white/80 p-2 text-slate-500 transition-colors hover:text-rose-700"
             aria-label="关闭"
           >
             <X className="size-4" />
@@ -113,7 +113,7 @@ export function AnimeCalendarPicker({
                   new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1),
                 )
               }
-              className="rounded-lg border border-cyan-100 bg-white/80 p-2 text-cyan-700 transition-colors hover:bg-cyan-50"
+              className="rounded-lg border border-rose-100 bg-white/80 p-2 text-rose-700 transition-colors hover:bg-rose-50"
               aria-label="上个月"
             >
               <ChevronLeft className="size-4" />
@@ -128,7 +128,7 @@ export function AnimeCalendarPicker({
                   new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1),
                 )
               }
-              className="rounded-lg border border-cyan-100 bg-white/80 p-2 text-cyan-700 transition-colors hover:bg-cyan-50"
+              className="rounded-lg border border-rose-100 bg-white/80 p-2 text-rose-700 transition-colors hover:bg-rose-50"
               aria-label="下个月"
             >
               <ChevronRight className="size-4" />
@@ -158,8 +158,8 @@ export function AnimeCalendarPicker({
                   className={cn(
                     "relative flex aspect-square items-center justify-center rounded-lg border text-sm font-bold transition-colors",
                     selected
-                      ? "border-cyan-400 bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-sm"
-                      : "border-transparent bg-white/60 text-slate-700 hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800",
+                      ? "border-rose-400 bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 shadow-sm"
+                      : "border-transparent bg-white/60 text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-800",
                     outside && !selected && "text-slate-300",
                   )}
                 >
@@ -168,7 +168,7 @@ export function AnimeCalendarPicker({
                     <span
                       className={cn(
                         "absolute bottom-1 size-1 rounded-full",
-                        selected ? "bg-white" : "bg-cyan-500",
+                        selected ? "bg-white" : "bg-rose-500",
                       )}
                     />
                   ) : null}
@@ -177,18 +177,18 @@ export function AnimeCalendarPicker({
             })}
           </div>
 
-          <div className="flex justify-between gap-2 border-t border-cyan-100 pt-4">
+          <div className="flex justify-between gap-2 border-t border-rose-100 pt-4">
             <button
               type="button"
               onClick={() => setCursor(new Date(today.getFullYear(), today.getMonth(), 1))}
-              className="rounded-lg border border-cyan-100 bg-white/80 px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:text-cyan-700"
+              className="rounded-lg border border-rose-100 bg-white/80 px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:text-rose-700"
             >
               回到本月
             </button>
             <button
               type="button"
               onClick={() => onSelect(today)}
-              className="rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:from-cyan-500 hover:to-teal-400"
+              className="rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:from-rose-200 hover:to-sky-200"
             >
               选择今天
             </button>

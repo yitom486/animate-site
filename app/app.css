@@ -65,38 +65,38 @@ body {
 }
 
 :root {
-  --background: oklch(0.982 0.02 188);
-  --foreground: oklch(0.236 0.034 243);
+  --background: oklch(0.982 0.014 328);
+  --foreground: oklch(0.25 0.032 276);
   --card: oklch(1 0 0 / 72%);
-  --card-foreground: oklch(0.236 0.034 243);
+  --card-foreground: oklch(0.25 0.032 276);
   --popover: oklch(1 0 0 / 94%);
-  --popover-foreground: oklch(0.236 0.034 243);
-  --primary: oklch(0.56 0.13 194);
-  --primary-foreground: oklch(0.99 0.01 190);
-  --secondary: oklch(0.92 0.036 190);
-  --secondary-foreground: oklch(0.32 0.07 196);
-  --muted: oklch(0.94 0.026 190);
-  --muted-foreground: oklch(0.48 0.032 240);
-  --accent: oklch(0.93 0.048 178);
-  --accent-foreground: oklch(0.32 0.075 184);
+  --popover-foreground: oklch(0.25 0.032 276);
+  --primary: oklch(0.78 0.075 337);
+  --primary-foreground: oklch(0.29 0.038 298);
+  --secondary: oklch(0.95 0.024 255);
+  --secondary-foreground: oklch(0.34 0.05 286);
+  --muted: oklch(0.958 0.018 313);
+  --muted-foreground: oklch(0.5 0.028 281);
+  --accent: oklch(0.935 0.035 248);
+  --accent-foreground: oklch(0.34 0.05 286);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.85 0.035 190 / 72%);
-  --input: oklch(0.92 0.028 190 / 78%);
-  --ring: oklch(0.66 0.12 192);
-  --chart-1: oklch(0.63 0.14 193);
-  --chart-2: oklch(0.67 0.12 165);
-  --chart-3: oklch(0.78 0.14 80);
-  --chart-4: oklch(0.62 0.16 20);
-  --chart-5: oklch(0.5 0.09 250);
+  --border: oklch(0.88 0.026 315 / 72%);
+  --input: oklch(0.94 0.02 300 / 78%);
+  --ring: oklch(0.78 0.075 337);
+  --chart-1: oklch(0.78 0.075 337);
+  --chart-2: oklch(0.82 0.06 245);
+  --chart-3: oklch(0.86 0.075 80);
+  --chart-4: oklch(0.78 0.09 25);
+  --chart-5: oklch(0.62 0.065 280);
   --radius: 0.5rem;
-  --sidebar: oklch(0.97 0.018 190 / 86%);
-  --sidebar-foreground: oklch(0.236 0.034 243);
-  --sidebar-primary: oklch(0.56 0.13 194);
-  --sidebar-primary-foreground: oklch(0.99 0.01 190);
-  --sidebar-accent: oklch(0.92 0.036 190);
-  --sidebar-accent-foreground: oklch(0.32 0.07 196);
-  --sidebar-border: oklch(0.85 0.035 190 / 72%);
-  --sidebar-ring: oklch(0.66 0.12 192);
+  --sidebar: oklch(0.97 0.016 316 / 86%);
+  --sidebar-foreground: oklch(0.25 0.032 276);
+  --sidebar-primary: oklch(0.78 0.075 337);
+  --sidebar-primary-foreground: oklch(0.29 0.038 298);
+  --sidebar-accent: oklch(0.95 0.024 255);
+  --sidebar-accent-foreground: oklch(0.34 0.05 286);
+  --sidebar-border: oklch(0.88 0.026 315 / 72%);
+  --sidebar-ring: oklch(0.78 0.075 337);
 }
 
 .dark {
@@ -140,7 +140,7 @@ body {
   body {
     @apply bg-background text-foreground antialiased;
     background:
-      linear-gradient(135deg, #e0f7f9 0%, #f5fffd 42%, #dff3ef 100%);
+      linear-gradient(135deg, #fff5fd 0%, #f7f0fb 45%, #eef8ff 100%);
     min-height: 100vh;
   }
   html {
@@ -151,28 +151,28 @@ body {
 @layer utilities {
   .celadon-page {
     background:
-      radial-gradient(ellipse at top, rgba(6, 182, 212, 0.09), transparent 58%),
-      linear-gradient(135deg, #e0f7f9 0%, #f8fffd 48%, #dcefeb 100%);
+      radial-gradient(ellipse at top, rgba(244, 114, 182, 0.08), transparent 58%),
+      linear-gradient(135deg, #fff5fd 0%, #f8f1fb 48%, #eef8ff 100%);
   }
 
   .celadon-glass {
     background: rgba(255, 255, 255, 0.58);
     border: 1px solid rgba(255, 255, 255, 0.76);
-    box-shadow: 0 16px 40px -28px rgba(15, 118, 110, 0.42);
+    box-shadow: 0 16px 40px -28px rgba(190, 83, 132, 0.28);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }
 
   .celadon-glass-strong {
     background: rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(207, 250, 254, 0.9);
-    box-shadow: 0 18px 45px -30px rgba(15, 118, 110, 0.5);
+    border: 1px solid rgba(255, 228, 240, 0.9);
+    box-shadow: 0 18px 45px -30px rgba(190, 83, 132, 0.34);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
 
   .celadon-soft-border {
-    border-color: rgba(165, 243, 252, 0.72);
+    border-color: rgba(251, 207, 232, 0.72);
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -201,6 +201,43 @@ body {
   }
 }
 
+@keyframes hamster-wheel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hamster-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(2deg);
+  }
+}
+
+@keyframes hamster-paw-run {
+  0%,
+  100% {
+    transform: rotate(22deg) translateX(0);
+  }
+  50% {
+    transform: rotate(-34deg) translateX(2px);
+  }
+}
+
+@keyframes hamster-card-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @layer utilities {
   .animate-float-slow {
     animation: float-slow 7s ease-in-out infinite;
@@ -208,5 +245,168 @@ body {
 
   .animate-spin-very-slow {
     animation: spin-very-slow 36s linear infinite;
+  }
+
+  .hamster-loader {
+    animation: hamster-card-pop 180ms ease-out both;
+  }
+
+  .hamster-stage {
+    position: relative;
+    margin-inline: auto;
+    width: 8.5rem;
+    height: 8.5rem;
+  }
+
+  .hamster-wheel {
+    position: absolute;
+    inset: 0.25rem;
+    border-radius: 9999px;
+    border: 0.55rem solid rgba(251, 207, 232, 0.9);
+    background:
+      radial-gradient(circle, rgba(255, 255, 255, 0.82) 0 12%, transparent 13%),
+      conic-gradient(
+        from 0deg,
+        rgba(186, 230, 253, 0.7),
+        rgba(253, 186, 216, 0.72),
+        rgba(249, 168, 212, 0.5),
+        rgba(186, 230, 253, 0.7)
+      );
+    box-shadow:
+      inset 0 0 0 0.28rem rgba(255, 255, 255, 0.78),
+      0 1rem 2.2rem -1.5rem rgba(190, 83, 132, 0.5);
+    animation: hamster-wheel-spin 900ms linear infinite;
+  }
+
+  .hamster-wheel span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.16rem;
+    height: 5.7rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.85);
+    transform-origin: center;
+  }
+
+  .hamster-wheel span:nth-child(1) {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  .hamster-wheel span:nth-child(2) {
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .hamster-wheel span:nth-child(3) {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+
+  .hamster-wheel span:nth-child(4) {
+    transform: translate(-50%, -50%) rotate(135deg);
+  }
+
+  .hamster-body {
+    position: absolute;
+    right: 2rem;
+    bottom: 2.3rem;
+    width: 4.65rem;
+    height: 3.55rem;
+    border-radius: 48% 52% 46% 46%;
+    background:
+      radial-gradient(circle at 72% 36%, #ffffff 0 0.18rem, transparent 0.2rem),
+      linear-gradient(145deg, #ffe5bd 0%, #ffd2a5 62%, #f6b982 100%);
+    border: 0.16rem solid rgba(180, 83, 9, 0.22);
+    box-shadow:
+      inset -0.4rem -0.45rem 0 rgba(238, 169, 95, 0.28),
+      0 0.5rem 1.2rem -0.9rem rgba(120, 53, 15, 0.7);
+    animation: hamster-bob 520ms ease-in-out infinite;
+  }
+
+  .hamster-ear {
+    position: absolute;
+    top: -0.45rem;
+    right: 0.62rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background: #ffd8aa;
+    border: 0.14rem solid rgba(180, 83, 9, 0.2);
+  }
+
+  .hamster-ear::after {
+    content: "";
+    position: absolute;
+    inset: 0.18rem;
+    border-radius: inherit;
+    background: #fecdd3;
+  }
+
+  .hamster-face {
+    position: absolute;
+    top: 0.58rem;
+    right: 0.42rem;
+    width: 1.35rem;
+    height: 1.3rem;
+  }
+
+  .hamster-eye,
+  .hamster-nose,
+  .hamster-blush {
+    position: absolute;
+    border-radius: 9999px;
+  }
+
+  .hamster-eye {
+    top: 0.02rem;
+    right: 0.5rem;
+    width: 0.24rem;
+    height: 0.24rem;
+    background: #3f2d2d;
+  }
+
+  .hamster-nose {
+    top: 0.48rem;
+    right: 0.02rem;
+    width: 0.22rem;
+    height: 0.18rem;
+    background: #8a4a4a;
+  }
+
+  .hamster-blush {
+    top: 0.58rem;
+    right: 0.48rem;
+    width: 0.48rem;
+    height: 0.26rem;
+    background: rgba(251, 113, 133, 0.36);
+  }
+
+  .hamster-belly {
+    position: absolute;
+    left: 0.72rem;
+    bottom: 0.38rem;
+    width: 2rem;
+    height: 1.42rem;
+    border-radius: 50%;
+    background: rgba(255, 247, 237, 0.82);
+  }
+
+  .hamster-paw {
+    position: absolute;
+    bottom: -0.24rem;
+    width: 1.1rem;
+    height: 0.35rem;
+    border-radius: 9999px;
+    background: #f59e6f;
+    transform-origin: 0.16rem 50%;
+    animation: hamster-paw-run 260ms ease-in-out infinite;
+  }
+
+  .hamster-paw-front {
+    right: 0.7rem;
+  }
+
+  .hamster-paw-back {
+    left: 0.78rem;
+    animation-delay: 130ms;
   }
 }

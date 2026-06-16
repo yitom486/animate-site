@@ -7,6 +7,7 @@ import { AnimeSchedule } from "~/components/anime-schedule";
 import { AnimeListSkeleton } from "~/components/anime-list-skeleton";
 import { AnimePagination } from "~/components/anime-pagination";
 import { AnimeRankFilter } from "~/components/anime-rank-filter";
+import { HamsterLoader } from "~/components/hamster-loader";
 import { SiteNav } from "~/components/site-nav";
 import { cn } from "~/lib/utils";
 import {
@@ -102,15 +103,16 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   return (
     <div className="celadon-page flex h-screen flex-col text-slate-800">
       <SiteNav activeType={type} searchType={type} />
+      <HamsterLoader show={isLoading} />
 
       <div
         className="grid min-h-0 flex-1 overflow-hidden p-3 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{ gridTemplateColumns: cols }}
       >
         <section className="celadon-glass flex min-w-0 flex-col overflow-hidden rounded-lg">
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-cyan-100/80 px-4 py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-rose-100/80 px-4 py-4">
             <div>
-              <span className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-cyan-600">
+              <span className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
                 <Sparkles className="size-3.5" />
                 Bangumi Archive
               </span>
@@ -122,7 +124,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
               </div>
             </div>
             {isLoading ? (
-              <span className="rounded-full border border-cyan-100 bg-white/70 px-3 py-1 font-mono text-xs text-cyan-700">
+              <span className="rounded-full border border-rose-100 bg-white/70 px-3 py-1 font-mono text-xs text-rose-700">
                 加载中…
               </span>
             ) : null}
@@ -130,7 +132,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
               <Link
                 to="/anime?type=2&view=calendar&calendar=overview"
                 prefetch="intent"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-100 bg-white/70 px-3 py-2 text-xs font-bold text-cyan-800 shadow-sm transition-colors hover:bg-white"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white/70 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
               >
                 <CalendarDays className="size-3.5" />
                 周总览

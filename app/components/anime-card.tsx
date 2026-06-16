@@ -23,11 +23,11 @@ export function AnimeCard({ item, to, active, priority, rank }: AnimeCardProps) 
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
         "group flex flex-col overflow-hidden rounded-lg border border-white/75 bg-white/62 shadow-sm transition-all duration-300",
-        "hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-white/88 hover:shadow-md",
-        active && "border-cyan-400 bg-white shadow-md ring-2 ring-cyan-500/25",
+        "hover:-translate-y-0.5 hover:border-rose-300 hover:bg-white/88 hover:shadow-md",
+        active && "border-rose-400 bg-white shadow-md ring-2 ring-rose-500/25",
       )}
     >
-      <div className="relative aspect-[2/3] overflow-hidden bg-cyan-50">
+      <div className="relative aspect-[2/3] overflow-hidden bg-rose-50">
         <AnimeCover
           url={cover}
           alt={title}
@@ -36,7 +36,7 @@ export function AnimeCard({ item, to, active, priority, rank }: AnimeCardProps) 
         />
 
         {rank != null ? (
-          <div className="absolute top-1.5 left-1.5 rounded-md border border-cyan-200 bg-white/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-800 backdrop-blur-sm">
+          <div className="absolute top-1.5 left-1.5 rounded-md border border-rose-200 bg-white/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rose-800 backdrop-blur-sm">
             #{rank}
           </div>
         ) : null}
@@ -49,8 +49,8 @@ export function AnimeCard({ item, to, active, priority, rank }: AnimeCardProps) 
         ) : null}
       </div>
 
-      <div className="space-y-1 border-t border-cyan-50/80 px-2.5 py-2">
-        <h3 className="line-clamp-1 font-serif text-xs font-bold leading-tight text-slate-800 transition-colors group-hover:text-cyan-700">
+      <div className="space-y-1 border-t border-rose-50/80 px-2.5 py-2">
+        <h3 className="line-clamp-1 font-serif text-xs font-bold leading-tight text-slate-800 transition-colors group-hover:text-rose-700">
           {title}
         </h3>
         {subtitle ? (

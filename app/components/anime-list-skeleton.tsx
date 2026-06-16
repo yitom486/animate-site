@@ -5,7 +5,7 @@ const PLACEHOLDERS = Array.from({ length: 24 }, (_, i) => i);
 export function AnimeListSkeleton() {
   return (
     <div className="celadon-glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg">
-      <div className="flex shrink-0 items-baseline gap-2 border-b border-cyan-100/80 px-4 py-4">
+      <div className="flex shrink-0 items-baseline gap-2 border-b border-rose-100/80 px-4 py-4">
         <Skeleton className="h-6 w-24" />
         <Skeleton className="h-4 w-20" />
       </div>
