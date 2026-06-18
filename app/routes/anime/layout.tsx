@@ -55,6 +55,19 @@ export type AnimeOutletContext = {
   setExpanded: (v: boolean) => void;
 };
 
+/** 小于 lg(1024px) 视为移动端：详情应全屏覆盖列表，而非并排挤压 */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isMobile;
+}
+
 export function HydrateFallback() {
   return (
     <div className="celadon-page flex h-screen flex-col">
@@ -84,6 +97,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const hasDetail = Boolean(params.id);
   const [expanded, setExpanded] = useState(false);
+  const isMobile = useIsMobile();
   const listScrollRef = useRef<HTMLDivElement>(null);
   const isLoading = navigation.state === "loading";
 
@@ -96,7 +110,16 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     listScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [page, viewLabel, typeLabel]);
 
-  const cols = !hasDetail ? "1fr 0fr" : expanded ? "0fr 1fr" : "1.6fr 1fr";
+  // 移动端：详情全屏覆盖列表（不并排）；桌面端保留并排/展开动画
+  const cols = isMobile
+    ? hasDetail
+      ? "0fr 1fr"
+      : "1fr 0fr"
+    : !hasDetail
+      ? "1fr 0fr"
+      : expanded
+        ? "0fr 1fr"
+        : "1.6fr 1fr";
   const listParams = mergeListParams(baseParams, page);
 
   return (

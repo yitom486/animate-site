@@ -10,6 +10,7 @@ export * from "./fetch-subjects";
 export * from "./fetch-search";
 export * from "./fetch-calendar";
 export * from "./fetch-detail";
+export * from "./fetch-card-extra";
 export * from "./cache";
 export * from "./calendar-utils";
 export * from "./menus";

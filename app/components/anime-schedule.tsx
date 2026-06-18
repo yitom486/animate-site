@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { CalendarDays, Clock, Star, Tv } from "lucide-react";
+import { CalendarDays, Clock, Eye, Heart, Star, Tv } from "lucide-react";
 import { AnimeCalendarPicker } from "~/components/anime-calendar-picker";
 import { AnimeWeekOverview } from "~/components/anime-week-overview";
+import {
+  SummaryModal,
+  useCardExtra,
+} from "~/components/anime-card-extra";
 import { cn } from "~/lib/utils";
 import { AnimeCover } from "~/components/anime-cover";
 import { buildCardMeta, getCoverUrl, type AnimeCardData } from "~/lib/anime-meta";
@@ -145,6 +149,27 @@ function CurrentTimeBar({
   );
 }
 
+function CollectionStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Heart;
+  label: string;
+  value?: number;
+}) {
+  if (!value) return null;
+  return (
+    <span
+      className="flex items-center gap-1 font-mono text-[10px] font-semibold text-slate-500"
+      title={`${label} ${value.toLocaleString()}`}
+    >
+      <Icon className="size-3 text-rose-400" />
+      {value.toLocaleString()}
+    </span>
+  );
+}
+
 function ScheduleCard({
   item,
   rank,
@@ -158,17 +183,41 @@ function ScheduleCard({
 }) {
   const { title, subtitle, score, ratingTotal } = buildCardMeta(item);
   const cover = getCoverUrl(item.images);
-  const tags = (item.tags ?? []).slice(0, 3);
   const airDate = formatAirDate(item.air_date || item.date);
+  // 日文原名（日历接口已返回，无需等增强数据）
+  const nameJa = item.name && item.name !== title ? item.name : "";
+
+  const { ref, data } = useCardExtra<HTMLDivElement>(item.id);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const summaryRef = useRef<HTMLParagraphElement>(null);
+  const [summaryTruncated, setSummaryTruncated] = useState(false);
+
+  // 官方元标签优先并去重，普通标签再去掉与元标签重复的部分
+  const metaTags = Array.from(new Set(data?.metaTags ?? []));
+  const tags = Array.from(new Set(data?.tags ?? [])).filter(
+    (t) => !metaTags.includes(t),
+  );
+  const staff = data?.staff;
+  const collection = data?.collection;
+  const summary = data?.summary ?? "";
+
+  // 简介加载后测量是否真的溢出 2 行，仅溢出时才显示「展开」
+  useEffect(() => {
+    const el = summaryRef.current;
+    if (!el) {
+      setSummaryTruncated(false);
+      return;
+    }
+    setSummaryTruncated(el.scrollHeight - el.clientHeight > 1);
+  }, [summary]);
 
   return (
-    <Link
-      to={buildDetailUrl(item.id, listParams)}
-      prefetch="viewport"
+    <div
+      ref={ref}
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
         "group relative flex flex-col gap-4 overflow-hidden rounded-lg border border-white/85 bg-white/56 p-4 shadow-sm transition-all duration-300 sm:flex-row",
-        "hover:-translate-y-0.5 hover:border-rose-300 hover:bg-white/86 hover:shadow-md",
+        "hover:border-rose-300 hover:bg-white/86 hover:shadow-md",
         active && "border-rose-400 bg-white shadow-md ring-2 ring-rose-500/25",
       )}
     >
@@ -190,12 +239,19 @@ function ScheduleCard({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 py-1">
-        <div>
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 py-1">
+        <div className="space-y-2">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="line-clamp-2 font-serif text-base font-bold leading-snug text-slate-800 transition-colors group-hover:text-rose-700">
-              {title}
-            </h3>
+            <div className="min-w-0">
+              <h3 className="line-clamp-2 font-serif text-base font-bold leading-snug text-slate-800 transition-colors group-hover:text-rose-700">
+                {title}
+              </h3>
+              {nameJa ? (
+                <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400">
+                  {nameJa}
+                </p>
+              ) : null}
+            </div>
             {airDate ? (
               <span className="hidden shrink-0 rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 font-mono text-[10px] font-semibold text-rose-700 md:inline-flex">
                 {airDate}
@@ -204,37 +260,110 @@ function ScheduleCard({
           </div>
 
           {subtitle ? (
-            <p className="mt-1 truncate font-mono text-xs font-semibold text-slate-500">
+            <p className="truncate font-mono text-xs font-semibold text-slate-500">
               {subtitle}
             </p>
           ) : null}
 
-          {tags.length ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+          {/* 简介：两行省略 + 展开弹窗（仅文字溢出时显示展开） */}
+          {summary ? (
+            <div className="text-xs leading-relaxed text-slate-600">
+              <p ref={summaryRef} className="line-clamp-2">
+                {summary}
+              </p>
+              {summaryTruncated ? (
+                <button
+                  type="button"
+                  onClick={() => setSummaryOpen(true)}
+                  className="mt-0.5 font-semibold text-rose-600 hover:underline"
+                >
+                  展开
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* staff：导演 / 原作 / 制作 */}
+          {staff && (staff.导演 || staff.原作 || staff.制作) ? (
+            <dl className="space-y-0.5 text-[11px] text-slate-500">
+              {staff.导演 ? (
+                <div className="flex gap-1.5">
+                  <dt className="shrink-0 text-slate-400">导演</dt>
+                  <dd className="min-w-0 truncate text-slate-600">
+                    {staff.导演}
+                  </dd>
+                </div>
+              ) : null}
+              {staff.原作 ? (
+                <div className="flex gap-1.5">
+                  <dt className="shrink-0 text-slate-400">原作</dt>
+                  <dd className="min-w-0 truncate text-slate-600">
+                    {staff.原作}
+                  </dd>
+                </div>
+              ) : null}
+              {staff.制作 ? (
+                <div className="flex gap-1.5">
+                  <dt className="shrink-0 text-slate-400">制作</dt>
+                  <dd className="min-w-0 truncate text-slate-600">
+                    {staff.制作}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+
+          {/* 标签：官方元标签 + 普通标签 */}
+          {metaTags.length || tags.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {metaTags.map((tag) => (
+                <span
+                  key={`m-${tag}`}
+                  className="rounded-full border border-rose-200 bg-rose-100/70 px-2 py-0.5 font-mono text-[10px] font-semibold text-rose-700"
+                >
+                  {tag}
+                </span>
+              ))}
               {tags.map((tag) => (
                 <span
-                  key={tag.name}
+                  key={`t-${tag}`}
                   className="rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 font-mono text-[10px] text-rose-700"
                 >
-                  {tag.name}
+                  {tag}
                 </span>
               ))}
             </div>
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between border-t border-rose-100 pt-3">
-          <span className="font-mono text-[10px] font-semibold text-slate-500">
-            {ratingTotal
-              ? `${ratingTotal.toLocaleString()} 人评分`
-              : item.platform || "Bangumi Calendar"}
-          </span>
-          <span className="rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-t border-rose-100 pt-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-mono text-[10px] font-semibold text-slate-500">
+              {ratingTotal
+                ? `${ratingTotal.toLocaleString()} 人评分`
+                : item.platform || "Bangumi Calendar"}
+            </span>
+            <CollectionStat icon={Heart} label="想看" value={collection?.wish} />
+            <CollectionStat icon={Eye} label="在看" value={collection?.doing} />
+          </div>
+          <Link
+            to={buildDetailUrl(item.id, listParams)}
+            prefetch="intent"
+            className="shrink-0 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm transition-colors hover:from-rose-200 hover:to-sky-200"
+          >
             查看详情
-          </span>
+          </Link>
         </div>
       </div>
-    </Link>
+
+      {summaryOpen ? (
+        <SummaryModal
+          title={title}
+          summary={summary}
+          onClose={() => setSummaryOpen(false)}
+        />
+      ) : null}
+    </div>
   );
 }
 
