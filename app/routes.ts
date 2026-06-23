@@ -10,6 +10,8 @@ export default [
   // /anime/blog 是独立全屏页（动画日志，无限滚动），不进三栏壳；
   // 静态段优先于下方 anime/:id 动态段，不会冲突
   route("anime/blog", "routes/anime/blog.tsx"),
+  // /anime/blog/:id 站内日志详情（爬 bgm 单篇 + 消毒渲染）
+  route("anime/blog/:id", "routes/anime/blog-detail.tsx"),
   // /anime 是带子路由的布局：三栏外壳里放 <Outlet/>
   route("anime", "routes/anime/layout.tsx", [
     index("routes/anime/index.tsx"), // /anime          → 右栏占位

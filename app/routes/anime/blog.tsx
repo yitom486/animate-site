@@ -1,5 +1,6 @@
 import { ExternalLink, Loader2, MessageCircle, MessageSquareText } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import type { Route } from "./+types/blog";
 import { SiteNav } from "~/components/site-nav";
 import { fetchBgmAnimeBlogPage, type BgmBlogPage } from "~/lib/bangumi/fetch-blog-html";
@@ -156,9 +157,10 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
 }
 
 function BlogCard({ item }: { item: BgmBlogItem }) {
+  const blogId = item.id.replace(/\D/g, "");
   return (
     <li className="group rounded-lg border border-rose-100/80 bg-white/65 p-3.5 transition-colors hover:border-rose-300 hover:bg-white">
-      <a href={item.link} target="_blank" rel="noreferrer" className="block">
+      <Link to={`/anime/blog/${blogId}`} prefetch="intent" className="block">
         <div className="flex items-start gap-3">
           {item.avatar ? (
             <img
@@ -195,7 +197,7 @@ function BlogCard({ item }: { item: BgmBlogItem }) {
             </div>
           </div>
         </div>
-      </a>
+      </Link>
     </li>
   );
 }
