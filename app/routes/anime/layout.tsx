@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useNavigation, useParams } from "react-router";
-import { CalendarDays, Sparkles } from "lucide-react";
+import { CalendarDays, MessageSquareText, Sparkles } from "lucide-react";
 import type { Route } from "./+types/layout";
 import { AnimeCard } from "~/components/anime-card";
 import { AnimeSchedule } from "~/components/anime-schedule";
@@ -208,6 +208,19 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                 pageSize={pageSize}
                 baseParams={baseParams}
               />
+            ) : null}
+
+            {type === "2" ? (
+              <div className="px-4 pb-4">
+                <Link
+                  to="/anime/blog"
+                  prefetch="intent"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-rose-200 bg-white/50 px-3 py-3 text-xs font-bold text-rose-700 transition-colors hover:border-rose-300 hover:bg-white"
+                >
+                  <MessageSquareText className="size-3.5" />
+                  浏览 Bangumi 动画日志 →
+                </Link>
+              </div>
             ) : null}
           </div>
         </section>

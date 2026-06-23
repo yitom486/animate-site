@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Form, Link, useLocation } from "react-router";
-import { ChevronDown, Home, Leaf, Menu, Search, X } from "lucide-react";
+import { ChevronDown, Home, Leaf, Menu, MessageSquareText, Search, X } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { BGM_MENUS, SUBJECT_TYPE } from "~/lib/bangumi";
 import {
@@ -72,6 +72,20 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE.anime }: SiteNav
           >
             <Home className="size-4" />
             主页
+          </Link>
+
+          <Link
+            to="/anime/blog"
+            prefetch="intent"
+            className={cn(
+              "hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-colors sm:inline-flex",
+              location.pathname === "/anime/blog"
+                ? "bg-white/80 text-rose-800 shadow-sm"
+                : "text-slate-600 hover:bg-white/70 hover:text-rose-700",
+            )}
+          >
+            <MessageSquareText className="size-4" />
+            动画日志
           </Link>
         </div>
 

@@ -11,11 +11,11 @@ export const BGM_WEB_ROUTES = {
  */
 export const THIRD_PARTY_SEARCH = {
   online: {
-    label: "在线链接",
+    label: "B站搜索",
     build: (kw: string) => `https://search.bilibili.com/all?keyword=${encodeURIComponent(kw)}`,
   },
   download: {
-    label: "下载链接",
+    label: "漫猫搜索",
     build: (kw: string) => `https://www.comicat.org/search.php?keyword=${encodeURIComponent(kw)}`,
   },
   subtitle: {
