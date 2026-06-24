@@ -8,3 +8,6 @@
 
 # Cloudflare Wrangler 本地运行时状态/缓存
 /.wrangler/
+
+# 本项目用 bun;避免误用 npm 生成 package-lock
+package-lock.json
