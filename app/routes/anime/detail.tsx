@@ -19,29 +19,15 @@ import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { searchBilibiliBangumi, type BilibiliMatch } from "~/lib/bilibili";
-import { fetchDmhyForAnime, type DmhyItem } from "~/lib/dmhy";
 import { BilibiliPlayer } from "~/components/bilibili-player";
-import { DmhyDownloads } from "~/components/dmhy-downloads";
+import { DownloadsPanel } from "~/components/downloads-panel";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<AnimeDetailData>();
 
 type AnimeDetailData = DetailPayload & {
   bilibili: BilibiliMatch | null;
-  dmhy: DmhyItem[];
 };
-
-/** 从 infobox 取「别名」里的各类译名，用作下载搜索的补充关键词 */
-function subjectAliases(infobox?: DetailPayload["subject"]["infobox"]): string[] {
-  const item = infobox?.find((i) => i.key === "别名");
-  if (!item) return [];
-  const { value } = item;
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) {
-    return value.map((v) => (typeof v === "string" ? v : v.v)).filter(Boolean);
-  }
-  return [];
-}
 
 async function loadBilibiliMatch(
   subject: DetailPayload["subject"],
@@ -73,19 +59,10 @@ export async function loader({ params }: Route.LoaderArgs) {
     }
   }
 
-  // 中文名 / 原名 + infobox 别名（含简繁、台译、罗马音等），多译名提高搜索命中率
-  const keywords = [
-    clonedData.subject.name_cn,
-    clonedData.subject.name,
-    ...subjectAliases(clonedData.subject.infobox),
-  ].filter(Boolean) as string[];
+  // 下载资源改为详情页内懒加载（双源较慢，避免阻塞详情首屏）
+  const bilibili = await loadBilibiliMatch(clonedData.subject);
 
-  const [bilibili, dmhy] = await Promise.all([
-    loadBilibiliMatch(clonedData.subject),
-    fetchDmhyForAnime(keywords),
-  ]);
-
-  return { ...clonedData, bilibili, dmhy };
+  return { ...clonedData, bilibili };
 }
 
 export async function clientLoader({
@@ -105,7 +82,7 @@ export async function clientLoader({
 clientLoader.hydrate = true as const;
 
 export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
-  const { subject, staff, episodes, bilibili, dmhy } = loaderData;
+  const { subject, staff, episodes, bilibili } = loaderData;
   const { expanded, setExpanded } = useOutletContext<AnimeOutletContext>();
   const [searchParams] = useSearchParams();
   const listBackUrl = buildListUrl(listParamsFromSearch(searchParams));
@@ -159,7 +136,6 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
             eps={eps}
             links={links}
             bilibili={bilibili}
-            dmhy={dmhy}
             onCollapse={() => setExpanded(false)}
           />
         ) : (
@@ -170,7 +146,6 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
             eps={eps}
             links={links}
             bilibili={bilibili}
-            dmhy={dmhy}
             onExpand={() => setExpanded(true)}
           />
         )}
@@ -187,7 +162,6 @@ function CompactView({
   eps,
   links,
   bilibili,
-  dmhy,
   onExpand,
 }: {
   subject: SubjectDetail;
@@ -196,7 +170,6 @@ function CompactView({
   eps: string | number;
   links: Record<string, string>;
   bilibili: BilibiliMatch | null;
-  dmhy: DmhyItem[];
   onExpand: () => void;
 }) {
   const title = subject.name_cn || subject.name;
@@ -256,7 +229,7 @@ function CompactView({
 
       <BilibiliPlayer match={bilibili} fallbackKeyword={title} />
 
-      <DmhyDownloads items={dmhy} searchKeyword={title} />
+      <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
 
       <JumpLinks links={links} />
     </div>
@@ -272,7 +245,6 @@ function FullView({
   eps,
   links,
   bilibili,
-  dmhy,
 }: {
   subject: SubjectDetail;
   staff: Record<string, string>;
@@ -281,7 +253,6 @@ function FullView({
   eps: string | number;
   links: Record<string, string>;
   bilibili: BilibiliMatch | null;
-  dmhy: DmhyItem[];
   onCollapse: () => void;
 }) {
   const title = subject.name_cn || subject.name;
@@ -344,7 +315,7 @@ function FullView({
 
       <BilibiliPlayer match={bilibili} fallbackKeyword={title} />
 
-      <DmhyDownloads items={dmhy} searchKeyword={title} />
+      <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
 
       {subject.summary ? (
         <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
