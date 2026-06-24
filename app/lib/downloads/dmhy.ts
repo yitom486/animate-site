@@ -61,7 +61,7 @@ function parseDmhyRss(xml: string): DownloadItem[] {
       magnet,
       detailUrl: link,
       resolution: parseResolution(title),
-      source: "dmhy",
+      sources: ["dmhy"],
       isBatch: classifyBatch(title),
     });
   }

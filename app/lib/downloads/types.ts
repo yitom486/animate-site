@@ -8,7 +8,8 @@ export type DownloadItem = {
   detailUrl: string;
   size?: string;
   resolution?: string;
-  source: DownloadSource;
+  /** 该条目出现在哪些源（同一 hash 可能两源都有） */
+  sources: DownloadSource[];
   /** 是否为合集 / 整季 / 区间打包 */
   isBatch: boolean;
 };

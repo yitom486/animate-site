@@ -58,7 +58,7 @@ function parseComicatHtml(html: string): DownloadItem[] {
       detailUrl: `${COMICAT}/show-${rawHash}.html`,
       size,
       resolution: parseResolution(title),
-      source: "comicat",
+      sources: ["comicat"],
       isBatch: classifyBatch(title),
     });
   }
