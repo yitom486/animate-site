@@ -3,6 +3,8 @@ export const BGM_USER_AGENT = "yhang/anime-site (https://github.com/yhang)";
 
 export const BGM_V0 = "https://api.bgm.tv/v0";
 export const BGM_LEGACY = "https://api.bgm.tv";
+/** 新版前端私有 API（p1）：吐槽 / 评论等，GET 无需登录 */
+export const BGM_NEXT = "https://next.bgm.tv";
 
 /** 列表网格：桌面端 7 列，分页尽量保持完整 6 行 */
 export const LIST_GRID_DESKTOP_COLUMNS = 7;

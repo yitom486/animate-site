@@ -19,4 +19,10 @@ export const BGM_API_ROUTES = {
 
   /** 每日放送 */
   calendar: () => `/calendar`,
+
+  /** 吐槽 / 短评（next p1 接口） */
+  subjectComments: (id: string | number) => `/p1/subjects/${id}/comments`,
+
+  /** 评论 / 长评（next p1 接口，entry 关联 bgm 日志） */
+  subjectReviews: (id: string | number) => `/p1/subjects/${id}/reviews`,
 } as const;
