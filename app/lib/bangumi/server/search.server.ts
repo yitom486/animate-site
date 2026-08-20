@@ -1,6 +1,6 @@
 import { bgmPost } from "./client.server";
 import { BGM_API_ROUTES } from "./api-routes.server";
-import { BGM_SEARCH_PAGE_SIZE, SEARCH_GROUP_PAGE_SIZE } from "./config.server";
+import { BGM_SEARCH_PAGE_SIZE, BGM_TIMEOUT_MS, SEARCH_GROUP_PAGE_SIZE } from "./config.server";
 import { getCurrentAnimeSeasonAirDateFilter } from "./season.server";
 import { trimSubjects } from "./trim.server";
 import { getTypeLabel } from "../params";
@@ -13,20 +13,29 @@ import {
   type SubjectTypeValue,
 } from "../types";
 import type { SearchSubjectsBody, SubjectListResponse } from "./api-types.server";
+import type { UpstreamRequestOptions } from "~/lib/upstream";
 
 type SearchPage = { items: AnimeCardData[]; total: number };
 
 type GroupedSearch = SearchPage & { groups: SearchGroup[] };
 
+const searchOpts = (options?: UpstreamRequestOptions): UpstreamRequestOptions => ({
+  ...options,
+  timeoutMs: options?.timeoutMs ?? BGM_TIMEOUT_MS.search,
+});
+
 async function postSearch(
   body: SearchSubjectsBody,
   limit: number,
   offset: number,
+  options?: UpstreamRequestOptions,
 ): Promise<SearchPage> {
-  const res = await bgmPost<SubjectListResponse>(BGM_API_ROUTES.searchSubjects(), body, {
-    limit,
-    offset,
-  });
+  const res = await bgmPost<SubjectListResponse>(
+    BGM_API_ROUTES.searchSubjects(),
+    body,
+    { limit, offset },
+    searchOpts(options),
+  );
 
   return {
     items: trimSubjects(res.data),
@@ -39,6 +48,7 @@ async function searchByType(
   type: SubjectTypeValue,
   offset: number,
   limit = BGM_SEARCH_PAGE_SIZE,
+  options?: UpstreamRequestOptions,
 ): Promise<SearchPage> {
   const filter: SearchSubjectsBody["filter"] = { type: [Number(type)] };
 
@@ -61,15 +71,18 @@ async function searchByType(
     keyword = keyword || query.tag || "";
   }
 
-  return postSearch({ keyword, sort, filter }, limit, offset);
+  return postSearch({ keyword, sort, filter }, limit, offset, options);
 }
 
-async function fetchGroupedSearch(query: ListQuery): Promise<GroupedSearch> {
+async function fetchGroupedSearch(
+  query: ListQuery,
+  options?: UpstreamRequestOptions,
+): Promise<GroupedSearch> {
   if (!query.q) return { items: [], total: 0, groups: [] };
 
   const settled = await Promise.allSettled(
     SUBJECT_TYPE_ORDER.map(async (type) => {
-      const page = await searchByType(query, type, 0, SEARCH_GROUP_PAGE_SIZE);
+      const page = await searchByType(query, type, 0, SEARCH_GROUP_PAGE_SIZE, options);
       const group: SearchGroup = {
         type,
         label: getTypeLabel(type),
@@ -101,15 +114,19 @@ async function fetchGroupedSearch(query: ListQuery): Promise<GroupedSearch> {
  * sort=heat 为总收藏人数；「30 日注目」无公开 API，heat 视图用当季 air_date 近似。
  * type=all 时按分类并发搜索，结果分块返回。
  */
-export async function fetchSearchList(query: ListQuery, offset: number): Promise<GroupedSearch> {
+export async function fetchSearchList(
+  query: ListQuery,
+  offset: number,
+  options?: UpstreamRequestOptions,
+): Promise<GroupedSearch> {
   if (query.view === "search" && query.type === SUBJECT_TYPE_ALL) {
-    return fetchGroupedSearch(query);
+    return fetchGroupedSearch(query, options);
   }
 
   if (query.type === SUBJECT_TYPE_ALL) {
     return { items: [], total: 0, groups: [] };
   }
 
-  const page = await searchByType(query, query.type, offset);
+  const page = await searchByType(query, query.type, offset, BGM_SEARCH_PAGE_SIZE, options);
   return { ...page, groups: [] };
 }

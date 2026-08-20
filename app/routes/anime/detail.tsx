@@ -8,6 +8,7 @@ import { DownloadsPanel } from "~/components/downloads-panel";
 import { createCache } from "~/lib/cache";
 import type { DetailPayload, Episode, SubjectDetail } from "~/lib/bangumi/types-detail";
 import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
+import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
@@ -16,26 +17,30 @@ import { BilibiliPlayer } from "~/components/bilibili-player";
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<DetailPayload>();
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
   const id = params.id;
   if (!id) throw new Response("缺少 id", { status: 400 });
 
-  const data = await fetchCachedDetail(id);
+  try {
+    const data = await fetchCachedDetail(id, upstreamFromRequest(request));
 
-  // 深度克隆以避免直接修改内存中的共享缓存
-  const clonedData = JSON.parse(JSON.stringify(data)) as DetailPayload;
+    // 深度克隆以避免直接修改内存中的共享缓存
+    const clonedData = JSON.parse(JSON.stringify(data)) as DetailPayload;
 
-  // 将图片链接全部自动升级为 HTTPS，避开 307 重定向
-  if (clonedData.subject.images) {
-    const images = clonedData.subject.images;
-    for (const key of Object.keys(images) as Array<keyof typeof images>) {
-      if (images[key]) {
-        images[key] = toHttps(images[key])!;
+    // 将图片链接全部自动升级为 HTTPS，避开 307 重定向
+    if (clonedData.subject.images) {
+      const images = clonedData.subject.images;
+      for (const key of Object.keys(images) as Array<keyof typeof images>) {
+        if (images[key]) {
+          images[key] = toHttps(images[key])!;
+        }
       }
     }
-  }
 
-  return clonedData;
+    return clonedData;
+  } catch (error) {
+    throwRouteUpstreamError(error);
+  }
 }
 
 export async function clientLoader({

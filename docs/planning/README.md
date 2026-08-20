@@ -93,7 +93,7 @@ npm ls --depth=0   通过
 | ------------------------------------------------ | --------------------------- | ------ | ------ | --------------------------------------- |
 | [001](./001-card-viewport-prefetch.md)           | 控制卡片视口预取成本        | P0     | 待验证 | 避免列表浏览触发大量昂贵详情请求        |
 | [002](./002-detail-request-waterfall.md)         | 消除详情可选请求瀑布        | P0     | 待验证 | 降低详情尾延迟并隔离第三方故障          |
-| [003](./003-bangumi-timeout-and-cancellation.md) | Bangumi 超时与取消传播      | P0     | 待实施 | 避免核心请求无限等待和无效占用          |
+| [003](./003-bangumi-timeout-and-cancellation.md) | Bangumi 超时与取消传播      | P0     | 已实施 | 避免核心请求无限等待和无效占用          |
 | [004](./004-anime-real-ssr.md)                   | Anime 列表真实 SSR          | P1     | 待实施 | 缩短首屏数据路径并改善无 JS/SEO 能力    |
 | [005](./005-cache-bounds-and-single-flight.md)   | 有界缓存与 Single-flight    | P1     | 待实施 | 控制内存并减少缓存击穿和重复回源        |
 | [006](./006-font-payload.md)                     | 字体负载精简                | P2     | 待实施 | 减少 CSS、部署资源和实际字体请求        |

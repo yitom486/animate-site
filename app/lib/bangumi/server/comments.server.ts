@@ -1,5 +1,8 @@
 import { bgmGetNext } from "./client.server";
 import { BGM_API_ROUTES } from "./api-routes.server";
+import { BGM_TIMEOUT_MS } from "./config.server";
+import { isAbortLike } from "~/lib/upstream";
+import type { UpstreamRequestOptions } from "~/lib/upstream";
 import type {
   CommentPage,
   ReviewPage,
@@ -42,6 +45,11 @@ type RawReview = {
 
 type ListResp<T> = { data: T[]; total: number };
 
+const commentOpts = (options?: UpstreamRequestOptions): UpstreamRequestOptions => ({
+  ...options,
+  timeoutMs: options?.timeoutMs ?? BGM_TIMEOUT_MS.comments,
+});
+
 function trimComment(x: RawComment): SubjectComment {
   return {
     id: x.id,
@@ -71,15 +79,22 @@ export async function fetchCommentsPage(
   id: string,
   offset = 0,
   limit = COMMENT_PAGE_SIZE,
+  options?: UpstreamRequestOptions,
 ): Promise<CommentPage> {
-  const c = await bgmGetNext<ListResp<RawComment>>(BGM_API_ROUTES.subjectComments(id), {
-    limit,
-    offset,
-  }).catch(() => ({ data: [], total: 0 }));
-  return {
-    items: (c.data ?? []).filter((x) => x.comment?.trim()).map(trimComment),
-    total: c.total ?? 0,
-  };
+  try {
+    const c = await bgmGetNext<ListResp<RawComment>>(
+      BGM_API_ROUTES.subjectComments(id),
+      { limit, offset },
+      commentOpts(options),
+    );
+    return {
+      items: (c.data ?? []).filter((x) => x.comment?.trim()).map(trimComment),
+      total: c.total ?? 0,
+    };
+  } catch (error) {
+    if (isAbortLike(error)) throw error;
+    return { items: [], total: 0 };
+  }
 }
 
 /** GET next p1：评论分页 */
@@ -87,17 +102,30 @@ export async function fetchReviewsPage(
   id: string,
   offset = 0,
   limit = REVIEW_PAGE_SIZE,
+  options?: UpstreamRequestOptions,
 ): Promise<ReviewPage> {
-  const r = await bgmGetNext<ListResp<RawReview>>(BGM_API_ROUTES.subjectReviews(id), {
-    limit,
-    offset,
-  }).catch(() => ({ data: [], total: 0 }));
-  return { items: (r.data ?? []).map(trimReview), total: r.total ?? 0 };
+  try {
+    const r = await bgmGetNext<ListResp<RawReview>>(
+      BGM_API_ROUTES.subjectReviews(id),
+      { limit, offset },
+      commentOpts(options),
+    );
+    return { items: (r.data ?? []).map(trimReview), total: r.total ?? 0 };
+  } catch (error) {
+    if (isAbortLike(error)) throw error;
+    return { items: [], total: 0 };
+  }
 }
 
 /** 初始合并：吐槽 + 评论 第一页并行 */
-export async function fetchSubjectComments(id: string): Promise<SubjectComments> {
-  const [c, r] = await Promise.all([fetchCommentsPage(id, 0), fetchReviewsPage(id, 0)]);
+export async function fetchSubjectComments(
+  id: string,
+  options?: UpstreamRequestOptions,
+): Promise<SubjectComments> {
+  const [c, r] = await Promise.all([
+    fetchCommentsPage(id, 0, COMMENT_PAGE_SIZE, options),
+    fetchReviewsPage(id, 0, REVIEW_PAGE_SIZE, options),
+  ]);
   return {
     comments: c.items,
     commentsTotal: c.total,

@@ -37,10 +37,14 @@ export async function withCache<T>(
   cache: CacheStore<T>,
   key: string,
   fetcher: () => Promise<T>,
+  options?: { signal?: AbortSignal },
 ): Promise<T> {
   const hit = cache.get(key);
   if (hit) return hit;
   const data = await fetcher();
+  if (options?.signal?.aborted) {
+    throw options.signal.reason;
+  }
   cache.set(key, data);
   return data;
 }

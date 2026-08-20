@@ -5,9 +5,13 @@ import { LIST_PAGE_SIZE } from "../constants";
 import { BGM_SEARCH_PAGE_SIZE, SEARCH_GROUP_PAGE_SIZE } from "./config.server";
 import { buildBaseParams, getTypeLabel, getViewLabel, parseListQuery } from "../params";
 import { SUBJECT_TYPE_ALL, type AnimeListResult } from "../types";
+import type { UpstreamRequestOptions } from "~/lib/upstream";
 
 /** 统一列表入口：按 view 分发到对应 Bangumi 接口 */
-export async function fetchAnimeList(searchParams: URLSearchParams): Promise<AnimeListResult> {
+export async function fetchAnimeList(
+  searchParams: URLSearchParams,
+  options?: UpstreamRequestOptions,
+): Promise<AnimeListResult> {
   const query = parseListQuery(searchParams);
   const isGroupedSearch = query.view === "search" && query.type === SUBJECT_TYPE_ALL;
   const isSearchView = query.view === "heat" || query.view === "tag" || query.view === "search";
@@ -24,7 +28,7 @@ export async function fetchAnimeList(searchParams: URLSearchParams): Promise<Ani
 
   switch (query.view) {
     case "calendar": {
-      const calendar = await fetchCalendarSchedule();
+      const calendar = await fetchCalendarSchedule(options);
       return {
         items: [],
         schedule: calendar.schedule,
@@ -42,14 +46,14 @@ export async function fetchAnimeList(searchParams: URLSearchParams): Promise<Ani
     case "heat":
     case "tag":
     case "search": {
-      const result = await fetchSearchList(query, offset);
+      const result = await fetchSearchList(query, offset, options);
       items = result.items;
       total = result.total;
       groups = result.groups?.length ? result.groups : undefined;
       break;
     }
     default:
-      ({ items, total } = await fetchSubjectsList(query, offset));
+      ({ items, total } = await fetchSubjectsList(query, offset, options));
       break;
   }
 

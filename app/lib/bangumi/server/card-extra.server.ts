@@ -1,7 +1,9 @@
 import { bgmGet } from "./client.server";
 import { BGM_API_ROUTES } from "./api-routes.server";
 import { createCache } from "~/lib/cache";
-import { CACHE_TTL_DETAIL_MS } from "./config.server";
+import { isAbortLike } from "~/lib/upstream";
+import type { UpstreamRequestOptions } from "~/lib/upstream";
+import { BGM_TIMEOUT_MS, CACHE_TTL_DETAIL_MS } from "./config.server";
 import type { InfoboxItem } from "~/lib/anime-meta";
 import type { CardExtra, SubjectCollection } from "../types-card";
 
@@ -36,26 +38,43 @@ function infoboxValue(infobox: InfoboxItem[] | undefined, ...keys: string[]): st
 }
 
 /** GET /v0/subjects/{id} — 仅取卡片增强字段，单次上游调用，带服务端缓存 */
-export async function fetchCardExtra(id: string): Promise<CardExtra> {
+export async function fetchCardExtra(
+  id: string,
+  options?: UpstreamRequestOptions,
+): Promise<CardExtra> {
   const cacheKey = `card:${id}`;
   const cached = cardExtraCache.get(cacheKey);
   if (cached) return cached;
 
-  const raw = await bgmGet<RawCardSubject>(BGM_API_ROUTES.subjectDetail(id));
-
-  const extra: CardExtra = {
-    nameJa: raw.name ?? "",
-    summary: raw.summary?.trim() ?? "",
-    tags: (raw.tags ?? []).slice(0, 3).map((t) => t.name),
-    metaTags: raw.meta_tags ?? [],
-    collection: raw.collection ?? {},
-    staff: {
-      原作: infoboxValue(raw.infobox, "原作"),
-      导演: infoboxValue(raw.infobox, "导演", "監督", "监督"),
-      制作: infoboxValue(raw.infobox, "动画制作", "動畫制作", "製作", "动画制作公司"),
-    },
+  const opts: UpstreamRequestOptions = {
+    ...options,
+    timeoutMs: options?.timeoutMs ?? BGM_TIMEOUT_MS.detail,
   };
 
-  cardExtraCache.set(cacheKey, extra);
-  return extra;
+  try {
+    const raw = await bgmGet<RawCardSubject>(BGM_API_ROUTES.subjectDetail(id), undefined, opts);
+
+    if (opts.signal?.aborted) {
+      throw opts.signal.reason;
+    }
+
+    const extra: CardExtra = {
+      nameJa: raw.name ?? "",
+      summary: raw.summary?.trim() ?? "",
+      tags: (raw.tags ?? []).slice(0, 3).map((t) => t.name),
+      metaTags: raw.meta_tags ?? [],
+      collection: raw.collection ?? {},
+      staff: {
+        原作: infoboxValue(raw.infobox, "原作"),
+        导演: infoboxValue(raw.infobox, "导演", "監督", "监督"),
+        制作: infoboxValue(raw.infobox, "动画制作", "動畫制作", "製作", "动画制作公司"),
+      },
+    };
+
+    cardExtraCache.set(cacheKey, extra);
+    return extra;
+  } catch (error) {
+    if (isAbortLike(error)) throw error;
+    throw error;
+  }
 }

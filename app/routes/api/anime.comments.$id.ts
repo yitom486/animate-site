@@ -4,6 +4,7 @@ import {
   fetchCommentsPage,
   fetchReviewsPage,
 } from "~/lib/bangumi/server/comments.server";
+import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 
 /**
  * 同源评论 API：
@@ -17,9 +18,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const kind = url.searchParams.get("kind");
   const offset = Number(url.searchParams.get("offset") ?? 0) || 0;
+  const upstream = upstreamFromRequest(request);
 
-  if (kind === "comments") return fetchCommentsPage(id, offset);
-  if (kind === "reviews") return fetchReviewsPage(id, offset);
-
-  return fetchSubjectComments(id);
+  try {
+    if (kind === "comments") return await fetchCommentsPage(id, offset, undefined, upstream);
+    if (kind === "reviews") return await fetchReviewsPage(id, offset, undefined, upstream);
+    return await fetchSubjectComments(id, upstream);
+  } catch (error) {
+    throwRouteUpstreamError(error);
+  }
 }
