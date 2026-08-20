@@ -4,6 +4,8 @@ import { cn } from "~/lib/utils";
 
 type AnimeCoverProps = {
   url?: string;
+  srcSet?: string;
+  sizes?: string;
   alt: string;
   className?: string;
   priority?: boolean;
@@ -11,10 +13,11 @@ type AnimeCoverProps = {
 
 /**
  * 封面加载组件：
- * 支持服务端直接渲染 <img> 标签以激活浏览器 Preload Scanner。
- * 根据 priority 决定使用原生 lazy-load 还是高优先级 eager 加载。
+ * 支持服务端直接渲染 <img> 以激活浏览器 Preload Scanner。
+ * priority 时 eager + high；其余 lazy + auto（避免一律 low 拖慢进视口后的显示）。
+ * 有 srcSet/sizes 时由浏览器按布局宽度选档。
  */
-export function AnimeCover({ url, alt, className, priority }: AnimeCoverProps) {
+export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: AnimeCoverProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -26,7 +29,7 @@ export function AnimeCover({ url, alt, className, priority }: AnimeCoverProps) {
     if (imgRef.current?.complete) {
       setLoaded(true);
     }
-  }, [url]);
+  }, [url, srcSet]);
 
   if (!url) {
     return (
@@ -48,11 +51,13 @@ export function AnimeCover({ url, alt, className, priority }: AnimeCoverProps) {
       <img
         ref={imgRef}
         src={url}
+        srcSet={srcSet}
+        sizes={srcSet ? sizes : undefined}
         alt={alt}
         referrerPolicy="no-referrer"
         decoding="async"
         loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : "low"}
+        fetchPriority={priority ? "high" : "auto"}
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
         className={cn(

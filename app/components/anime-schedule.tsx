@@ -6,7 +6,12 @@ import { AnimeWeekOverview } from "~/components/anime-week-overview";
 import { SummaryModal, useCardExtra } from "~/components/anime-card-extra";
 import { cn } from "~/lib/utils";
 import { AnimeCover } from "~/components/anime-cover";
-import { buildCardMeta, getCoverUrl, type AnimeCardData } from "~/lib/anime-meta";
+import {
+  buildCardMeta,
+  COVER_SIZES_SCHEDULE,
+  getCoverSources,
+  type AnimeCardData,
+} from "~/lib/anime-meta";
 import {
   formatAirDate,
   formatCurrentDateTime,
@@ -169,7 +174,7 @@ function ScheduleCard({
   active?: boolean;
 }) {
   const { title, subtitle, score, ratingTotal } = buildCardMeta(item);
-  const cover = getCoverUrl(item.images);
+  const cover = getCoverSources(item.images);
   const airDate = formatAirDate(item.air_date || item.date);
   // 日文原名（日历接口已返回，无需等增强数据）
   const nameJa = item.name && item.name !== title ? item.name : "";
@@ -208,7 +213,9 @@ function ScheduleCard({
     >
       <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg border border-rose-100 bg-rose-50 sm:w-28 md:w-32">
         <AnimeCover
-          url={cover}
+          url={cover?.src}
+          srcSet={cover?.srcSet}
+          sizes={COVER_SIZES_SCHEDULE}
           alt={title}
           className="transition-transform duration-700 group-hover:scale-105"
         />

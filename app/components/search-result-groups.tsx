@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { AnimeCard } from "~/components/anime-card";
+import { COVER_PRIORITY_COUNT } from "~/lib/anime-meta";
 import { buildDetailUrl, buildListHref } from "~/lib/bangumi/params";
 import type { SearchGroup } from "~/lib/bangumi/types";
 
@@ -52,7 +53,7 @@ export function SearchResultGroups({
                 item={item}
                 to={buildDetailUrl(item.id, listParams)}
                 active={activeId === String(item.id)}
-                priority={idx < 4}
+                priority={idx < COVER_PRIORITY_COUNT}
               />
             ))}
           </div>

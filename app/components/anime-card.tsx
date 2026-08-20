@@ -2,7 +2,12 @@ import { Link, type PrefetchBehavior } from "react-router";
 import { Star } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { AnimeCover } from "~/components/anime-cover";
-import { buildCardMeta, getCoverUrl, type AnimeCardData } from "~/lib/anime-meta";
+import {
+  buildCardMeta,
+  COVER_SIZES_GRID,
+  getCoverSources,
+  type AnimeCardData,
+} from "~/lib/anime-meta";
 
 type AnimeCardProps = {
   item: AnimeCardData;
@@ -23,7 +28,7 @@ export function AnimeCard({
   prefetch = "intent",
 }: AnimeCardProps) {
   const { title, subtitle, score, ratingTotal } = buildCardMeta(item);
-  const cover = getCoverUrl(item.images);
+  const cover = getCoverSources(item.images);
 
   return (
     <Link
@@ -38,7 +43,9 @@ export function AnimeCard({
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-rose-50">
         <AnimeCover
-          url={cover}
+          url={cover?.src}
+          srcSet={cover?.srcSet}
+          sizes={COVER_SIZES_GRID}
           alt={title}
           priority={priority}
           className="transition-transform duration-300 group-hover:scale-[1.03]"
