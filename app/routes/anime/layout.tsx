@@ -19,25 +19,39 @@ import {
   LIST_REVALIDATE_KEYS,
   mergeListParams,
 } from "~/lib/bangumi/params";
+import { loadCachedAnimeListFromRequest } from "~/lib/bangumi/server/list-load.server";
 import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bangumi/types";
+import { isAbortLike, throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 
 const clientCache = createCache<AnimeListResult>();
 
-export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise<AnimeListResult> {
+export async function loader({ request }: Route.LoaderArgs) {
+  try {
+    return await loadCachedAnimeListFromRequest(request, upstreamFromRequest(request));
+  } catch (error) {
+    throwRouteUpstreamError(error);
+  }
+}
+
+export async function clientLoader({
+  request,
+  serverLoader,
+}: Route.ClientLoaderArgs): Promise<AnimeListResult> {
   const url = new URL(request.url);
   const key = listCacheKey(url.searchParams);
 
   const cached = clientCache.get(key);
   if (cached) return cached;
 
-  const apiUrl = `/api/anime/list?${url.searchParams.toString()}`;
-  const res = await fetch(apiUrl);
-  if (!res.ok) throw new Response("加载列表失败", { status: res.status });
-  const data = (await res.json()) as AnimeListResult;
-  clientCache.set(key, data);
-  return data;
+  try {
+    const data = (await serverLoader()) as AnimeListResult;
+    clientCache.set(key, data);
+    return data;
+  } catch (error) {
+    if (isAbortLike(error)) throw error;
+    throw error;
+  }
 }
-clientLoader.hydrate = true as const;
 
 export function shouldRevalidate({ currentUrl, nextUrl }: { currentUrl: URL; nextUrl: URL }) {
   return LIST_REVALIDATE_KEYS.some(
