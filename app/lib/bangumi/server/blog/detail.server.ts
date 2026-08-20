@@ -2,7 +2,7 @@ import sanitizeHtml from "sanitize-html";
 import { createCache, withCache } from "~/lib/cache";
 import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
 import { CACHE_MAX_ENTRIES } from "../../constants";
-import type { BgmBlogDetail } from "../../types-blog";
+import type { BgmBlogDetail, BgmBlogRelatedSubject } from "../../types-blog";
 import { BGM_WEB } from "../../web-urls";
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -57,7 +57,7 @@ const SANITIZE_OPTS: sanitizeHtml.IOptions = {
   ],
   allowedAttributes: {
     a: ["href", "title", "target", "rel"],
-    img: ["src", "alt", "width", "height", "loading", "referrerpolicy"],
+    img: ["src", "alt", "loading", "referrerpolicy", "class"],
   },
   allowedSchemes: ["http", "https", "mailto"],
   transformTags: {
@@ -66,15 +66,15 @@ const SANITIZE_OPTS: sanitizeHtml.IOptions = {
       attribs: { ...attribs, target: "_blank", rel: "noreferrer nofollow" },
     }),
     img: (_tagName, attribs) => {
-      let src = attribs.src ?? "";
-      if (src.startsWith("//")) src = `https:${src}`;
-      // 去掉固定宽高，避免手机端把版心撑出视口
+      // /img/smiles/... 等站内相对路径必须接到 bgm.tv，否则会打到本站 404
+      const src = absolutize(attribs.src ?? "");
       const next: Record<string, string> = {
         src,
         loading: "lazy",
         referrerpolicy: "no-referrer",
       };
       if (attribs.alt) next.alt = attribs.alt;
+      if (attribs.class?.includes("smile")) next.class = "bgm-smile";
       return { tagName: "img", attribs: next };
     },
   },
@@ -97,6 +97,7 @@ function stripTags(s: string): string {
 }
 
 function absolutize(url: string): string {
+  if (!url) return url;
   if (url.startsWith("//")) return `https:${url}`;
   if (url.startsWith("/")) return `${BGM_WEB}${url}`;
   return url;
@@ -126,12 +127,41 @@ function extractContent(html: string): string {
   return sanitizeHtml(raw, SANITIZE_OPTS).trim();
 }
 
+/** 解析详情页「关联条目」卡片 */
+function extractRelatedSubjects(html: string): BgmBlogRelatedSubject[] {
+  const zoneStart = html.indexOf('<div class="entry-related-subjects">');
+  if (zoneStart < 0) return [];
+  const zoneEnd = html.indexOf('<div id="footer"', zoneStart);
+  const chunk = html.slice(zoneStart, zoneEnd > zoneStart ? zoneEnd : undefined);
+
+  const cards = chunk.split('<div class="card subject-card"').slice(1);
+  const out: BgmBlogRelatedSubject[] = [];
+
+  for (const card of cards) {
+    const idM = card.match(/\/subject\/(\d+)/);
+    if (!idM) continue;
+    const imgM = card.match(/<img[^>]+src="([^"]+)"/);
+    const titleM = card.match(/<p class="title">\s*<a[^>]*>([\s\S]*?)<\/a>/);
+    const tipM = card.match(/<p class="info tip">\s*([\s\S]*?)<\/p>/);
+    const name = titleM ? stripTags(titleM[1].replace(/<small[\s\S]*?<\/small>/g, "")) : "";
+    if (!name) continue;
+    out.push({
+      id: Number(idM[1]),
+      name,
+      nameCn: tipM ? stripTags(tipM[1]) || undefined : undefined,
+      image: imgM ? absolutize(imgM[1]) : undefined,
+    });
+  }
+
+  return out;
+}
+
 /** 抓单篇日志正文（HTML 爬取 + 消毒；Bangumi 无日志 API/单篇 RSS） */
 export async function fetchBgmBlogDetail(id: string | number): Promise<BgmBlogDetail> {
   const numId = String(id).replace(/\D/g, "");
   const link = `${BGM_WEB}/blog/${numId}`;
 
-  return withCache(detailCache, `bgm:blog:detail:v2:${numId}`, async () => {
+  return withCache(detailCache, `bgm:blog:detail:v3:${numId}`, async () => {
     const fallback: BgmBlogDetail = { id: numId, title: "日志", link, contentHtml: "" };
 
     try {
@@ -168,6 +198,7 @@ export async function fetchBgmBlogDetail(id: string | number): Promise<BgmBlogDe
         authorUrl: authorM ? absolutize(authorM[1]) : undefined,
         avatar: avatarM ? absolutize(avatarM[1]) : undefined,
         publishedAt: timeM ? bgmTimeToIso(timeM[1]) : undefined,
+        relatedSubjects: extractRelatedSubjects(html),
       };
     } catch {
       return fallback;

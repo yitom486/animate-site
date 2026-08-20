@@ -224,7 +224,7 @@ body {
     word-break: break-word;
   }
 
-  .blog-prose :where(img, video, svg, iframe) {
+  .blog-prose :where(img:not(.bgm-smile), video, svg, iframe) {
     display: block;
     max-width: 100%;
     height: auto;
@@ -259,6 +259,15 @@ body {
 
   .blog-prose :where(a) {
     overflow-wrap: anywhere;
+  }
+
+  .blog-prose :where(img.bgm-smile) {
+    display: inline-block;
+    width: 1.35em;
+    height: 1.35em;
+    margin: 0 0.1em;
+    vertical-align: -0.25em;
+    border-radius: 0;
   }
 }
 

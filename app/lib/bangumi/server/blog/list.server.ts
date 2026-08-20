@@ -77,12 +77,16 @@ function parseBlogList(html: string, section: BlogSection): BgmBlogItem[] {
           .slice(0, 140) || undefined
       : undefined;
 
-    const avatarM = block.match(/<img[^>]+src="([^"]+)"[^>]*class="avatarCover"/);
-    const avatar = avatarM ? absolutize(avatarM[1]) : undefined;
+    // 左侧图：关联条目封面（avatarCoverPortrait）或用户头像（avatarCover）
+    const coverM = block.match(
+      /<p class="cover">[\s\S]*?<img[^>]+src="([^"]+)"[^>]*(?:class="(?:avatarCoverPortrait|avatarCover)")?/,
+    );
+    const cover = coverM ? absolutize(coverM[1]) : undefined;
 
     const timeM = block.match(/<div class="time">([\s\S]*?)<\/div>/);
     const timeBlock = timeM ? timeM[1] : "";
     const authorM = timeBlock.match(/<a href="(\/user\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+    const subjectM = timeBlock.match(/评论\s*<a href="\/subject\/(\d+)"[^>]*>([\s\S]*?)<\/a>/);
     const timeText = stripTags(timeBlock);
     const repliesM = timeText.match(/(\d+)\s*回复/);
 
@@ -94,8 +98,11 @@ function parseBlogList(html: string, section: BlogSection): BgmBlogItem[] {
       publishedAt: bgmTimeToIso(timeText),
       author: authorM ? stripTags(authorM[2]) : undefined,
       authorUrl: authorM ? absolutize(authorM[1]) : undefined,
-      avatar,
+      cover,
+      avatar: cover,
       replies: repliesM ? Number(repliesM[1]) : undefined,
+      subjectId: subjectM ? Number(subjectM[1]) : undefined,
+      subjectName: subjectM ? stripTags(subjectM[2]) : undefined,
     });
   }
 
@@ -106,7 +113,7 @@ function parseBlogList(html: string, section: BlogSection): BgmBlogItem[] {
 export async function fetchBlogListPage(section: BlogSection, page = 1): Promise<BgmBlogPage> {
   const safePage = Math.max(1, Math.floor(Number(page) || 1));
 
-  return withCache(pageCache, `bgm:blog:html:${section}:${safePage}`, async () => {
+  return withCache(pageCache, `bgm:blog:html:v2:${section}:${safePage}`, async () => {
     const res = await fetch(`${BGM_WEB}/${section}/blog?page=${safePage}`, {
       headers: headersFor(section),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

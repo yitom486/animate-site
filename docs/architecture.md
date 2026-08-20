@@ -52,12 +52,12 @@ flowchart LR
   Api["/api/anime/* · /api/news · /api/bgm-blog"] --> ApiR[routes/api/*]
 ```
 
-| 路径                                               | 模块                     | 说明                                             |
-| -------------------------------------------------- | ------------------------ | ------------------------------------------------ |
-| `/`                                                | `routes/home.tsx`        | 首页 Hero、搜索、资讯                            |
-| `/anime` · `/anime/:id`                            | `routes/anime/*`         | 列表 + 详情分栏；query 决定类型与视图            |
-| `/:section/blog`                                   | `routes/blog/list.tsx`   | 板块日志列表（`anime\|book\|music\|game\|real`） |
-| `/:section/blog/:id`                               | `routes/blog/detail.tsx` | 日志详情（HTML 抓取 + 消毒）                     |
+| 路径                                           | 模块                     | 说明                                             |
+| ---------------------------------------------- | ------------------------ | ------------------------------------------------ |
+| `/`                                            | `routes/home.tsx`        | 首页 Hero、搜索、资讯                            |
+| `/anime` · `/anime/:id`                        | `routes/anime/*`         | 列表 + 详情分栏；query 决定类型与视图            |
+| `/:section/blog`                               | `routes/blog/list.tsx`   | 板块日志列表（`anime\|book\|music\|game\|real`） |
+| `/:section/blog/:id`                           | `routes/blog/detail.tsx` | 日志详情（HTML 抓取 + 消毒）                     |
 | `/api/anime/*` · `/api/news` · `/api/bgm-blog` | `routes/api/*`           | 同源 BFF                                         |
 
 列表筛选一律进 URL query，用 `buildListHref` / `buildListUrl`（`app/lib/bangumi/params.ts`）生成，避免在 JSX 里手写路径。
@@ -108,12 +108,12 @@ stateDiagram-v2
   end note
 ```
 
-| 态           | 断点        | Grid 列宽   | 内容深度                         |
-| ------------ | ----------- | ----------- | -------------------------------- |
-| 仅列表       | 任意        | `1fr 0fr`   | —                                |
-| 并排         | ≥ lg        | `1.6fr 1fr` | 概要 + 插件；展开后才有完整附加  |
-| 桌面展开     | ≥ lg        | `0fr 1fr`   | 简介 / 章节 / 短评 / 关联等      |
-| 移动全屏详情 | &lt; lg     | `0fr 1fr`   | **一步到位**完整信息             |
+| 态           | 断点    | Grid 列宽   | 内容深度                        |
+| ------------ | ------- | ----------- | ------------------------------- |
+| 仅列表       | 任意    | `1fr 0fr`   | —                               |
+| 并排         | ≥ lg    | `1.6fr 1fr` | 概要 + 插件；展开后才有完整附加 |
+| 桌面展开     | ≥ lg    | `0fr 1fr`   | 简介 / 章节 / 短评 / 关联等     |
+| 移动全屏详情 | &lt; lg | `0fr 1fr`   | **一步到位**完整信息            |
 
 `isMobile` / `expanded` 经 Outlet context 下发。首屏仍可能有 hydration 后布局纠正，见 [013](./planning/013-mobile-hydration-layout.md)。
 
@@ -173,12 +173,12 @@ flowchart LR
   San --> Prose[".blog-prose 展示"]
 ```
 
-| 能力 | 实现要点                                                                |
-| ---- | ----------------------------------------------------------------------- |
-| 分区 | `BlogSection`：`anime\|book\|music\|game\|real`                         |
-| 列表 | HTML 分页为主；RSS 作辅                                                 |
-| 详情 | 消毒；图片去固定宽高；`.blog-prose` 防手机横向溢出                      |
-| 路由 | `/:section/blog` 须注册在 `/anime` 动态段之前                           |
+| 能力 | 实现要点                                           |
+| ---- | -------------------------------------------------- |
+| 分区 | `BlogSection`：`anime\|book\|music\|game\|real`    |
+| 列表 | HTML 分页为主；RSS 作辅                            |
+| 详情 | 消毒；图片去固定宽高；`.blog-prose` 防手机横向溢出 |
+| 路由 | `/:section/blog` 须注册在 `/anime` 动态段之前      |
 
 ## 7. 缓存与 BFF
 
@@ -195,6 +195,20 @@ flowchart TB
 - 进程内 `Map` LRU + single-flight（`app/lib/cache`）；设计上可换 Cloudflare KV / Cache API，**KV 尚未接**。
 - 卡片增强：`/api/anime/cards` 批量补简介 / staff，日历避免 N+1。
 - 上游失败：单块可降级，整页尽量不崩。
+
+### 条目侧栏预览（跨页可复用）
+
+与 `/anime/:id` **正式分栏详情**分离。任意页面可：
+
+```tsx
+const side = useSubjectSidePanel(); // 读写 ?subject=
+<SubjectSideLayout side={side}>{/* 主内容 */}</SubjectSideLayout>;
+// 任意处 side.open(id) / side.close() / side.isActive(id)
+```
+
+- 启动器：`app/lib/subject-side-panel.ts`
+- 面板 + 分栏壳：`app/components/subject-side-panel.tsx`
+- 数据：同源 `/api/anime/detail/:id`
 
 ## 8. 部署
 
@@ -215,9 +229,9 @@ flowchart LR
 
 ## 9. 相关文档
 
-| 文档                                       | 用途                       |
-| ------------------------------------------ | -------------------------- |
-| [AGENTS.md](../AGENTS.md)                  | 给协作者 / Agent 的硬约定  |
-| [planning/README.md](./planning/README.md) | 性能与工程优化项索引       |
-| [bangumi-api.md](./bangumi-api.md)         | Bangumi API 调研           |
-| [requirements.md](./requirements.md)       | 早期需求（历史）           |
+| 文档                                       | 用途                      |
+| ------------------------------------------ | ------------------------- |
+| [AGENTS.md](../AGENTS.md)                  | 给协作者 / Agent 的硬约定 |
+| [planning/README.md](./planning/README.md) | 性能与工程优化项索引      |
+| [bangumi-api.md](./bangumi-api.md)         | Bangumi API 调研          |
+| [requirements.md](./requirements.md)       | 早期需求（历史）          |

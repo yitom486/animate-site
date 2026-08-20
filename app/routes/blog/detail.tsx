@@ -2,6 +2,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Link } from "react-router";
 import type { Route } from "./+types/detail";
 import { SiteNav } from "~/components/site-nav";
+import { SubjectSideLayout } from "~/components/subject-side-panel";
 import { fetchBgmBlogDetail } from "~/lib/bangumi/server/blog/detail.server";
 import {
   BLOG_SECTION_LABEL,
@@ -9,6 +10,8 @@ import {
   blogSectionToSubjectType,
   parseBlogSection,
 } from "~/lib/bangumi/blog-section";
+import { useSubjectSidePanel } from "~/lib/subject-side-panel";
+import { cn } from "~/lib/utils";
 
 export async function loader({ params }: Route.LoaderArgs) {
   const section = parseBlogSection(params.section);
@@ -38,12 +41,20 @@ function formatWhen(iso?: string) {
 export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
   const { post, section } = loaderData;
   const listLabel = BLOG_SECTION_LABEL[section];
+  const related = post.relatedSubjects ?? [];
+  const side = useSubjectSidePanel();
 
   return (
-    <div className="celadon-page min-h-screen text-slate-800">
+    <div className="celadon-page flex min-h-screen flex-col text-slate-800">
       <SiteNav activeType={blogSectionToSubjectType(section)} />
 
-      <main className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
+      <SubjectSideLayout
+        side={side}
+        narrowMaxClass="max-w-3xl"
+        wideMaxClass="max-w-6xl"
+        openGridClass="lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]"
+        contentClassName="overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6"
+      >
         <Link
           to={blogListPath(section)}
           prefetch="intent"
@@ -94,6 +105,57 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
             </a>
           </div>
 
+          {related.length > 0 ? (
+            <section className="mt-4 space-y-2" aria-label="关联条目">
+              <h2 className="text-xs font-bold tracking-wide text-slate-500 uppercase">关联条目</h2>
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {related.map((s) => {
+                  const title = s.nameCn || s.name;
+                  const active = side.isActive(s.id);
+                  return (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        onClick={() => side.open(s.id)}
+                        className={cn(
+                          "flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors",
+                          active
+                            ? "border-rose-300 bg-rose-50"
+                            : "border-rose-100 bg-white/70 hover:border-rose-300 hover:bg-white",
+                        )}
+                      >
+                        {s.image ? (
+                          <img
+                            src={s.image}
+                            alt=""
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            className="h-14 w-10 shrink-0 rounded object-cover"
+                          />
+                        ) : (
+                          <span className="h-14 w-10 shrink-0 rounded bg-rose-50" />
+                        )}
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-slate-800">
+                            {title}
+                          </span>
+                          {s.nameCn && s.name !== s.nameCn ? (
+                            <span className="mt-0.5 block truncate font-mono text-[10px] text-slate-400">
+                              {s.name}
+                            </span>
+                          ) : null}
+                          <span className="mt-1 block text-[10px] font-medium text-rose-600">
+                            {active ? "已在右侧打开" : "在右侧打开详情"}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
+
           {post.contentHtml ? (
             <div
               className="blog-prose mt-5 space-y-3 text-sm leading-relaxed text-slate-700 [&_a]:text-rose-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-rose-200 [&_blockquote]:pl-3 [&_blockquote]:text-slate-500 [&_h2]:mt-5 [&_h2]:font-bold [&_h3]:mt-4 [&_h3]:font-bold [&_img]:my-3 [&_img]:rounded-lg [&_li]:ml-4 [&_li]:list-disc sm:[&_li]:ml-5 [&_p]:leading-relaxed"
@@ -114,7 +176,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
             </p>
           )}
         </article>
-      </main>
+      </SubjectSideLayout>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/list";
 import { SiteNav } from "~/components/site-nav";
+import { SubjectSideLayout } from "~/components/subject-side-panel";
 import { fetchBlogListPage } from "~/lib/bangumi/server/blog/list.server";
 import type { BgmBlogItem, BgmBlogPage } from "~/lib/bangumi/types-blog";
 import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/web-urls";
@@ -16,6 +17,7 @@ import {
   parseBlogSection,
   type BlogSection,
 } from "~/lib/bangumi/blog-section";
+import { useSubjectSidePanel, type SubjectSidePanelControls } from "~/lib/subject-side-panel";
 import { cn } from "~/lib/utils";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
@@ -71,6 +73,7 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
   const [loading, setLoading] = useState(false);
   const [errored, setErrored] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const side = useSubjectSidePanel();
 
   // 切换板块时重置（同模块多 section 路由可能复用实例）
   useEffect(() => {
@@ -115,10 +118,10 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
   }, [loadMore]);
 
   return (
-    <div className="celadon-page min-h-screen text-slate-800">
+    <div className="celadon-page flex min-h-screen flex-col text-slate-800">
       <SiteNav activeType={blogSectionToSubjectType(section)} />
 
-      <main className="mx-auto w-full min-w-0 max-w-5xl overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
+      <SubjectSideLayout side={side} contentClassName="overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
         <header className="celadon-glass rounded-lg p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -170,7 +173,7 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
         ) : (
           <ul className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2">
             {items.map((item) => (
-              <BlogCard key={item.id} item={item} section={section} />
+              <BlogCard key={item.id} item={item} section={section} side={side} />
             ))}
           </ul>
         )}
@@ -199,26 +202,59 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
             <span>· 没有更多了 ·</span>
           )}
         </div>
-      </main>
+      </SubjectSideLayout>
     </div>
   );
 }
 
-function BlogCard({ item, section }: { item: BgmBlogItem; section: BlogSection }) {
+function BlogCard({
+  item,
+  section,
+  side,
+}: {
+  item: BgmBlogItem;
+  section: BlogSection;
+  side: SubjectSidePanelControls;
+}) {
   const blogId = item.id.replace(/\D/g, "");
+  const cover = item.cover ?? item.avatar;
+  const hasSubject = item.subjectId != null;
+  const active = hasSubject && side.isActive(item.subjectId!);
+
   return (
     <li className="group rounded-lg border border-rose-100/80 bg-white/65 p-3.5 transition-colors hover:border-rose-300 hover:bg-white">
-      <Link to={blogDetailPath(section, blogId)} prefetch="intent" className="block">
-        <div className="flex items-start gap-3">
-          {item.avatar ? (
+      <div className="flex items-start gap-3">
+        {cover ? (
+          hasSubject ? (
+            <button
+              type="button"
+              onClick={() => side.open(item.subjectId!)}
+              className="shrink-0"
+              title={item.subjectName}
+            >
+              <img
+                src={cover}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className={cn(
+                  "h-16 w-12 rounded border object-cover shadow-sm transition-transform group-hover:scale-[1.02]",
+                  active ? "border-rose-400 ring-2 ring-rose-200" : "border-rose-100",
+                )}
+              />
+            </button>
+          ) : (
             <img
-              src={item.avatar}
+              src={cover}
               alt=""
               loading="lazy"
-              className="size-9 shrink-0 rounded-full border border-rose-100 object-cover"
+              referrerPolicy="no-referrer"
+              className="h-16 w-12 shrink-0 rounded border border-rose-100 object-cover"
             />
-          ) : null}
-          <div className="min-w-0 flex-1">
+          )
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <Link to={blogDetailPath(section, blogId)} prefetch="intent" className="block">
             <h2 className="line-clamp-2 text-sm font-bold leading-snug text-slate-800 group-hover:text-rose-800">
               {item.title}
             </h2>
@@ -227,25 +263,45 @@ function BlogCard({ item, section }: { item: BgmBlogItem; section: BlogSection }
                 {item.excerpt}
               </p>
             ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-400">
-              {item.author ? (
-                <span className="font-medium text-rose-700">{item.author}</span>
-              ) : null}
-              {item.publishedAt ? (
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] text-slate-400">
+            {item.author ? <span className="font-medium text-rose-700">{item.author}</span> : null}
+            {item.subjectName && hasSubject ? (
+              <>
+                <span>·</span>
+                <span>评论</span>
+                <button
+                  type="button"
+                  onClick={() => side.open(item.subjectId!)}
+                  className={cn(
+                    "font-medium hover:underline",
+                    active ? "text-rose-700" : "text-sky-700",
+                  )}
+                >
+                  {item.subjectName}
+                </button>
+              </>
+            ) : null}
+            {item.publishedAt ? (
+              <>
+                <span>·</span>
                 <time dateTime={item.publishedAt} className="font-mono">
                   {formatWhen(item.publishedAt)}
                 </time>
-              ) : null}
-              {typeof item.replies === "number" ? (
+              </>
+            ) : null}
+            {typeof item.replies === "number" ? (
+              <>
+                <span>·</span>
                 <span className="inline-flex items-center gap-0.5">
                   <MessageCircle className="size-3" />
                   {item.replies}
                 </span>
-              ) : null}
-            </div>
+              </>
+            ) : null}
           </div>
         </div>
-      </Link>
+      </div>
     </li>
   );
 }
