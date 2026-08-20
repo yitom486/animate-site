@@ -1,4 +1,5 @@
-import { Form } from "react-router";
+import { useEffect, useState } from "react";
+import { Form, useLocation, useNavigation } from "react-router";
 import { ArrowRight, Search } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -27,6 +28,21 @@ export function SearchForm({
 }: SearchFormProps) {
   const isHero = variant === "hero";
   const typeValue = defaultType || SUBJECT_TYPE_ALL;
+  const location = useLocation();
+  const navigation = useNavigation();
+  const [query, setQuery] = useState(defaultQuery);
+
+  // 顶栏：跳转完成后清空，避免结果页仍占着上次关键词
+  useEffect(() => {
+    if (!isHero && navigation.state === "idle") {
+      setQuery("");
+    }
+  }, [isHero, navigation.state, location.pathname, location.search]);
+
+  // Hero：跟随外部 defaultQuery（较少变化）
+  useEffect(() => {
+    if (isHero) setQuery(defaultQuery);
+  }, [isHero, defaultQuery]);
 
   return (
     <Form
@@ -38,10 +54,10 @@ export function SearchForm({
       <input type="hidden" name="view" value="search" />
       <div
         className={cn(
-          "flex min-w-0 items-center gap-2",
+          "flex min-w-0 items-center gap-1.5 sm:gap-2",
           isHero
             ? "celadon-glass-strong h-14 rounded-lg px-2"
-            : "h-10 rounded-lg border border-rose-100 bg-white/70 pl-1 pr-2",
+            : "h-10 rounded-lg border border-rose-100 bg-white/70 pl-1 pr-1",
         )}
       >
         <label className="sr-only" htmlFor={isHero ? "hero-search-q" : "nav-search-q"}>
@@ -53,7 +69,9 @@ export function SearchForm({
             aria-label="搜索类型"
             className={cn(
               "shrink-0 border-0 bg-rose-50/80 text-rose-800 shadow-none hover:bg-rose-50 focus-visible:ring-rose-500/20",
-              isHero ? "h-10 min-w-24 px-3" : "h-8 min-w-20 px-2 text-xs",
+              isHero
+                ? "h-10 min-w-24 px-3"
+                : "h-8 min-w-[4.5rem] px-1.5 text-[11px] sm:min-w-20 sm:px-2 sm:text-xs",
             )}
           >
             <SelectValue />
@@ -67,17 +85,16 @@ export function SearchForm({
           </SelectContent>
         </Select>
 
-        <Search
-          className={cn("shrink-0 text-rose-600", isHero ? "size-5" : "size-3.5")}
-          aria-hidden
-        />
+        {!isHero ? null : <Search className="size-5 shrink-0 text-rose-600" aria-hidden />}
         <Input
           id={isHero ? "hero-search-q" : "nav-search-q"}
           name="q"
           type="search"
           required
-          defaultValue={defaultQuery}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder={isHero ? "搜索番剧、游戏、书籍或作品名" : "搜索…"}
+          enterKeyHint="search"
           className={cn(
             "min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent",
             isHero
@@ -94,9 +111,15 @@ export function SearchForm({
             <ArrowRight className="size-3.5" />
           </Button>
         ) : (
-          <button type="submit" className="sr-only">
-            搜索
-          </button>
+          <Button
+            type="submit"
+            size="icon-sm"
+            variant="ghost"
+            aria-label="搜索"
+            className="size-8 shrink-0 rounded-lg text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+          >
+            <Search className="size-4" />
+          </Button>
         )}
       </div>
     </Form>
