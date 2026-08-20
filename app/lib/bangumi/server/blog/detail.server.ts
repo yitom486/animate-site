@@ -65,13 +65,17 @@ const SANITIZE_OPTS: sanitizeHtml.IOptions = {
       tagName,
       attribs: { ...attribs, target: "_blank", rel: "noreferrer nofollow" },
     }),
-    img: (tagName, attribs) => {
+    img: (_tagName, attribs) => {
       let src = attribs.src ?? "";
       if (src.startsWith("//")) src = `https:${src}`;
-      return {
-        tagName,
-        attribs: { ...attribs, src, loading: "lazy", referrerpolicy: "no-referrer" },
+      // 去掉固定宽高，避免手机端把版心撑出视口
+      const next: Record<string, string> = {
+        src,
+        loading: "lazy",
+        referrerpolicy: "no-referrer",
       };
+      if (attribs.alt) next.alt = attribs.alt;
+      return { tagName: "img", attribs: next };
     },
   },
 };
@@ -127,7 +131,7 @@ export async function fetchBgmBlogDetail(id: string | number): Promise<BgmBlogDe
   const numId = String(id).replace(/\D/g, "");
   const link = `${BGM_WEB}/blog/${numId}`;
 
-  return withCache(detailCache, `bgm:blog:detail:${numId}`, async () => {
+  return withCache(detailCache, `bgm:blog:detail:v2:${numId}`, async () => {
     const fallback: BgmBlogDetail = { id: numId, title: "日志", link, contentHtml: "" };
 
     try {

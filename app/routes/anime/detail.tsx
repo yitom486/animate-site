@@ -71,9 +71,12 @@ clientLoader.hydrate = true as const;
 
 export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
   const { subject, staff, episodes } = loaderData;
-  const { expanded, setExpanded } = useOutletContext<AnimeOutletContext>();
+  const { expanded, setExpanded, isMobile } = useOutletContext<AnimeOutletContext>();
   const [searchParams] = useSearchParams();
   const listBackUrl = buildListUrl(listParamsFromSearch(searchParams));
+
+  /** 手机端详情已全屏：直接完整信息，不再二次展开 */
+  const showFull = isMobile || expanded;
 
   const title = subject.name_cn || subject.name;
   const countValue = subject.total_episodes || subject.eps;
@@ -91,23 +94,30 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* 操作条 */}
-      <div className="flex items-center justify-between gap-2 border-b border-rose-100/80 bg-white/45 p-3 backdrop-blur-md">
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-3 py-1.5 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:from-rose-200 hover:to-sky-200"
-        >
-          {expanded ? (
-            <>
-              <Minimize2 className="size-4" /> 收起
-            </>
-          ) : (
-            <>
-              <Maximize2 className="size-4" /> 展开详情
-            </>
-          )}
-        </button>
+      {/* 操作条：桌面可展开/收起；移动端仅返回列表 */}
+      <div
+        className={
+          "flex items-center gap-2 border-b border-rose-100/80 bg-white/45 p-3 backdrop-blur-md " +
+          (isMobile ? "justify-end" : "justify-between")
+        }
+      >
+        {!isMobile ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-3 py-1.5 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:from-rose-200 hover:to-sky-200"
+          >
+            {expanded ? (
+              <>
+                <Minimize2 className="size-4" /> 收起
+              </>
+            ) : (
+              <>
+                <Maximize2 className="size-4" /> 展开详情
+              </>
+            )}
+          </button>
+        ) : null}
         <Link
           to={listBackUrl}
           className="rounded-lg border border-rose-100 bg-white/70 p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-rose-700"
@@ -117,15 +127,17 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className={expanded ? "mx-auto max-w-5xl space-y-6" : "space-y-4"}>
+      <div className="min-w-0 flex-1 overflow-y-auto p-4">
+        <div className={showFull ? "mx-auto max-w-5xl space-y-6" : "space-y-4"}>
           <DetailOverview
             subject={subject}
             staff={staff}
             tags={tags}
             countValue={countValue}
-            expanded={expanded}
-            onExpand={() => setExpanded(true)}
+            expanded={showFull}
+            onExpand={() => {
+              if (!isMobile) setExpanded(true);
+            }}
           />
 
           {isAnime ? (
@@ -136,7 +148,7 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
           ) : null}
           <JumpLinks links={links} />
 
-          {expanded ? (
+          {showFull ? (
             <FullExtras subject={subject} episodes={episodes} showEpisodes={isAnime} />
           ) : null}
         </div>

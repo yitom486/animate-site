@@ -67,6 +67,8 @@ export function shouldRevalidate({ currentUrl, nextUrl }: { currentUrl: URL; nex
 export type AnimeOutletContext = {
   expanded: boolean;
   setExpanded: (v: boolean) => void;
+  /** 小于 lg 时详情已全屏，无需再二次展开 */
+  isMobile: boolean;
 };
 
 /** 小于 lg(1024px) 视为移动端：详情应全屏覆盖列表，而非并排挤压 */
@@ -167,7 +169,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     [expanded, runFlip],
   );
 
-  const outletContext = { expanded, setExpanded } satisfies AnimeOutletContext;
+  const outletContext = { expanded, setExpanded, isMobile } satisfies AnimeOutletContext;
   const outlet = useOutlet(outletContext);
   if (outlet) cachedOutletRef.current = outlet;
 

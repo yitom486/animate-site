@@ -118,15 +118,15 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
     <div className="celadon-page min-h-screen text-slate-800">
       <SiteNav activeType={blogSectionToSubjectType(section)} />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
-        <header className="celadon-glass rounded-lg p-5">
+      <main className="mx-auto w-full min-w-0 max-w-5xl overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
+        <header className="celadon-glass rounded-lg p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
                 Bangumi Blog
               </span>
-              <h1 className="mt-1 inline-flex items-center gap-2 font-serif text-2xl font-bold text-slate-800">
-                <MessageSquareText className="size-6 text-rose-600" />
+              <h1 className="mt-1 inline-flex items-center gap-2 font-serif text-xl font-bold text-slate-800 sm:text-2xl">
+                <MessageSquareText className="size-5 shrink-0 text-rose-600 sm:size-6" />
                 {BLOG_SECTION_LABEL[section]}
               </h1>
               <p className="mt-1 text-xs text-slate-500">{BLOG_SECTION_DESC[section]}</p>
@@ -135,20 +135,23 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
               href={BGM_WEB_ROUTES_BLOG.sectionBlog(section)}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg border border-rose-100 bg-white/70 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-rose-100 bg-white/70 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
             >
               在 Bangumi 查看 <ExternalLink className="size-3.5" />
             </a>
           </div>
 
-          <nav className="mt-4 flex flex-wrap gap-1.5" aria-label="日志板块">
+          <nav
+            className="no-scrollbar mt-4 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5"
+            aria-label="日志板块"
+          >
             {BLOG_SECTIONS.map((s) => (
               <Link
                 key={s}
                 to={blogListPath(s)}
                 prefetch="intent"
                 className={cn(
-                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
                   s === section
                     ? "border-rose-300 bg-rose-50 text-rose-800"
                     : "border-rose-100 bg-white/60 text-slate-600 hover:border-rose-200 hover:bg-white",
@@ -165,7 +168,7 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
             暂无社区日志，请稍后再来。
           </p>
         ) : (
-          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+          <ul className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2">
             {items.map((item) => (
               <BlogCard key={item.id} item={item} section={section} />
             ))}

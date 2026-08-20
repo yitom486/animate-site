@@ -216,6 +216,50 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /** Bangumi 日志正文：约束第三方 HTML，避免手机横向溢出 */
+  .blog-prose {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .blog-prose :where(img, video, svg, iframe) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .blog-prose :where(pre, code) {
+    max-width: 100%;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .blog-prose :where(pre) {
+    overflow-x: auto;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(251, 207, 232, 0.6);
+  }
+
+  .blog-prose :where(table) {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+
+  .blog-prose :where(td, th) {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid rgba(251, 207, 232, 0.55);
+  }
+
+  .blog-prose :where(a) {
+    overflow-wrap: anywhere;
+  }
 }
 
 @keyframes float-slow {

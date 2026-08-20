@@ -43,7 +43,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
     <div className="celadon-page min-h-screen text-slate-800">
       <SiteNav activeType={blogSectionToSubjectType(section)} />
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <main className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
         <Link
           to={blogListPath(section)}
           prefetch="intent"
@@ -53,8 +53,8 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
           返回{listLabel}
         </Link>
 
-        <article className="celadon-glass mt-3 rounded-lg p-6">
-          <h1 className="font-serif text-2xl font-bold leading-snug text-slate-900">
+        <article className="celadon-glass mt-3 min-w-0 rounded-lg p-4 sm:p-6">
+          <h1 className="font-serif text-xl font-bold leading-snug break-words text-slate-900 sm:text-2xl">
             {post.title}
           </h1>
 
@@ -65,10 +65,10 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
                 alt=""
                 loading="lazy"
                 referrerPolicy="no-referrer"
-                className="size-6 rounded-full border border-rose-100 object-cover"
+                className="size-6 shrink-0 rounded-full border border-rose-100 object-cover"
               />
             ) : null}
-            <span>
+            <span className="min-w-0 break-words">
               内容来自 Bangumi 用户{" "}
               {post.authorUrl ? (
                 <a
@@ -96,7 +96,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
 
           {post.contentHtml ? (
             <div
-              className="mt-5 space-y-3 break-words text-sm leading-relaxed text-slate-700 [&_a]:text-rose-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-rose-200 [&_blockquote]:pl-3 [&_blockquote]:text-slate-500 [&_h2]:mt-5 [&_h2]:font-bold [&_h3]:mt-4 [&_h3]:font-bold [&_img]:my-3 [&_img]:max-w-full [&_img]:rounded-lg [&_li]:ml-5 [&_li]:list-disc [&_p]:leading-relaxed"
+              className="blog-prose mt-5 space-y-3 text-sm leading-relaxed text-slate-700 [&_a]:text-rose-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-rose-200 [&_blockquote]:pl-3 [&_blockquote]:text-slate-500 [&_h2]:mt-5 [&_h2]:font-bold [&_h3]:mt-4 [&_h3]:font-bold [&_img]:my-3 [&_img]:rounded-lg [&_li]:ml-4 [&_li]:list-disc sm:[&_li]:ml-5 [&_p]:leading-relaxed"
               dangerouslySetInnerHTML={{ __html: post.contentHtml }}
             />
           ) : (
