@@ -9,8 +9,7 @@ export const ANINEWS_API = "https://aninews.vercel.app/api/news";
  * 例：RSSHUB_BASE=https://your-rsshub.example.com
  */
 export const RSSHUB_BASE =
-  (typeof process !== "undefined" && process.env?.RSSHUB_BASE) ||
-  "https://rsshub.app";
+  (typeof process !== "undefined" && process.env?.RSSHUB_BASE) || "https://rsshub.app";
 
 /**
  * RSSHub 路由（需自建 RSSHub 或可用镜像；公共 rsshub.app 常 403）。

@@ -24,7 +24,8 @@
       "Bash(curl -s -A \"yhang/anime-site \\(https://github.com/yhang\\)\" https://raw.githubusercontent.com/bangumi/api/master/open-api/api.yml -o bgm-api.yml)",
       "Bash(grep -nE '\\\\$ref|\\\\.yml|\\\\.yaml|paths:' bgm-api.yml)",
       "Bash(curl -s -A \"yhang/anime-site \\(https://github.com/yhang\\)\" https://raw.githubusercontent.com/bangumi/server/master/openapi/v0.yaml -o bgm-v0.yaml)",
-      "WebFetch(domain:www.comicat.org)"
+      "WebFetch(domain:www.comicat.org)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

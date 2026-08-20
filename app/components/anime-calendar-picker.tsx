@@ -46,8 +46,8 @@ export function AnimeCalendarPicker({
   onSelect,
   onClose,
 }: AnimeCalendarPickerProps) {
-  const [cursor, setCursor] = useState(() =>
-    new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+  const [cursor, setCursor] = useState(
+    () => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
   );
   const today = useMemo(() => startOfDay(new Date()), []);
   const days = useMemo(() => buildMonthDays(cursor), [cursor]);
@@ -86,12 +86,8 @@ export function AnimeCalendarPicker({
               <CalendarDays className="size-4" />
             </span>
             <div>
-              <h2 className="font-serif text-base font-bold text-slate-800">
-                选择放送日期
-              </h2>
-              <p className="font-mono text-[10px] text-rose-700">
-                按所选日期映射到对应星期放送表
-              </p>
+              <h2 className="font-serif text-base font-bold text-slate-800">选择放送日期</h2>
+              <p className="font-mono text-[10px] text-rose-700">按所选日期映射到对应星期放送表</p>
             </div>
           </div>
           <button
@@ -108,26 +104,16 @@ export function AnimeCalendarPicker({
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() =>
-                setCursor(
-                  new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1),
-                )
-              }
+              onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
               className="rounded-lg border border-rose-100 bg-white/80 p-2 text-rose-700 transition-colors hover:bg-rose-50"
               aria-label="上个月"
             >
               <ChevronLeft className="size-4" />
             </button>
-            <div className="font-serif text-lg font-bold text-slate-800">
-              {monthTitle(cursor)}
-            </div>
+            <div className="font-serif text-lg font-bold text-slate-800">{monthTitle(cursor)}</div>
             <button
               type="button"
-              onClick={() =>
-                setCursor(
-                  new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1),
-                )
-              }
+              onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
               className="rounded-lg border border-rose-100 bg-white/80 p-2 text-rose-700 transition-colors hover:bg-rose-50"
               aria-label="下个月"
             >
@@ -137,10 +123,7 @@ export function AnimeCalendarPicker({
 
           <div className="grid grid-cols-7 gap-1 text-center">
             {WEEKDAY_LABELS.map((label) => (
-              <span
-                key={label}
-                className="py-1 font-mono text-[11px] font-bold text-slate-400"
-              >
+              <span key={label} className="py-1 font-mono text-[11px] font-bold text-slate-400">
                 {label}
               </span>
             ))}

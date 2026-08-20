@@ -10,7 +10,8 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
       <div
         className="relative overflow-hidden rounded-2xl border border-rose-100/90 bg-white/95 px-8 py-6 text-center shadow-2xl shadow-rose-950/10 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
         style={{
-          boxShadow: "0 20px 40px -15px rgba(251, 113, 133, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8)",
+          boxShadow:
+            "0 20px 40px -15px rgba(251, 113, 133, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8)",
         }}
         role="status"
         aria-live="polite"
@@ -20,7 +21,9 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
         <div className="absolute -right-10 -bottom-10 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
 
         {/* SVG Inline Styles */}
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           @keyframes wheel-spin { to { transform: rotate(360deg); } }
           @keyframes hamster-body-bounce {
             0%, 100% { transform: translate(0, 1.5px) scaleX(1.01) scaleY(0.97); }
@@ -66,14 +69,12 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
           .ear-back  { transform-origin: 121px 110px; animation: ear-twitch 2.6s ease-in-out infinite; animation-delay: 130ms; }
           .hamster-eye { transform-origin: 134px 126px; animation: eye-blink 3.4s ease-in-out infinite; }
           .hamster-nose { transform-origin: 149px 131px; animation: nose-sniff 600ms ease-in-out infinite; }
-        `}} />
+        `,
+          }}
+        />
 
         <div className="relative mx-auto h-64 w-64" aria-hidden="true">
-          <svg
-            viewBox="0 0 200 200"
-            className="h-full w-full"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          <svg viewBox="0 0 200 200" className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
               {/* Light, buttery cartoon fur — soft and bright */}
               <radialGradient id="furGrad" cx="40%" cy="28%" r="85%">
@@ -102,24 +103,119 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
 
             {/* 2. Rotating wheel */}
             <g className="svg-wheel-rotate">
-              <circle cx="100" cy="95" r="66" stroke="#fda4af" strokeWidth="1.5" fill="none" opacity="0.3" />
-              <circle cx="100" cy="95" r="63" stroke="url(#rimGrad)" strokeWidth="5.5" fill="none" />
-              <circle cx="100" cy="95" r="58.5" stroke="#ffe4e6" strokeWidth="2.5" strokeDasharray="3 7" fill="none" />
-              <line x1="100" y1="95" x2="100" y2="32" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="100" y2="158" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="37" y2="95" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="163" y2="95" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="55" y2="50" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="145" y2="140" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="55" y2="140" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-              <line x1="100" y1="95" x2="145" y2="50" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+              <circle
+                cx="100"
+                cy="95"
+                r="66"
+                stroke="#fda4af"
+                strokeWidth="1.5"
+                fill="none"
+                opacity="0.3"
+              />
+              <circle
+                cx="100"
+                cy="95"
+                r="63"
+                stroke="url(#rimGrad)"
+                strokeWidth="5.5"
+                fill="none"
+              />
+              <circle
+                cx="100"
+                cy="95"
+                r="58.5"
+                stroke="#ffe4e6"
+                strokeWidth="2.5"
+                strokeDasharray="3 7"
+                fill="none"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="100"
+                y2="32"
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="100"
+                y2="158"
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="37"
+                y2="95"
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="163"
+                y2="95"
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="55"
+                y2="50"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="145"
+                y2="140"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="55"
+                y2="140"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <line
+                x1="100"
+                y1="95"
+                x2="145"
+                y2="50"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </g>
 
             {/* 3. Static center cap */}
             <circle cx="100" cy="95" r="6.5" fill="#fb7185" stroke="#ffffff" strokeWidth="2.5" />
 
             {/* 4. Ground shadow */}
-            <ellipse cx="108" cy="158" rx="26" ry="3.2" fill="#94a3b8" opacity="0.45" className="hamster-shadow" />
+            <ellipse
+              cx="108"
+              cy="158"
+              rx="26"
+              ry="3.2"
+              fill="#94a3b8"
+              opacity="0.45"
+              className="hamster-shadow"
+            />
 
             {/* 5. The chubby hamster */}
             <g className="hamster-body-group">
@@ -128,14 +224,42 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
 
               {/* Back leg (far, behind) */}
               <g className="leg-back">
-                <path d="M94 140 q-3 8 0 13" stroke="#f3cd80" strokeWidth="9" strokeLinecap="round" fill="none" />
-                <ellipse cx="93" cy="156" rx="6" ry="3.4" fill="#fff0cf" stroke="#f0c878" strokeWidth="1.3" />
+                <path
+                  d="M94 140 q-3 8 0 13"
+                  stroke="#f3cd80"
+                  strokeWidth="9"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <ellipse
+                  cx="93"
+                  cy="156"
+                  rx="6"
+                  ry="3.4"
+                  fill="#fff0cf"
+                  stroke="#f0c878"
+                  strokeWidth="1.3"
+                />
               </g>
 
               {/* Front leg (running) */}
               <g className="leg-front">
-                <path d="M122 140 q3 8 0 13" stroke="#ffe1a8" strokeWidth="9.5" strokeLinecap="round" fill="none" />
-                <ellipse cx="121" cy="156" rx="6.5" ry="3.6" fill="#fff8e8" stroke="#f0c878" strokeWidth="1.3" />
+                <path
+                  d="M122 140 q3 8 0 13"
+                  stroke="#ffe1a8"
+                  strokeWidth="9.5"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <ellipse
+                  cx="121"
+                  cy="156"
+                  rx="6.5"
+                  ry="3.6"
+                  fill="#fff8e8"
+                  stroke="#f0c878"
+                  strokeWidth="1.3"
+                />
               </g>
 
               {/* One smooth chubby body+head silhouette (no seams) */}
@@ -161,8 +285,22 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
 
               {/* Front paw reaching out */}
               <g className="arm-front">
-                <path d="M132 138 q7 4 10 9" stroke="#ffe1a8" strokeWidth="8" strokeLinecap="round" fill="none" />
-                <ellipse cx="143" cy="148" rx="5" ry="4" fill="#fff8e8" stroke="#f0c878" strokeWidth="1.3" />
+                <path
+                  d="M132 138 q7 4 10 9"
+                  stroke="#ffe1a8"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <ellipse
+                  cx="143"
+                  cy="148"
+                  rx="5"
+                  ry="4"
+                  fill="#fff8e8"
+                  stroke="#f0c878"
+                  strokeWidth="1.3"
+                />
               </g>
 
               {/* Back ear */}
@@ -172,7 +310,14 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
               </g>
               {/* Front ear */}
               <g className="ear-front">
-                <circle cx="134" cy="106" r="8.5" fill="#fff0cf" stroke="#f3c877" strokeWidth="1.6" />
+                <circle
+                  cx="134"
+                  cy="106"
+                  r="8.5"
+                  fill="#fff0cf"
+                  stroke="#f3c877"
+                  strokeWidth="1.6"
+                />
                 <circle cx="134" cy="106" r="4" fill="#ffc2cf" />
               </g>
 
@@ -198,17 +343,19 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
                 <ellipse cx="149" cy="131" rx="3.2" ry="2.6" fill="#ff9bab" />
                 <ellipse cx="148" cy="130" rx="1" ry="0.8" fill="#ffe0e6" />
               </g>
-              <path d="M149 134 q0 3 -3.2 3.6 M149 134 q0 3 3.2 3.6" stroke="#d98aa0" strokeWidth="1.1" strokeLinecap="round" fill="none" />
+              <path
+                d="M149 134 q0 3 -3.2 3.6 M149 134 q0 3 3.2 3.6"
+                stroke="#d98aa0"
+                strokeWidth="1.1"
+                strokeLinecap="round"
+                fill="none"
+              />
             </g>
           </svg>
         </div>
 
-        <p className="mt-5 font-serif text-base font-bold text-slate-700">
-          小仓鼠正在搬运番剧资料
-        </p>
-        <p className="mt-1.5 font-mono text-sm font-semibold text-rose-500">
-          loading...
-        </p>
+        <p className="mt-5 font-serif text-base font-bold text-slate-700">小仓鼠正在搬运番剧资料</p>
+        <p className="mt-1.5 font-mono text-sm font-semibold text-rose-500">loading...</p>
       </div>
     </div>
   );

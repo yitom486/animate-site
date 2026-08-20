@@ -20,6 +20,7 @@ export const THIRD_PARTY_SEARCH = {
   },
   subtitle: {
     label: "字幕网站",
-    build: (kw: string) => `https://bbs.acgrip.com/search.php?mod=forum&srchtxt=${encodeURIComponent(kw)}`,
+    build: (kw: string) =>
+      `https://bbs.acgrip.com/search.php?mod=forum&srchtxt=${encodeURIComponent(kw)}`,
   },
 } as const;

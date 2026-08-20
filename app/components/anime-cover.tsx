@@ -43,9 +43,7 @@ export function AnimeCover({ url, alt, className, priority }: AnimeCoverProps) {
 
   return (
     <div className={cn("relative size-full overflow-hidden bg-muted", className)}>
-      {!loaded && !error ? (
-        <Skeleton className="absolute inset-0 rounded-none" />
-      ) : null}
+      {!loaded && !error ? <Skeleton className="absolute inset-0 rounded-none" /> : null}
 
       <img
         ref={imgRef}

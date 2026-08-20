@@ -1,0 +1,17 @@
+{
+  "hard_tabs": false,
+  "tab_size": 2,
+  "languages": {
+    "JavaScript": { "tab_size": 2, "hard_tabs": false },
+    "JSX": { "tab_size": 2, "hard_tabs": false },
+    "TypeScript": { "tab_size": 2, "hard_tabs": false },
+    "TSX": { "tab_size": 2, "hard_tabs": false },
+    "JSON": { "tab_size": 2, "hard_tabs": false },
+    "JSONC": { "tab_size": 2, "hard_tabs": false },
+    "CSS": { "tab_size": 2, "hard_tabs": false },
+    "HTML": { "tab_size": 2, "hard_tabs": false },
+    "YAML": { "tab_size": 2, "hard_tabs": false }
+  },
+  "soft_wrap": "editor_width"
+
+}

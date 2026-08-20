@@ -1,0 +1,3 @@
+# 本仓库用 Bun 安装依赖和运行脚本，不要用 npm / pnpm / yarn。
+[install]
+exact = false

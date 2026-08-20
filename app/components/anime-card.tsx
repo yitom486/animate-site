@@ -54,9 +54,7 @@ export function AnimeCard({ item, to, active, priority, rank }: AnimeCardProps) 
           {title}
         </h3>
         {subtitle ? (
-          <p className="truncate font-mono text-[10px] text-slate-500">
-            {subtitle}
-          </p>
+          <p className="truncate font-mono text-[10px] text-slate-500">{subtitle}</p>
         ) : null}
         {ratingTotal ? (
           <p className="truncate font-mono text-[10px] text-slate-400">

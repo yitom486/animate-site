@@ -8,8 +8,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
   --font-serif: "Noto Serif SC", "Songti SC", serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", monospace;
 }
@@ -25,7 +26,7 @@ body {
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: "Geist Variable", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -141,8 +142,7 @@ body {
   }
   body {
     @apply bg-background text-foreground antialiased;
-    background:
-      linear-gradient(135deg, #fff5fd 0%, #f7f0fb 45%, #eef8ff 100%);
+    background: linear-gradient(135deg, #fff5fd 0%, #f7f0fb 45%, #eef8ff 100%);
     min-height: 100vh;
   }
   html {

@@ -14,8 +14,7 @@ export function BilibiliPlayer({ match, fallbackKeyword }: BilibiliPlayerProps) 
       <section className="space-y-2 rounded-lg border border-rose-100 bg-white/58 p-3 shadow-sm">
         <h3 className="text-sm font-bold text-slate-800">B 站观看</h3>
         <p className="text-xs leading-relaxed text-slate-500">
-          未能自动匹配到 B 站番剧（可能无版权或接口限流）。请使用下方「在线链接」在 B
-          站搜索后观看。
+          未能自动匹配到 B 站番剧（可能无版权或接口限流）。请使用下方「在线链接」在 B 站搜索后观看。
         </p>
         <a
           href={searchUrl}

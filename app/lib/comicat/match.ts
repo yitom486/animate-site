@@ -1,10 +1,7 @@
 import type { ComicatItem } from "./types";
 
 function normalizeKeyword(text: string): string {
-  return text
-    .trim()
-    .replace(/\s+/g, "")
-    .toLowerCase();
+  return text.trim().replace(/\s+/g, "").toLowerCase();
 }
 
 /** 去掉字幕组、清晰度等方括号，便于标题匹配 */
@@ -31,8 +28,9 @@ export function matchComicatItems(
   keywords: string[],
   limit = 8,
 ): ComicatItem[] {
-  const terms = [...new Set(keywords.map(normalizeKeyword).filter((t) => t.length >= 2))]
-    .sort((a, b) => b.length - a.length);
+  const terms = [...new Set(keywords.map(normalizeKeyword).filter((t) => t.length >= 2))].sort(
+    (a, b) => b.length - a.length,
+  );
 
   if (!terms.length) return [];
 

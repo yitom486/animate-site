@@ -54,9 +54,7 @@ export function NewsPanel({ feed, className }: NewsPanelProps) {
           <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
             ACG Chronicle
           </span>
-          <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">
-            今日亚文化资讯
-          </h2>
+          <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日亚文化资讯</h2>
           <p className="mt-1 text-xs text-slate-500">
             中文：Bangumi 动画日志 · Google 新闻 · 垂直源（需自建 RSSHub）· 国际：AniNews
           </p>
@@ -66,9 +64,7 @@ export function NewsPanel({ feed, className }: NewsPanelProps) {
 
       {sourceStats.length > 0 ? (
         <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-medium text-slate-400">
-            来源（点击筛选）
-          </span>
+          <span className="mr-1 text-[10px] font-medium text-slate-400">来源（点击筛选）</span>
           {sourceStats.map((s) => {
             const off = hidden.has(s.label);
             return (

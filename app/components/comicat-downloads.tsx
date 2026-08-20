@@ -37,7 +37,8 @@ export function ComicatDownloads({ items, searchKeyword }: ComicatDownloadsProps
       </div>
 
       <p className="text-[11px] leading-relaxed text-slate-500">
-        数据来自漫猫官方 RSS，按标题匹配「{searchKeyword}」，可能不全或不准；下载请在漫猫详情页完成。
+        数据来自漫猫官方 RSS，按标题匹配「{searchKeyword}
+        」，可能不全或不准；下载请在漫猫详情页完成。
       </p>
 
       {items.length ? (
@@ -47,9 +48,7 @@ export function ComicatDownloads({ items, searchKeyword }: ComicatDownloadsProps
               key={item.id}
               className="rounded-lg border border-rose-100/80 bg-white/70 px-3 py-2.5"
             >
-              <p className="text-xs font-medium leading-snug text-slate-800">
-                {item.title}
-              </p>
+              <p className="text-xs font-medium leading-snug text-slate-800">{item.title}</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
                 {item.author ? <span>{item.author}</span> : null}
                 {item.resolution ? (
