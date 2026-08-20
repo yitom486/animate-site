@@ -7,11 +7,11 @@
 
 Bangumi 有**两套** API：
 
-| | Legacy（旧版） | v0 REST（新版，推荐）|
-|---|---|---|
-| Base URL | `https://api.bgm.tv` | `https://api.bgm.tv/v0` |
-| 风格 | 老接口，字段较杂 | 规范的 RESTful，数据干净 |
-| 用途 | 仍保留 `/calendar` 等 | 条目/角色/人物/收藏/搜索全覆盖 |
+|          | Legacy（旧版）        | v0 REST（新版，推荐）          |
+| -------- | --------------------- | ------------------------------ |
+| Base URL | `https://api.bgm.tv`  | `https://api.bgm.tv/v0`        |
+| 风格     | 老接口，字段较杂      | 规范的 RESTful，数据干净       |
+| 用途     | 仍保留 `/calendar` 等 | 条目/角色/人物/收藏/搜索全覆盖 |
 
 ### 通用规则（务必遵守）
 
@@ -46,9 +46,9 @@ Bangumi 有**两套** API：
       "images": { "large": "...", "common": "...", "medium": "...", "grid": "..." },
       "rating": { "score": 7.8, "total": 1234 },
       "air_date": "2026-04-01",
-      "air_weekday": 1
-    }
-  ]
+      "air_weekday": 1,
+    },
+  ],
 }
 ```
 
@@ -63,15 +63,15 @@ Bangumi 有**两套** API：
 
 ### 2.1 条目（Subjects）
 
-| 方法 | 路径 | 返回 / 用途 | 鉴权 |
-|---|---|---|---|
-| POST | `/search/subjects` | **条目搜索**（实验性），body 传筛选条件 | 公开 |
-| GET | `/subjects` | **浏览条目**（按类型/分类/年月排序分页）| 公开 |
-| GET | `/subjects/{subject_id}` | 单个条目详情（含简介、标签、评分、infobox）| 公开 |
-| GET | `/subjects/{subject_id}/image` | 条目封面图（重定向到图片）| 公开 |
-| GET | `/subjects/{subject_id}/persons` | 条目相关人物（声优、监督、制作等）| 公开 |
-| GET | `/subjects/{subject_id}/characters` | 条目登场角色 | 公开 |
-| GET | `/subjects/{subject_id}/subjects` | 关联条目（续作/系列等）| 公开 |
+| 方法 | 路径                                | 返回 / 用途                                 | 鉴权 |
+| ---- | ----------------------------------- | ------------------------------------------- | ---- |
+| POST | `/search/subjects`                  | **条目搜索**（实验性），body 传筛选条件     | 公开 |
+| GET  | `/subjects`                         | **浏览条目**（按类型/分类/年月排序分页）    | 公开 |
+| GET  | `/subjects/{subject_id}`            | 单个条目详情（含简介、标签、评分、infobox） | 公开 |
+| GET  | `/subjects/{subject_id}/image`      | 条目封面图（重定向到图片）                  | 公开 |
+| GET  | `/subjects/{subject_id}/persons`    | 条目相关人物（声优、监督、制作等）          | 公开 |
+| GET  | `/subjects/{subject_id}/characters` | 条目登场角色                                | 公开 |
+| GET  | `/subjects/{subject_id}/subjects`   | 关联条目（续作/系列等）                     | 公开 |
 
 **`GET /subjects` 常用 query 参数**：
 `type`（条目类型，见枚举）、`cat`（分类）、`series`（书籍是否系列）、
@@ -84,130 +84,133 @@ Bangumi 有**两套** API：
 
 ### 2.2 章节（Episodes）
 
-| 方法 | 路径 | 返回 / 用途 | 鉴权 |
-|---|---|---|---|
-| GET | `/episodes` | 某条目的章节列表，query: `subject_id`（必填）、`type`、`limit`、`offset` | 公开 |
-| GET | `/episodes/{episode_id}` | 单集详情（标题、放送日期、简介）| 公开 |
+| 方法 | 路径                     | 返回 / 用途                                                              | 鉴权 |
+| ---- | ------------------------ | ------------------------------------------------------------------------ | ---- |
+| GET  | `/episodes`              | 某条目的章节列表，query: `subject_id`（必填）、`type`、`limit`、`offset` | 公开 |
+| GET  | `/episodes/{episode_id}` | 单集详情（标题、放送日期、简介）                                         | 公开 |
 
 ### 2.3 角色（Characters）
 
-| 方法 | 路径 | 返回 / 用途 | 鉴权 |
-|---|---|---|---|
-| GET | `/characters/{character_id}` | 角色详情 | 公开 |
-| GET | `/characters/{character_id}/image` | 角色图片 | 公开 |
-| GET | `/characters/{character_id}/subjects` | 角色出演的条目 | 公开 |
-| GET | `/characters/{character_id}/persons` | 角色的声优 | 公开 |
-| POST | `/characters/{character_id}/collect` | 收藏该角色 | 🔒 |
-| DELETE | `/characters/{character_id}/collect` | 取消收藏 | 🔒 |
+| 方法   | 路径                                  | 返回 / 用途    | 鉴权 |
+| ------ | ------------------------------------- | -------------- | ---- |
+| GET    | `/characters/{character_id}`          | 角色详情       | 公开 |
+| GET    | `/characters/{character_id}/image`    | 角色图片       | 公开 |
+| GET    | `/characters/{character_id}/subjects` | 角色出演的条目 | 公开 |
+| GET    | `/characters/{character_id}/persons`  | 角色的声优     | 公开 |
+| POST   | `/characters/{character_id}/collect`  | 收藏该角色     | 🔒   |
+| DELETE | `/characters/{character_id}/collect`  | 取消收藏       | 🔒   |
 
 ### 2.4 人物（Persons，声优/制作者）
 
-| 方法 | 路径 | 返回 / 用途 | 鉴权 |
-|---|---|---|---|
-| GET | `/persons/{person_id}` | 人物详情 | 公开 |
-| GET | `/persons/{person_id}/image` | 人物图片 | 公开 |
-| GET | `/persons/{person_id}/subjects` | 参与的条目 | 公开 |
-| GET | `/persons/{person_id}/characters` | 配过的角色 | 公开 |
-| POST/DELETE | `/persons/{person_id}/collect` | 收藏 / 取消收藏 | 🔒 |
+| 方法        | 路径                              | 返回 / 用途     | 鉴权 |
+| ----------- | --------------------------------- | --------------- | ---- |
+| GET         | `/persons/{person_id}`            | 人物详情        | 公开 |
+| GET         | `/persons/{person_id}/image`      | 人物图片        | 公开 |
+| GET         | `/persons/{person_id}/subjects`   | 参与的条目      | 公开 |
+| GET         | `/persons/{person_id}/characters` | 配过的角色      | 公开 |
+| POST/DELETE | `/persons/{person_id}/collect`    | 收藏 / 取消收藏 | 🔒   |
 
 ### 2.5 用户（Users）
 
-| 方法 | 路径 | 返回 / 用途 | 鉴权 |
-|---|---|---|---|
-| GET | `/users/{username}` | 用户公开资料 | 公开 |
-| GET | `/users/{username}/avatar` | 用户头像 | 公开 |
-| GET | `/me` | 当前登录用户信息 | 🔒 |
+| 方法 | 路径                       | 返回 / 用途      | 鉴权 |
+| ---- | -------------------------- | ---------------- | ---- |
+| GET  | `/users/{username}`        | 用户公开资料     | 公开 |
+| GET  | `/users/{username}/avatar` | 用户头像         | 公开 |
+| GET  | `/me`                      | 当前登录用户信息 | 🔒   |
 
 ### 2.6 收藏（Collections）
 
-| 方法 | 路径 | 返回 / 用途 | 鉴权 |
-|---|---|---|---|
-| GET | `/users/{username}/collections` | 用户的条目收藏列表 | 公开* |
-| GET | `/users/{username}/collections/{subject_id}` | 单个条目收藏 | 公开* |
-| POST | `/users/-/collections/{subject_id}` | 新增/修改自己的条目收藏 | 🔒 |
-| PATCH | `/users/-/collections/{subject_id}` | 修改自己的收藏 | 🔒 |
-| GET/PATCH | `/users/-/collections/{subject_id}/episodes` | 章节收藏（看到第几集）| 🔒 |
-| GET/PUT | `/users/-/collections/-/episodes/{episode_id}` | 单集收藏状态 | 🔒 |
-| GET | `/users/{username}/collections/-/characters` | 角色收藏列表 | 公开* |
-| GET | `/users/{username}/collections/-/persons` | 人物收藏列表 | 公开* |
+| 方法      | 路径                                           | 返回 / 用途             | 鉴权  |
+| --------- | ---------------------------------------------- | ----------------------- | ----- |
+| GET       | `/users/{username}/collections`                | 用户的条目收藏列表      | 公开* |
+| GET       | `/users/{username}/collections/{subject_id}`   | 单个条目收藏            | 公开* |
+| POST      | `/users/-/collections/{subject_id}`            | 新增/修改自己的条目收藏 | 🔒    |
+| PATCH     | `/users/-/collections/{subject_id}`            | 修改自己的收藏          | 🔒    |
+| GET/PATCH | `/users/-/collections/{subject_id}/episodes`   | 章节收藏（看到第几集）  | 🔒    |
+| GET/PUT   | `/users/-/collections/-/episodes/{episode_id}` | 单集收藏状态            | 🔒    |
+| GET       | `/users/{username}/collections/-/characters`   | 角色收藏列表            | 公开* |
+| GET       | `/users/{username}/collections/-/persons`      | 人物收藏列表            | 公开* |
 
 > *私密收藏需要本人 token 才能看到。
 
 ### 2.7 编辑历史（Revisions）
 
-| 方法 | 路径 | 用途 |
-|---|---|---|
-| GET | `/revisions/subjects`、`/revisions/subjects/{revision_id}` | 条目编辑历史 |
-| GET | `/revisions/characters`、`/revisions/characters/{revision_id}` | 角色编辑历史 |
-| GET | `/revisions/persons`、`/revisions/persons/{revision_id}` | 人物编辑历史 |
-| GET | `/revisions/episodes`、`/revisions/episodes/{revision_id}` | 章节编辑历史 |
+| 方法 | 路径                                                           | 用途         |
+| ---- | -------------------------------------------------------------- | ------------ |
+| GET  | `/revisions/subjects`、`/revisions/subjects/{revision_id}`     | 条目编辑历史 |
+| GET  | `/revisions/characters`、`/revisions/characters/{revision_id}` | 角色编辑历史 |
+| GET  | `/revisions/persons`、`/revisions/persons/{revision_id}`       | 人物编辑历史 |
+| GET  | `/revisions/episodes`、`/revisions/episodes/{revision_id}`     | 章节编辑历史 |
 
 ### 2.8 目录（Indices，用户自建条目清单）
 
-| 方法 | 路径 | 用途 | 鉴权 |
-|---|---|---|---|
-| POST | `/indices` | 新建目录 | 🔒 |
-| GET | `/indices/{index_id}` | 目录详情 | 公开 |
-| PUT | `/indices/{index_id}` | 编辑目录 | 🔒 |
-| GET | `/indices/{index_id}/subjects` | 目录内条目 | 公开 |
-| POST | `/indices/{index_id}/subjects` | 往目录加条目 | 🔒 |
-| PUT/DELETE | `/indices/{index_id}/subjects/{subject_id}` | 编辑/移除目录内条目 | 🔒 |
-| POST/DELETE | `/indices/{index_id}/collect` | 收藏/取消收藏目录 | 🔒 |
+| 方法        | 路径                                        | 用途                | 鉴权 |
+| ----------- | ------------------------------------------- | ------------------- | ---- |
+| POST        | `/indices`                                  | 新建目录            | 🔒   |
+| GET         | `/indices/{index_id}`                       | 目录详情            | 公开 |
+| PUT         | `/indices/{index_id}`                       | 编辑目录            | 🔒   |
+| GET         | `/indices/{index_id}/subjects`              | 目录内条目          | 公开 |
+| POST        | `/indices/{index_id}/subjects`              | 往目录加条目        | 🔒   |
+| PUT/DELETE  | `/indices/{index_id}/subjects/{subject_id}` | 编辑/移除目录内条目 | 🔒   |
+| POST/DELETE | `/indices/{index_id}/collect`               | 收藏/取消收藏目录   | 🔒   |
 
 ### 2.9 搜索（其它）
 
-| 方法 | 路径 | 用途 |
-|---|---|---|
-| POST | `/search/characters` | 角色搜索（实验性）|
-| POST | `/search/persons` | 人物搜索（实验性）|
+| 方法 | 路径                 | 用途               |
+| ---- | -------------------- | ------------------ |
+| POST | `/search/characters` | 角色搜索（实验性） |
+| POST | `/search/persons`    | 人物搜索（实验性） |
 
 ---
 
 ## 3. 枚举值
 
 ### SubjectType（条目类型）
-| 值 | 含义 |
-|---|---|
-| 1 | 书籍 Book |
-| 2 | 动画 Anime |
-| 3 | 音乐 Music |
-| 4 | 游戏 Game |
-| 6 | 三次元 Real（影视剧等）|
+
+| 值  | 含义                    |
+| --- | ----------------------- |
+| 1   | 书籍 Book               |
+| 2   | 动画 Anime              |
+| 3   | 音乐 Music              |
+| 4   | 游戏 Game               |
+| 6   | 三次元 Real（影视剧等） |
 
 > 注意没有 5。番剧用 `2`。
 
 ### EpType（章节类型）
-| 值 | 含义 |
-|---|---|
-| 0 | 本篇（正片）|
-| 1 | SP 特别篇 |
-| 2 | OP 片头 |
-| 3 | ED 片尾 |
-| 4 | 预告/宣传/广告 |
-| 5 | MAD |
-| 6 | 其他 |
+
+| 值  | 含义           |
+| --- | -------------- |
+| 0   | 本篇（正片）   |
+| 1   | SP 特别篇      |
+| 2   | OP 片头        |
+| 3   | ED 片尾        |
+| 4   | 预告/宣传/广告 |
+| 5   | MAD            |
+| 6   | 其他           |
 
 ### CollectionType（收藏类型）
-| 值 | 含义 |
-|---|---|
-| 1 | 想看 |
-| 2 | 看过 |
-| 3 | 在看 |
-| 4 | 搁置 |
-| 5 | 抛弃 |
+
+| 值  | 含义 |
+| --- | ---- |
+| 1   | 想看 |
+| 2   | 看过 |
+| 3   | 在看 |
+| 4   | 搁置 |
+| 5   | 抛弃 |
 
 ---
 
 ## 4. 对本项目（番剧站）的建议用法
 
-| 想做的功能 | 用哪个接口 |
-|---|---|
-| 首页「每日放送」| `GET /calendar`（已实现）|
-| 搜索番剧 | `POST /v0/search/subjects`，`filter.type=[2]` |
-| 番剧详情页 | `GET /v0/subjects/{id}` |
-| 详情页的角色/声优 | `GET /v0/subjects/{id}/characters`、`/persons` |
-| 详情页的分集列表 | `GET /v0/episodes?subject_id={id}` |
-| 按季度浏览新番 | `GET /v0/subjects?type=2&year=2026&month=4&sort=rank` |
+| 想做的功能        | 用哪个接口                                            |
+| ----------------- | ----------------------------------------------------- |
+| 首页「每日放送」  | `GET /calendar`（已实现）                             |
+| 搜索番剧          | `POST /v0/search/subjects`，`filter.type=[2]`         |
+| 番剧详情页        | `GET /v0/subjects/{id}`                               |
+| 详情页的角色/声优 | `GET /v0/subjects/{id}/characters`、`/persons`        |
+| 详情页的分集列表  | `GET /v0/episodes?subject_id={id}`                    |
+| 按季度浏览新番    | `GET /v0/subjects?type=2&year=2026&month=4&sort=rank` |
 
 **图片字段**：条目的 `images` 有 `large/common/medium/small/grid` 多种尺寸，
 列表用 `common` 或 `grid`，详情页用 `large`。
