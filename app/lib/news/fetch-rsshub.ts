@@ -1,5 +1,5 @@
 import { FETCH_TIMEOUT_MS, RSSHUB_BASE, RSSHUB_FEEDS } from "./constants";
-import { stripHtml } from "./parse-rss";
+import { stripHtml } from "~/lib/rss";
 import type { NewsItem, NewsLocale, NewsSourceStatus } from "./types";
 
 type JsonFeedItem = {
@@ -15,9 +15,7 @@ type JsonFeed = {
   items?: JsonFeedItem[];
 };
 
-async function fetchRssHubJson(
-  path: string,
-): Promise<JsonFeedItem[]> {
+async function fetchRssHubJson(path: string): Promise<JsonFeedItem[]> {
   const url = `${RSSHUB_BASE.replace(/\/$/, "")}${path}`;
   const res = await fetch(url, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

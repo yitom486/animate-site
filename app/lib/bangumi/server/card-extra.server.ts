@@ -1,17 +1,9 @@
-import { bgmGet } from "./client";
-import { BGM_API_ROUTES } from "./urls";
-import { createCache } from "./cache";
-import { CACHE_TTL_DETAIL_MS } from "./constants";
+import { bgmGet } from "./client.server";
+import { BGM_API_ROUTES } from "./api-routes.server";
+import { createCache } from "~/lib/cache";
+import { CACHE_TTL_DETAIL_MS } from "./config.server";
 import type { InfoboxItem } from "~/lib/anime-meta";
-
-/** Bangumi 收藏分布（想看 / 在看 / 看过 / 搁置 / 抛弃） */
-export type SubjectCollection = {
-  wish?: number;
-  doing?: number;
-  collect?: number;
-  on_hold?: number;
-  dropped?: number;
-};
+import type { CardExtra, SubjectCollection } from "../types-card";
 
 /** 详情接口里卡片需要的原始字段（/calendar 不返回，需单独取 /v0/subjects/{id}） */
 type RawCardSubject = {
@@ -21,16 +13,6 @@ type RawCardSubject = {
   infobox?: InfoboxItem[];
   collection?: SubjectCollection;
   meta_tags?: string[];
-};
-
-/** 卡片增强数据：补足日历接口缺失的简介 / staff / 收藏 / 元数据 */
-export type CardExtra = {
-  nameJa: string;
-  summary: string;
-  tags: string[];
-  metaTags: string[];
-  collection: SubjectCollection;
-  staff: { 原作: string; 导演: string; 制作: string };
 };
 
 const cardExtraCache = createCache<CardExtra>(CACHE_TTL_DETAIL_MS);

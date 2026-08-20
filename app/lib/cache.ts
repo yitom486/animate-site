@@ -1,4 +1,4 @@
-import { CACHE_TTL_LIST_MS } from "./constants";
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type Entry<T> = { data: T; expires: number };
 
@@ -13,7 +13,7 @@ export type CacheStore<T> = {
  *   get: await env.KV.get(key, "json")
  *   set: await env.KV.put(key, JSON.stringify(data), { expirationTtl: TTL_SEC })
  */
-export function createCache<T>(ttlMs = CACHE_TTL_LIST_MS): CacheStore<T> {
+export function createCache<T>(ttlMs = DEFAULT_CACHE_TTL_MS): CacheStore<T> {
   const store = new Map<string, Entry<T>>();
 
   return {

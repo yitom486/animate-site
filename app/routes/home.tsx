@@ -1,19 +1,20 @@
-import { Form, Link } from "react-router";
+import { Link } from "react-router";
 import {
-  ArrowRight,
   BookOpen,
   CalendarDays,
   Clock,
   Compass,
   Gamepad2,
   Music,
-  Search,
   Sparkles,
   Tv,
 } from "lucide-react";
 import { SiteNav } from "~/components/site-nav";
+import { SearchForm } from "~/components/search-form";
 import { NewsPanel } from "~/components/news-panel";
 import { fetchNewsFeed } from "~/lib/news";
+import { buildListHref } from "~/lib/bangumi/params";
+import { SUBJECT_TYPE } from "~/lib/bangumi/types";
 import type { Route } from "./+types/home";
 
 export function meta() {
@@ -21,8 +22,7 @@ export function meta() {
     { title: "亚域空间 - 亚文化平行传送门" },
     {
       name: "description",
-      content:
-        "聚合番剧放送、评分数据、字幕下载，以及游戏与幻想世界入口。",
+      content: "聚合番剧放送、评分数据、字幕下载，以及游戏与幻想世界入口。",
     },
   ];
 }
@@ -38,44 +38,44 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     {
       label: "放送",
       desc: "每日新番时间表",
-      to: "/anime?type=2&view=calendar",
+      to: buildListHref({ type: SUBJECT_TYPE.anime, view: "calendar" }),
     },
     {
       label: "评分",
       desc: "Bangumi 口碑排序",
-      to: "/anime?type=2&sort=rank",
+      to: buildListHref({ type: SUBJECT_TYPE.anime, sort: "rank" }),
     },
     {
       label: "外链",
       desc: "选择番剧后查看资源链接",
-      to: "/anime?type=2&view=links",
+      to: buildListHref({ type: SUBJECT_TYPE.anime, view: "links" }),
     },
   ];
 
   const categories = [
     {
-      type: "2",
+      type: SUBJECT_TYPE.anime,
       label: "动画",
       desc: "每日放送 & 新番推介",
       icon: Tv,
       color: "border-rose-200/80 bg-rose-50/70 text-rose-700",
     },
     {
-      type: "4",
+      type: SUBJECT_TYPE.game,
       label: "游戏",
       desc: "星象平台 & 游艺纪事",
       icon: Gamepad2,
       color: "border-sky-200/80 bg-sky-50/70 text-sky-700",
     },
     {
-      type: "1",
+      type: SUBJECT_TYPE.book,
       label: "书籍",
       desc: "轻小漫本 & 墨香记录",
       icon: BookOpen,
       color: "border-amber-200/80 bg-amber-50/70 text-amber-700",
     },
     {
-      type: "3",
+      type: SUBJECT_TYPE.music,
       label: "音乐",
       desc: "原声旋律 & 乐之幻音",
       icon: Music,
@@ -85,13 +85,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="celadon-page relative min-h-screen overflow-hidden text-slate-800 selection:bg-rose-500/20 selection:text-rose-900">
-      <SiteNav searchType="2" />
+      <SiteNav />
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <section className="relative min-h-[560px] overflow-hidden rounded-lg border border-white/75 bg-white/42 shadow-xl shadow-rose-900/5">
           <img
-            src="/assets/portal-hero.png"
-            alt="次元航行者"
+            src="/assets/portal-hero.webp"
+            alt=""
+            aria-hidden="true"
             className="absolute inset-0 size-full object-cover opacity-32 mix-blend-luminosity"
           />
           <div className="absolute inset-0 bg-gradient-to-br from-[#fff5fd]/96 via-[#f8f1fb]/88 to-[#eef8ff]/82" />
@@ -114,31 +115,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               聚合番剧放送、评分数据、字幕下载与幻想世界入口，以青瓷般的轻盈界面整理你的第二空间。
             </p>
 
-            <Form method="get" action="/anime" className="mt-8 w-full max-w-xl">
-              <input type="hidden" name="view" value="search" />
-              <input type="hidden" name="type" value="2" />
-              <div className="celadon-glass-strong flex h-14 items-center gap-3 rounded-lg px-3">
-                <Search className="size-5 shrink-0 text-rose-600" />
-                <input
-                  name="q"
-                  type="search"
-                  required
-                  placeholder="搜索番剧、游戏或作品名"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                <button
-                  type="submit"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-4 text-xs font-bold text-slate-700 shadow-md shadow-rose-900/5 transition-colors hover:from-rose-200 hover:to-sky-200"
-                >
-                  搜索
-                  <ArrowRight className="size-3.5" />
-                </button>
-              </div>
-            </Form>
+            <SearchForm variant="hero" className="mt-8" />
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                to="/anime?view=calendar&type=2"
+                to={buildListHref({ type: SUBJECT_TYPE.anime, view: "calendar" })}
                 prefetch="intent"
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-5 py-3 text-sm font-bold text-slate-700 shadow-lg shadow-rose-900/5 transition-colors hover:from-rose-200 hover:to-sky-200"
               >
@@ -164,9 +145,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
                   Today Chronicle
                 </span>
-                <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">
-                  今日星历速览
-                </h2>
+                <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日星历速览</h2>
               </div>
               <Clock className="size-5 text-rose-600" />
             </div>
@@ -178,9 +157,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   prefetch="intent"
                   className="rounded-lg border border-rose-100/80 bg-white/65 p-4 transition-colors hover:border-rose-300 hover:bg-white/90"
                 >
-                  <span className="font-serif text-base font-bold text-rose-800">
-                    {label}
-                  </span>
+                  <span className="font-serif text-base font-bold text-rose-800">{label}</span>
                   <p className="mt-1 text-xs text-slate-500">{desc}</p>
                 </Link>
               ))}
@@ -193,7 +170,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               return (
                 <Link
                   key={c.type}
-                  to={`/anime?type=${c.type}`}
+                  to={buildListHref({ type: c.type })}
                   prefetch="intent"
                   className={`group flex items-center gap-4 rounded-lg border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/90 ${c.color}`}
                 >
@@ -204,9 +181,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                     <span className="block font-serif text-base font-bold text-slate-800">
                       {c.label}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs text-slate-500">
-                      {c.desc}
-                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-slate-500">{c.desc}</span>
                   </span>
                 </Link>
               );

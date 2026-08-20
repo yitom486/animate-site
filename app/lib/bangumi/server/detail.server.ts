@@ -1,16 +1,8 @@
-import { bgmGet } from "./client";
-import { BGM_API_ROUTES } from "./urls";
-import type { Episode, Person, SubjectDetail } from "./types-detail";
-import { createCache } from "./cache";
-import { CACHE_TTL_DETAIL_MS } from "./constants";
-
-export type { Episode, Person, SubjectDetail };
-
-export type DetailPayload = {
-  subject: SubjectDetail;
-  staff: Record<string, string>;
-  episodes: Episode[];
-};
+import { bgmGet } from "./client.server";
+import { BGM_API_ROUTES } from "./api-routes.server";
+import type { DetailPayload, Episode, Person, SubjectDetail } from "../types-detail";
+import { createCache } from "~/lib/cache";
+import { CACHE_TTL_DETAIL_MS } from "./config.server";
 
 // 共享的服务端详情缓存
 export const serverDetailCache = createCache<DetailPayload>(CACHE_TTL_DETAIL_MS);
@@ -26,10 +18,7 @@ export async function fetchSubjectPersons(id: string): Promise<Person[]> {
 }
 
 /** GET /v0/episodes — 章节列表 */
-export async function fetchSubjectEpisodes(
-  id: string,
-  limit = 100,
-): Promise<Episode[]> {
+export async function fetchSubjectEpisodes(id: string, limit = 100): Promise<Episode[]> {
   const res = await bgmGet<{ data: Episode[] }>(BGM_API_ROUTES.episodes(), {
     subject_id: id,
     limit,

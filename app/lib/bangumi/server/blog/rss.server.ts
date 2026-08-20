@@ -1,30 +1,11 @@
-import { parseRss2, rssDateToIso, stripHtml } from "~/lib/news/parse-rss";
-import { createCache, withCache } from "./cache";
-import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "./constants";
-
-const BGM_WEB = "https://bgm.tv";
+import { parseRss2, rssDateToIso, stripHtml } from "~/lib/rss";
+import { createCache, withCache } from "~/lib/cache";
+import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
+import type { BgmBlogItem } from "../../types-blog";
+import { BGM_WEB, BGM_WEB_ROUTES_BLOG } from "../../web-urls";
 
 /** 全站动画日志 RSS（页面 head autodiscovery 给的正确路径；旧 /blog/rss/2 已返回空） */
 export const BGM_ANIME_BLOG_RSS = `${BGM_WEB}/feed/blog/anime`;
-
-export const BGM_WEB_ROUTES_BLOG = {
-  animeBlog: () => `${BGM_WEB}/anime/blog`,
-  subjectBlog: (id: string | number) => `${BGM_WEB}/subject/${id}/blog`,
-  subjectBlogRss: (id: string | number) => `${BGM_WEB}/subject/${id}/blog/rss`,
-} as const;
-
-export type BgmBlogItem = {
-  id: string;
-  title: string;
-  link: string;
-  excerpt?: string;
-  publishedAt?: string;
-  /** 以下字段仅 HTML 列表抓取（/anime/blog）填充，RSS 源没有 */
-  author?: string;
-  authorUrl?: string;
-  avatar?: string;
-  replies?: number;
-};
 
 const blogCache = createCache<BgmBlogItem[]>(CACHE_TTL_DETAIL_MS);
 
@@ -85,10 +66,7 @@ export async function fetchBgmAnimeBlog(limit = 8): Promise<BgmBlogItem[]> {
 }
 
 /** 单条目下的用户日志（无帖子时 RSS 可能为空） */
-export async function fetchBgmSubjectBlog(
-  subjectId: string,
-  limit = 6,
-): Promise<BgmBlogItem[]> {
+export async function fetchBgmSubjectBlog(subjectId: string, limit = 6): Promise<BgmBlogItem[]> {
   try {
     return await withCache(blogCache, `bgm:blog:subject:${subjectId}`, async () => {
       const xml = await fetchRssXml(BGM_WEB_ROUTES_BLOG.subjectBlogRss(subjectId));

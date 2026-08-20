@@ -7,22 +7,22 @@ import { AnimeSchedule } from "~/components/anime-schedule";
 import { AnimeListSkeleton } from "~/components/anime-list-skeleton";
 import { AnimePagination } from "~/components/anime-pagination";
 import { AnimeRankFilter } from "~/components/anime-rank-filter";
+import { SearchResultGroups } from "~/components/search-result-groups";
 import { SiteNav } from "~/components/site-nav";
 import { cn } from "~/lib/utils";
+import { createCache } from "~/lib/cache";
 import {
   buildDetailUrl,
-  createCache,
+  buildListHref,
   listCacheKey,
   LIST_REVALIDATE_KEYS,
   mergeListParams,
-  type AnimeListResult,
-} from "~/lib/bangumi";
+} from "~/lib/bangumi/params";
+import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bangumi/types";
 
 const clientCache = createCache<AnimeListResult>();
 
-export async function clientLoader({
-  request,
-}: Route.ClientLoaderArgs): Promise<AnimeListResult> {
+export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise<AnimeListResult> {
   const url = new URL(request.url);
   const key = listCacheKey(url.searchParams);
 
@@ -38,13 +38,7 @@ export async function clientLoader({
 }
 clientLoader.hydrate = true as const;
 
-export function shouldRevalidate({
-  currentUrl,
-  nextUrl,
-}: {
-  currentUrl: URL;
-  nextUrl: URL;
-}) {
+export function shouldRevalidate({ currentUrl, nextUrl }: { currentUrl: URL; nextUrl: URL }) {
   return LIST_REVALIDATE_KEYS.some(
     (k) => currentUrl.searchParams.get(k) !== nextUrl.searchParams.get(k),
   );
@@ -71,7 +65,7 @@ function useIsMobile() {
 export function HydrateFallback() {
   return (
     <div className="celadon-page flex h-screen flex-col">
-      <SiteNav activeType="2" searchType="2" />
+      <SiteNav activeType={SUBJECT_TYPE.anime} />
       <div className="grid min-h-0 flex-1 grid-cols-[1fr_0fr] overflow-hidden">
         <AnimeListSkeleton />
       </div>
@@ -83,6 +77,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const {
     items,
     schedule,
+    groups,
     type,
     page,
     pageSize,
@@ -124,7 +119,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="celadon-page flex h-screen flex-col text-slate-800">
-      <SiteNav activeType={type} searchType={type} />
+      <SiteNav activeType={type === SUBJECT_TYPE_ALL ? undefined : type} />
 
       <div
         className="grid min-h-0 flex-1 overflow-hidden p-3 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -138,9 +133,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                 Bangumi Archive
               </span>
               <div className="mt-1 flex items-baseline gap-2">
-                <h2 className="font-serif text-xl font-bold text-slate-800">
-                  {typeLabel}
-                </h2>
+                <h2 className="font-serif text-xl font-bold text-slate-800">{typeLabel}</h2>
                 <span className="text-sm text-slate-500">· {viewLabel}</span>
               </div>
             </div>
@@ -151,7 +144,11 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
             ) : null}
             {schedule?.length ? (
               <Link
-                to="/anime?type=2&view=calendar&calendar=overview"
+                to={buildListHref({
+                  type: SUBJECT_TYPE.anime,
+                  view: "calendar",
+                  calendar: "overview",
+                })}
                 prefetch="intent"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white/70 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
               >
@@ -160,12 +157,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
               </Link>
             ) : null}
             {!schedule?.length ? (
-              <AnimeRankFilter
-                type={type}
-                sort={sort}
-                view={view}
-                year={baseParams.year}
-              />
+              <AnimeRankFilter type={type} sort={sort} view={view} year={baseParams.year} />
             ) : null}
           </div>
 
@@ -176,16 +168,17 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
               isLoading && "pointer-events-none opacity-50",
             )}
           >
-            {schedule && schedule.length > 0 ? (
-              <AnimeSchedule
-                schedule={schedule}
-                activeId={params.id}
+            {groups?.length ? (
+              <SearchResultGroups
+                groups={groups}
+                query={baseParams.q ?? ""}
                 listParams={listParams}
+                activeId={params.id}
               />
+            ) : schedule && schedule.length > 0 ? (
+              <AnimeSchedule schedule={schedule} activeId={params.id} listParams={listParams} />
             ) : items.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                暂无结果
-              </p>
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">暂无结果</p>
             ) : (
               <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
                 {items.map((it, idx) => (
@@ -201,7 +194,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
               </div>
             )}
 
-            {!schedule?.length ? (
+            {!schedule?.length && !groups?.length ? (
               <AnimePagination
                 page={page}
                 total={total}
@@ -210,7 +203,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
               />
             ) : null}
 
-            {type === "2" ? (
+            {type === SUBJECT_TYPE.anime ? (
               <div className="px-4 pb-4">
                 <Link
                   to="/anime/blog"
@@ -231,9 +224,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
             hasDetail && "ml-3",
           )}
         >
-          <Outlet
-            context={{ expanded, setExpanded } satisfies AnimeOutletContext}
-          />
+          <Outlet context={{ expanded, setExpanded } satisfies AnimeOutletContext} />
         </section>
       </div>
     </div>

@@ -1,8 +1,7 @@
-import { createCache, withCache } from "./cache";
-import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "./constants";
-import type { BgmBlogItem } from "./fetch-blog-rss";
-
-const BGM_WEB = "https://bgm.tv";
+import { createCache, withCache } from "~/lib/cache";
+import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
+import type { BgmBlogItem, BgmBlogPage } from "../../types-blog";
+import { BGM_WEB } from "../../web-urls";
 const FETCH_TIMEOUT_MS = 10_000;
 
 /** 全站动画日志列表页每页固定 24 条；满页即判定还有下一页 */
@@ -13,12 +12,6 @@ const HEADERS = {
   Accept: "text/html,application/xhtml+xml,*/*",
   Referer: `${BGM_WEB}/anime/blog`,
 } as const;
-
-export type BgmBlogPage = {
-  items: BgmBlogItem[];
-  page: number;
-  hasMore: boolean;
-};
 
 const pageCache = createCache<BgmBlogPage>(CACHE_TTL_DETAIL_MS);
 

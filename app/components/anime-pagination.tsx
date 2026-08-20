@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { LIST_PAGE_SIZE } from "~/lib/bangumi/constants";
+import { buildListUrl } from "~/lib/bangumi/params";
 
 type AnimePaginationProps = {
   page: number;
@@ -14,19 +15,14 @@ function buildPageUrl(baseParams: Record<string, string>, page: number) {
   const params = new URLSearchParams(baseParams);
   if (page > 1) params.set("page", String(page));
   else params.delete("page");
-  const qs = params.toString();
-  return qs ? `/anime?${qs}` : "/anime";
+  return buildListUrl(params);
 }
 
 function pageRange(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages: (number | "…")[] = [1];
   if (current > 3) pages.push("…");
-  for (
-    let p = Math.max(2, current - 1);
-    p <= Math.min(total - 1, current + 1);
-    p++
-  ) {
+  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) {
     pages.push(p);
   }
   if (current < total - 2) pages.push("…");
@@ -70,10 +66,7 @@ export function AnimePagination({
       <div className="flex items-center gap-0.5 px-1">
         {pages.map((p, i) =>
           p === "…" ? (
-            <span
-              key={`ellipsis-${i}`}
-              className="px-1.5 text-xs text-muted-foreground"
-            >
+            <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-muted-foreground">
               …
             </span>
           ) : (

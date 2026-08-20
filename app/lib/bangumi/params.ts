@@ -1,12 +1,14 @@
-import { ANIME_CAT_LABEL, SUBJECT_TYPE, type ListQuery, type ListView, type SubjectTypeValue } from "./types";
-
-const TYPE_LABEL: Record<string, string> = {
-  [SUBJECT_TYPE.book]: "书籍",
-  [SUBJECT_TYPE.anime]: "动画",
-  [SUBJECT_TYPE.music]: "音乐",
-  [SUBJECT_TYPE.game]: "游戏",
-  [SUBJECT_TYPE.real]: "三次元",
-};
+import {
+  ANIME_CAT_LABEL,
+  SUBJECT_TYPE,
+  SUBJECT_TYPE_ALL,
+  SUBJECT_TYPE_LABEL,
+  isSubjectType,
+  type ListQuery,
+  type ListTypeValue,
+  type ListView,
+  type SubjectTypeValue,
+} from "./types";
 
 const LIST_PARAM_KEYS = [
   "type",
@@ -20,21 +22,28 @@ const LIST_PARAM_KEYS = [
   "month",
 ] as const;
 
-const DETAIL_BACK_PARAM_KEYS = [
-  ...LIST_PARAM_KEYS,
-  "date",
-  "calendar",
-] as const;
+const DETAIL_BACK_PARAM_KEYS = [...LIST_PARAM_KEYS, "date", "calendar"] as const;
 
-export function getDefaultView(type: SubjectTypeValue): ListView {
+export type ListHrefParams = {
+  type?: string;
+  sort?: string;
+  view?: string;
+  page?: number | string;
+  cat?: string;
+  tag?: string;
+  q?: string;
+  year?: string;
+  month?: string;
+  date?: string;
+  calendar?: string;
+};
+
+export function getDefaultView(type: ListTypeValue): ListView {
   return type === SUBJECT_TYPE.anime ? "calendar" : "";
 }
 
 /** 仅裸 /anime（无 sort/view/筛选参数）时默认每日放送 */
-function isBareAnimeHome(
-  searchParams: URLSearchParams,
-  type: SubjectTypeValue,
-): boolean {
+function isBareAnimeHome(searchParams: URLSearchParams, type: ListTypeValue): boolean {
   if (type !== SUBJECT_TYPE.anime) return false;
   if (searchParams.get("view")) return false;
   if (searchParams.has("sort")) return false;
@@ -47,20 +56,28 @@ function isBareAnimeHome(
   return true;
 }
 
-export function resolveView(
-  searchParams: URLSearchParams,
-  type: SubjectTypeValue,
-): ListView {
+export function resolveView(searchParams: URLSearchParams, type: ListTypeValue): ListView {
   const rawView = searchParams.get("view") ?? "";
   if (rawView) return rawView as ListView;
   if (isBareAnimeHome(searchParams, type)) return getDefaultView(type);
   return "";
 }
 
+function parseListType(searchParams: URLSearchParams, view: string): ListTypeValue {
+  const rawType = searchParams.get("type");
+  if (view === "search" && (!rawType || rawType === SUBJECT_TYPE_ALL)) {
+    return SUBJECT_TYPE_ALL;
+  }
+  if (rawType && isSubjectType(rawType)) return rawType;
+  return SUBJECT_TYPE.anime;
+}
+
 export function parseListQuery(searchParams: URLSearchParams): ListQuery {
-  const type = (searchParams.get("type") ?? SUBJECT_TYPE.anime) as SubjectTypeValue;
+  const rawView = searchParams.get("view") ?? "";
+  const typeHint = parseListType(searchParams, rawView);
+  const view = rawView ? (rawView as ListView) : resolveView(searchParams, typeHint);
+  const type = parseListType(searchParams, view);
   const sort = searchParams.get("sort") === "date" ? "date" : "rank";
-  const view = resolveView(searchParams, type);
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
   return {
@@ -92,18 +109,13 @@ export function buildBaseParams(query: ListQuery): Record<string, string> {
 }
 
 /** 合并 baseParams 与当前页码，用于详情链接 / 关闭返回 */
-export function mergeListParams(
-  baseParams: Record<string, string>,
-  page: number,
-): URLSearchParams {
+export function mergeListParams(baseParams: Record<string, string>, page: number): URLSearchParams {
   const params = new URLSearchParams(baseParams);
   if (page > 1) params.set("page", String(page));
   return params;
 }
 
-export function listParamsFromSearch(
-  searchParams: URLSearchParams,
-): URLSearchParams {
+export function listParamsFromSearch(searchParams: URLSearchParams): URLSearchParams {
   const params = new URLSearchParams();
   for (const key of DETAIL_BACK_PARAM_KEYS) {
     const v = searchParams.get(key);
@@ -117,23 +129,31 @@ export function buildListUrl(listParams: URLSearchParams): string {
   return qs ? `/anime?${qs}` : "/anime";
 }
 
-export function buildDetailUrl(
-  id: string | number,
-  listParams: URLSearchParams,
-): string {
+/** 用对象拼列表 URL，避免在 UI 里做字符串拼接 */
+export function buildListHref(params: ListHrefParams = {}): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null || value === "") continue;
+    search.set(key, String(value));
+  }
+  return buildListUrl(search);
+}
+
+export function buildSearchHref(q: string, type: ListTypeValue = SUBJECT_TYPE_ALL): string {
+  return buildListHref({ view: "search", q, type });
+}
+
+export function buildDetailUrl(id: string | number, listParams: URLSearchParams): string {
   const qs = listParams.toString();
   return qs ? `/anime/${id}?${qs}` : `/anime/${id}`;
 }
 
 export function listCacheKey(searchParams: URLSearchParams): string {
-  const type = (searchParams.get("type") ?? SUBJECT_TYPE.anime) as SubjectTypeValue;
   const rawView = searchParams.get("view") ?? "";
+  const type = parseListType(searchParams, rawView);
   const view = resolveView(searchParams, type);
 
-  const keys =
-    view === "calendar"
-      ? LIST_PARAM_KEYS.filter((k) => k !== "page")
-      : LIST_PARAM_KEYS;
+  const keys = view === "calendar" ? LIST_PARAM_KEYS.filter((k) => k !== "page") : LIST_PARAM_KEYS;
 
   const parts = keys.map((k) => {
     if (k === "view" && !rawView && view === "calendar") return "view=calendar";
@@ -144,7 +164,8 @@ export function listCacheKey(searchParams: URLSearchParams): string {
 }
 
 export function getTypeLabel(type: string): string {
-  return TYPE_LABEL[type] ?? "条目";
+  if (type === SUBJECT_TYPE_ALL) return "全部类型";
+  return SUBJECT_TYPE_LABEL[type as SubjectTypeValue] ?? "条目";
 }
 
 export function getViewLabel(query: ListQuery): string {
@@ -154,9 +175,7 @@ export function getViewLabel(query: ListQuery): string {
     case "heat":
       return "近期注目";
     case "cat":
-      return ANIME_CAT_LABEL[query.cat]
-        ? `分类 · ${ANIME_CAT_LABEL[query.cat]}`
-        : "分类浏览";
+      return ANIME_CAT_LABEL[query.cat] ? `分类 · ${ANIME_CAT_LABEL[query.cat]}` : "分类浏览";
     case "tag":
       return query.tag ? `标签 · ${query.tag}` : "标签浏览";
     case "search":

@@ -9,8 +9,44 @@ export const SUBJECT_TYPE = {
   real: "6",
 } as const;
 
-export type SubjectTypeValue =
-  (typeof SUBJECT_TYPE)[keyof typeof SUBJECT_TYPE];
+export type SubjectTypeValue = (typeof SUBJECT_TYPE)[keyof typeof SUBJECT_TYPE];
+
+/** 搜索未限定类型时使用；不是 Bangumi 的 type 枚举 */
+export const SUBJECT_TYPE_ALL = "all" as const;
+
+export type ListTypeValue = SubjectTypeValue | typeof SUBJECT_TYPE_ALL;
+
+/** 分块展示顺序（与导航分类一致） */
+export const SUBJECT_TYPE_ORDER = [
+  SUBJECT_TYPE.anime,
+  SUBJECT_TYPE.book,
+  SUBJECT_TYPE.music,
+  SUBJECT_TYPE.game,
+  SUBJECT_TYPE.real,
+] as const;
+
+export const SUBJECT_TYPE_LABEL: Record<SubjectTypeValue, string> = {
+  [SUBJECT_TYPE.book]: "书籍",
+  [SUBJECT_TYPE.anime]: "动画",
+  [SUBJECT_TYPE.music]: "音乐",
+  [SUBJECT_TYPE.game]: "游戏",
+  [SUBJECT_TYPE.real]: "三次元",
+};
+
+export const SUBJECT_TYPE_OPTIONS: Array<{
+  value: ListTypeValue;
+  label: string;
+}> = [
+  { value: SUBJECT_TYPE_ALL, label: "全部类型" },
+  ...SUBJECT_TYPE_ORDER.map((value) => ({
+    value,
+    label: SUBJECT_TYPE_LABEL[value],
+  })),
+];
+
+export function isSubjectType(type: string): type is SubjectTypeValue {
+  return Object.values(SUBJECT_TYPE).includes(type as SubjectTypeValue);
+}
 
 /** 动画分类 SubjectAnimeCategory */
 export const ANIME_CAT = {
@@ -28,18 +64,10 @@ export const ANIME_CAT_LABEL: Record<string, string> = {
 };
 
 /** 列表视图模式 */
-export type ListView =
-  | ""
-  | "calendar"
-  | "heat"
-  | "cat"
-  | "tag"
-  | "search"
-  | "season"
-  | "links";
+export type ListView = "" | "calendar" | "heat" | "cat" | "tag" | "search" | "season" | "links";
 
 export type ListQuery = {
-  type: SubjectTypeValue;
+  type: ListTypeValue;
   sort: "rank" | "date";
   view: ListView;
   page: number;
@@ -50,18 +78,11 @@ export type ListQuery = {
   month: string;
 };
 
-export type RawSubject = AnimeCardData & {
-  summary?: string;
-  infobox?: unknown;
-  collection?: unknown;
-  meta_tags?: unknown;
-};
-
-export type SubjectListResponse = {
-  data: RawSubject[];
+export type SearchGroup = {
+  type: SubjectTypeValue;
+  label: string;
+  items: AnimeCardData[];
   total: number;
-  limit?: number;
-  offset?: number;
 };
 
 export type CalendarWeekday = {
@@ -80,6 +101,8 @@ export type AnimeListResult = {
   items: AnimeCardData[];
   /** 每日放送：按星期分组（view=calendar 时有值） */
   schedule?: CalendarDayGroup[];
+  /** 全类型搜索：按条目类型分块（view=search 且 type=all 时有值） */
+  groups?: SearchGroup[];
   type: string;
   sort: string;
   view: string;
@@ -89,14 +112,4 @@ export type AnimeListResult = {
   baseParams: Record<string, string>;
   typeLabel: string;
   viewLabel: string;
-};
-
-export type SearchSubjectsBody = {
-  keyword?: string;
-  sort?: "match" | "heat" | "rank";
-  filter?: {
-    type?: number[];
-    tag?: string[];
-    air_date?: string[];
-  };
 };

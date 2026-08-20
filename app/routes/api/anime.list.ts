@@ -1,11 +1,8 @@
 import type { Route } from "./+types/anime.list";
-import {
-  fetchAnimeList,
-  listCacheKey,
-  withCache,
-  createCache,
-  type AnimeListResult,
-} from "~/lib/bangumi";
+import { createCache, withCache } from "~/lib/cache";
+import { listCacheKey } from "~/lib/bangumi/params";
+import { fetchAnimeList } from "~/lib/bangumi/server/list.server";
+import type { AnimeListResult } from "~/lib/bangumi/types";
 
 const listCache = createCache<AnimeListResult>();
 
@@ -13,7 +10,5 @@ const listCache = createCache<AnimeListResult>();
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const key = listCacheKey(url.searchParams);
-  return withCache(listCache, key, () =>
-    fetchAnimeList(url.searchParams),
-  );
+  return withCache(listCache, key, () => fetchAnimeList(url.searchParams));
 }

@@ -1,9 +1,10 @@
-import { bgmGet } from "./client";
-import { BGM_API_ROUTES } from "./urls";
-import { LIST_PAGE_SIZE } from "./constants";
-import { trimSubjects } from "./trim";
+import { bgmGet } from "./client.server";
+import { BGM_API_ROUTES } from "./api-routes.server";
+import { LIST_PAGE_SIZE } from "../constants";
+import { trimSubjects } from "./trim.server";
 import type { AnimeCardData } from "~/lib/anime-meta";
-import type { ListQuery, SubjectListResponse } from "./types";
+import { SUBJECT_TYPE, isSubjectType, type ListQuery } from "../types";
+import type { SubjectListResponse } from "./api-types.server";
 
 type BrowseParams = {
   type: string;
@@ -36,10 +37,11 @@ export async function fetchSubjectsList(
   offset: number,
 ): Promise<{ items: AnimeCardData[]; total: number }> {
   const { type, sort, view, cat, year, month } = query;
+  const browseType = isSubjectType(type) ? type : SUBJECT_TYPE.anime;
 
   if (view === "cat" && cat) {
     return fetchSubjectsBrowse({
-      type,
+      type: browseType,
       sort: "rank",
       cat,
       limit: LIST_PAGE_SIZE,
@@ -49,7 +51,7 @@ export async function fetchSubjectsList(
 
   if (view === "season" && year) {
     return fetchSubjectsBrowse({
-      type,
+      type: browseType,
       sort: "rank",
       year,
       month: month || undefined,
@@ -59,7 +61,7 @@ export async function fetchSubjectsList(
   }
 
   return fetchSubjectsBrowse({
-    type,
+    type: browseType,
     sort,
     year: year || undefined,
     month: month || undefined,

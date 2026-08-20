@@ -1,11 +1,7 @@
-import {
-  buildBilibiliBangumiUrl,
-  buildBilibiliEmbedUrl,
-} from "./player";
+import { buildBilibiliBangumiUrl, buildBilibiliEmbedUrl } from "./player";
 import type { BilibiliMatch } from "./types";
 
-const BILI_SEARCH =
-  "https://api.bilibili.com/x/web-interface/search/type";
+const BILI_SEARCH = "https://api.bilibili.com/x/web-interface/search/type";
 
 const BILI_HEADERS = {
   "User-Agent":
@@ -30,9 +26,7 @@ const SEARCH_TIMEOUT_MS = 4000;
  * 用番剧中文/日文名在 B 站搜「番剧」类目，取第一条 season_id 供 iframe 嵌入。
  * 非官方开放 API，失败时返回 null（仍可走搜索页外链）。
  */
-export async function searchBilibiliBangumi(
-  keyword: string,
-): Promise<BilibiliMatch | null> {
+export async function searchBilibiliBangumi(keyword: string): Promise<BilibiliMatch | null> {
   const q = keyword.trim();
   if (!q) return null;
 

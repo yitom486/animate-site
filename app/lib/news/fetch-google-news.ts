@@ -1,13 +1,8 @@
 import { FETCH_TIMEOUT_MS } from "./constants";
-import {
-  parseRss2,
-  rssDateToIso,
-  stripHtml,
-} from "./parse-rss";
+import { parseRss2, rssDateToIso, stripHtml } from "~/lib/rss";
 import type { NewsItem } from "./types";
 
-const UA =
-  "yhang/anime-site (https://github.com/yitom486/animate-site)";
+const UA = "yhang/anime-site (https://github.com/yitom486/animate-site)";
 
 type GoogleLocale = "cn" | "tw";
 
@@ -50,9 +45,7 @@ const GOOGLE_NEWS_FEEDS = [
   },
 ] as const;
 
-async function fetchGoogleFeed(
-  feed: (typeof GOOGLE_NEWS_FEEDS)[number],
-): Promise<NewsItem[]> {
+async function fetchGoogleFeed(feed: (typeof GOOGLE_NEWS_FEEDS)[number]): Promise<NewsItem[]> {
   const res = await fetch(feed.url, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: { "User-Agent": UA, Accept: "application/rss+xml, application/xml" },

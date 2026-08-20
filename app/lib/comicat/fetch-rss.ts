@@ -1,4 +1,4 @@
-import { createCache, withCache } from "~/lib/bangumi/cache";
+import { createCache, withCache } from "~/lib/cache";
 import {
   CACHE_TTL_COMICAT_MS,
   COMICAT_FETCH_TIMEOUT_MS,
@@ -35,9 +35,7 @@ export async function fetchComicatRss(): Promise<ComicatItem[]> {
 }
 
 /** 按番剧名在 RSS 中匹配可能相关的下载条目 */
-export async function fetchComicatForAnime(
-  keywords: string[],
-): Promise<ComicatItem[]> {
+export async function fetchComicatForAnime(keywords: string[]): Promise<ComicatItem[]> {
   try {
     const feed = await fetchComicatRss();
     const animation = filterAnimationItems(feed);

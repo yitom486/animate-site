@@ -1,4 +1,4 @@
-import { BGM_LEGACY, BGM_USER_AGENT, BGM_V0 } from "./constants";
+import { BGM_LEGACY, BGM_USER_AGENT, BGM_V0 } from "./config.server";
 
 const JSON_HEADERS = {
   "User-Agent": BGM_USER_AGENT,

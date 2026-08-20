@@ -2,7 +2,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Link } from "react-router";
 import type { Route } from "./+types/blog-detail";
 import { SiteNav } from "~/components/site-nav";
-import { fetchBgmBlogDetail } from "~/lib/bangumi/fetch-blog-detail";
+import { fetchBgmBlogDetail } from "~/lib/bangumi/server/blog/detail.server";
 
 export async function loader({ params }: Route.LoaderArgs) {
   return fetchBgmBlogDetail(params.id);
@@ -30,7 +30,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="celadon-page min-h-screen text-slate-800">
-      <SiteNav activeType="2" searchType="2" />
+      <SiteNav activeType="2" />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
         <Link
@@ -92,7 +92,12 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
           ) : (
             <p className="mt-5 rounded-lg border border-dashed border-rose-100 bg-white/50 px-4 py-8 text-center text-sm text-slate-500">
               无法在站内加载正文，请{" "}
-              <a href={post.link} target="_blank" rel="noreferrer" className="font-bold text-rose-700 hover:underline">
+              <a
+                href={post.link}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-rose-700 hover:underline"
+              >
                 前往 Bangumi 查看原文
               </a>
               。

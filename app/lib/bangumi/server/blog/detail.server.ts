@@ -1,8 +1,8 @@
 import sanitizeHtml from "sanitize-html";
-import { createCache, withCache } from "./cache";
-import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "./constants";
-
-const BGM_WEB = "https://bgm.tv";
+import { createCache, withCache } from "~/lib/cache";
+import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
+import type { BgmBlogDetail } from "../../types-blog";
+import { BGM_WEB } from "../../web-urls";
 const FETCH_TIMEOUT_MS = 10_000;
 
 const HEADERS = {
@@ -11,27 +11,45 @@ const HEADERS = {
   Referer: `${BGM_WEB}/anime/blog`,
 } as const;
 
-export type BgmBlogDetail = {
-  id: string;
-  title: string;
-  link: string;
-  /** 已消毒的正文 HTML，可直接 dangerouslySetInnerHTML */
-  contentHtml: string;
-  author?: string;
-  authorUrl?: string;
-  avatar?: string;
-  publishedAt?: string;
-};
-
 const detailCache = createCache<BgmBlogDetail>(CACHE_TTL_DETAIL_MS);
 
 /** 正文是第三方用户 HTML：白名单消毒，去脚本/事件/危险协议，规范图片与外链 */
 const SANITIZE_OPTS: sanitizeHtml.IOptions = {
   allowedTags: [
-    "p", "br", "span", "strong", "b", "em", "i", "u", "s", "del", "sub", "sup",
-    "blockquote", "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6",
-    "ul", "ol", "li", "hr", "img", "a", "div",
-    "table", "thead", "tbody", "tr", "td", "th",
+    "p",
+    "br",
+    "span",
+    "strong",
+    "b",
+    "em",
+    "i",
+    "u",
+    "s",
+    "del",
+    "sub",
+    "sup",
+    "blockquote",
+    "pre",
+    "code",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "ul",
+    "ol",
+    "li",
+    "hr",
+    "img",
+    "a",
+    "div",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "td",
+    "th",
   ],
   allowedAttributes: {
     a: ["href", "title", "target", "rel"],
@@ -65,7 +83,9 @@ function decodeEntities(s: string): string {
 }
 
 function stripTags(s: string): string {
-  return decodeEntities(s.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+  return decodeEntities(s.replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function absolutize(url: string): string {
@@ -115,9 +135,7 @@ export async function fetchBgmBlogDetail(id: string | number): Promise<BgmBlogDe
 
       const html = await res.text();
 
-      const titleM = html.match(
-        /<div class="header">[\s\S]*?<h1 class="title">([\s\S]*?)<\/h1>/,
-      );
+      const titleM = html.match(/<div class="header">[\s\S]*?<h1 class="title">([\s\S]*?)<\/h1>/);
       const title =
         (titleM && stripTags(titleM[1])) ||
         stripTags(html.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "") ||
@@ -126,8 +144,12 @@ export async function fetchBgmBlogDetail(id: string | number): Promise<BgmBlogDe
       const card = html.match(/<div class="author user-card">([\s\S]*?)<div class="header">/);
       const cardHtml = card?.[1] ?? "";
       const avatarM = cardHtml.match(/<img[^>]+src="([^"]+)"/);
-      const authorM = cardHtml.match(/<div class="title">\s*<p>\s*<a href="(\/user\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/);
-      const timeM = html.match(/<div class="time">\s*([\d]{4}-[\d]{1,2}-[\d]{1,2}\s+[\d]{1,2}:[\d]{2})/);
+      const authorM = cardHtml.match(
+        /<div class="title">\s*<p>\s*<a href="(\/user\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/,
+      );
+      const timeM = html.match(
+        /<div class="time">\s*([\d]{4}-[\d]{1,2}-[\d]{1,2}\s+[\d]{1,2}:[\d]{2})/,
+      );
 
       return {
         id: numId,

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import { CalendarDays, Trophy } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { buildListHref } from "~/lib/bangumi/params";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const FIRST_ANIME_YEAR = 1960;
@@ -17,17 +18,10 @@ type AnimeRankFilterProps = {
 };
 
 function buildRankUrl(type: string, year?: string): string {
-  const params = new URLSearchParams({ type, sort: "rank" });
-  if (year) params.set("year", year);
-  return `/anime?${params.toString()}`;
+  return buildListHref({ type, sort: "rank", year });
 }
 
-export function AnimeRankFilter({
-  type,
-  sort,
-  view,
-  year,
-}: AnimeRankFilterProps) {
+export function AnimeRankFilter({ type, sort, view, year }: AnimeRankFilterProps) {
   const navigate = useNavigate();
   const isRankView = !view && sort === "rank";
   if (!isRankView) return null;

@@ -1,23 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { CalendarDays, Clock, Eye, Heart, Star, Tv } from "lucide-react";
+import { CalendarDays, Eye, Heart, Star, Tv } from "lucide-react";
 import { AnimeCalendarPicker } from "~/components/anime-calendar-picker";
 import { AnimeWeekOverview } from "~/components/anime-week-overview";
-import {
-  SummaryModal,
-  useCardExtra,
-} from "~/components/anime-card-extra";
+import { SummaryModal, useCardExtra } from "~/components/anime-card-extra";
 import { cn } from "~/lib/utils";
 import { AnimeCover } from "~/components/anime-cover";
 import { buildCardMeta, getCoverUrl, type AnimeCardData } from "~/lib/anime-meta";
 import {
-  buildDetailUrl,
   formatAirDate,
   formatCurrentDateTime,
   getBangumiWeekdayId,
   getWeekdayLabel,
-  type CalendarDayGroup,
-} from "~/lib/bangumi";
+} from "~/lib/bangumi/calendar-utils";
+import { buildDetailUrl } from "~/lib/bangumi/params";
+import type { CalendarDayGroup } from "~/lib/bangumi/types";
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -37,11 +34,7 @@ function parseDateParam(value: string | null): Date | null {
   const day = Number(match[3]);
   const date = new Date(year, month - 1, day);
 
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
     return null;
   }
 
@@ -97,9 +90,7 @@ function CurrentTimeBar({
         <CalendarDays className="size-5" />
       </div>
       <div className="min-w-[220px] flex-1">
-        <span className="block font-serif text-sm font-bold text-slate-800">
-          日历新番星历
-        </span>
+        <span className="block font-serif text-sm font-bold text-slate-800">日历新番星历</span>
         <time className="mt-0.5 block truncate font-mono text-[11px] font-semibold text-rose-700">
           {now}
         </time>
@@ -132,15 +123,11 @@ function CurrentTimeBar({
 
         <div className="grid grid-cols-2 gap-2 text-center">
           <div className="rounded-lg border border-rose-100 bg-white/72 px-3 py-2">
-            <span className="block font-mono text-sm font-bold text-rose-800">
-              {selectedCount}
-            </span>
+            <span className="block font-mono text-sm font-bold text-rose-800">{selectedCount}</span>
             <span className="text-[10px] text-slate-500">选日放送</span>
           </div>
           <div className="rounded-lg border border-sky-100 bg-white/72 px-3 py-2">
-            <span className="block font-mono text-sm font-bold text-sky-800">
-              {totalCount}
-            </span>
+            <span className="block font-mono text-sm font-bold text-sky-800">{totalCount}</span>
             <span className="text-[10px] text-slate-500">本周收录</span>
           </div>
         </div>
@@ -194,9 +181,7 @@ function ScheduleCard({
 
   // 官方元标签优先并去重，普通标签再去掉与元标签重复的部分
   const metaTags = Array.from(new Set(data?.metaTags ?? []));
-  const tags = Array.from(new Set(data?.tags ?? [])).filter(
-    (t) => !metaTags.includes(t),
-  );
+  const tags = Array.from(new Set(data?.tags ?? [])).filter((t) => !metaTags.includes(t));
   const staff = data?.staff;
   const collection = data?.collection;
   const summary = data?.summary ?? "";
@@ -247,9 +232,7 @@ function ScheduleCard({
                 {title}
               </h3>
               {nameJa ? (
-                <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400">
-                  {nameJa}
-                </p>
+                <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400">{nameJa}</p>
               ) : null}
             </div>
             {airDate ? (
@@ -260,9 +243,7 @@ function ScheduleCard({
           </div>
 
           {subtitle ? (
-            <p className="truncate font-mono text-xs font-semibold text-slate-500">
-              {subtitle}
-            </p>
+            <p className="truncate font-mono text-xs font-semibold text-slate-500">{subtitle}</p>
           ) : null}
 
           {/* 简介：两行省略 + 展开弹窗（仅文字溢出时显示展开） */}
@@ -289,25 +270,19 @@ function ScheduleCard({
               {staff.导演 ? (
                 <div className="flex gap-1.5">
                   <dt className="shrink-0 text-slate-400">导演</dt>
-                  <dd className="min-w-0 truncate text-slate-600">
-                    {staff.导演}
-                  </dd>
+                  <dd className="min-w-0 truncate text-slate-600">{staff.导演}</dd>
                 </div>
               ) : null}
               {staff.原作 ? (
                 <div className="flex gap-1.5">
                   <dt className="shrink-0 text-slate-400">原作</dt>
-                  <dd className="min-w-0 truncate text-slate-600">
-                    {staff.原作}
-                  </dd>
+                  <dd className="min-w-0 truncate text-slate-600">{staff.原作}</dd>
                 </div>
               ) : null}
               {staff.制作 ? (
                 <div className="flex gap-1.5">
                   <dt className="shrink-0 text-slate-400">制作</dt>
-                  <dd className="min-w-0 truncate text-slate-600">
-                    {staff.制作}
-                  </dd>
+                  <dd className="min-w-0 truncate text-slate-600">{staff.制作}</dd>
                 </div>
               ) : null}
             </dl>
@@ -357,11 +332,7 @@ function ScheduleCard({
       </div>
 
       {summaryOpen ? (
-        <SummaryModal
-          title={title}
-          summary={summary}
-          onClose={() => setSummaryOpen(false)}
-        />
+        <SummaryModal title={title} summary={summary} onClose={() => setSummaryOpen(false)} />
       ) : null}
     </div>
   );
@@ -373,11 +344,7 @@ type AnimeScheduleProps = {
   listParams: URLSearchParams;
 };
 
-export function AnimeSchedule({
-  schedule,
-  activeId,
-  listParams,
-}: AnimeScheduleProps) {
+export function AnimeSchedule({ schedule, activeId, listParams }: AnimeScheduleProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [pickerOpen, setPickerOpen] = useState(false);
   const todayId = getBangumiWeekdayId();
@@ -388,22 +355,15 @@ export function AnimeSchedule({
     [searchParams],
   );
   const selectedDayId = getBangumiWeekdayId(selectedDate);
-  const mode: CalendarMode =
-    searchParams.get("calendar") === "overview" ? "overview" : "day";
+  const mode: CalendarMode = searchParams.get("calendar") === "overview" ? "overview" : "day";
 
   const orderedDays = useMemo(() => {
     const map = new Map(schedule.map((d) => [d.weekday.id, d]));
-    return WEEKDAY_ORDER.map((id) => map.get(id)).filter(
-      (d): d is CalendarDayGroup => d != null,
-    );
+    return WEEKDAY_ORDER.map((id) => map.get(id)).filter((d): d is CalendarDayGroup => d != null);
   }, [schedule]);
 
-  const totalCount = useMemo(
-    () => schedule.reduce((n, d) => n + d.items.length, 0),
-    [schedule],
-  );
-  const selectedDay =
-    orderedDays.find((d) => d.weekday.id === selectedDayId) ?? orderedDays[0];
+  const totalCount = useMemo(() => schedule.reduce((n, d) => n + d.items.length, 0), [schedule]);
+  const selectedDay = orderedDays.find((d) => d.weekday.id === selectedDayId) ?? orderedDays[0];
   const selectedCount = selectedDay?.items.length ?? 0;
 
   const routedListParams = useMemo(() => {
@@ -477,9 +437,7 @@ export function AnimeSchedule({
                 <span>
                   {day.weekday.cn.replace("星期", "周")}
                   {isToday ? (
-                    <span className="ml-1 font-mono text-[10px] opacity-80">
-                      今天
-                    </span>
+                    <span className="ml-1 font-mono text-[10px] opacity-80">今天</span>
                   ) : null}
                 </span>
                 <span className="flex items-center gap-1 font-mono text-[10px] font-semibold opacity-85">
@@ -487,11 +445,7 @@ export function AnimeSchedule({
                   <span
                     className={cn(
                       "size-1.5 rounded-full",
-                      isActive
-                        ? "bg-white"
-                        : isToday
-                          ? "bg-rose-500"
-                          : "bg-slate-300",
+                      isActive ? "bg-white" : isToday ? "bg-rose-500" : "bg-slate-300",
                     )}
                   />
                 </span>

@@ -1,5 +1,5 @@
 /**
- * Bangumi API 路径配置 (均为相对路径，在 client.ts 中拼接)
+ * Bangumi API 路径配置（均为相对路径，在 client.server.ts 中拼接）
  */
 export const BGM_API_ROUTES = {
   /** 条目详情 */

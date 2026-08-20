@@ -3,8 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/blog";
 import { SiteNav } from "~/components/site-nav";
-import { fetchBgmAnimeBlogPage, type BgmBlogPage } from "~/lib/bangumi/fetch-blog-html";
-import { BGM_WEB_ROUTES_BLOG, type BgmBlogItem } from "~/lib/bangumi/fetch-blog-rss";
+import { fetchBgmAnimeBlogPage } from "~/lib/bangumi/server/blog/list.server";
+import type { BgmBlogItem, BgmBlogPage } from "~/lib/bangumi/types-blog";
+import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/web-urls";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -86,7 +87,7 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="celadon-page min-h-screen text-slate-800">
-      <SiteNav activeType="2" searchType="2" />
+      <SiteNav activeType="2" />
 
       <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
         <header className="celadon-glass rounded-lg p-5">

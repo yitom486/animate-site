@@ -1,9 +1,7 @@
 import { AnimeCard } from "~/components/anime-card";
 import { cn } from "~/lib/utils";
-import {
-  buildDetailUrl,
-  type CalendarDayGroup,
-} from "~/lib/bangumi";
+import { buildDetailUrl } from "~/lib/bangumi/params";
+import type { CalendarDayGroup } from "~/lib/bangumi/types";
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -40,9 +38,7 @@ export function AnimeWeekOverview({
               key={day.weekday.id}
               className={cn(
                 "overflow-hidden rounded-lg border bg-white/52 shadow-sm",
-                isSelected
-                  ? "border-rose-300 ring-2 ring-rose-500/15"
-                  : "border-white/80",
+                isSelected ? "border-rose-300 ring-2 ring-rose-500/15" : "border-white/80",
               )}
             >
               <button
@@ -59,14 +55,10 @@ export function AnimeWeekOverview({
                   <div className="font-serif text-base font-bold">
                     {day.weekday.cn.replace("星期", "周")}
                     {isToday ? (
-                      <span className="ml-1 font-mono text-[10px] opacity-85">
-                        今天
-                      </span>
+                      <span className="ml-1 font-mono text-[10px] opacity-85">今天</span>
                     ) : null}
                   </div>
-                  <div className="mt-0.5 font-mono text-[10px] opacity-80">
-                    {day.weekday.en}
-                  </div>
+                  <div className="mt-0.5 font-mono text-[10px] opacity-80">{day.weekday.en}</div>
                 </div>
                 <div className="rounded-lg border border-white/50 bg-white/20 px-3 py-1.5 font-mono text-xs font-bold">
                   {day.items.length} 部
@@ -87,9 +79,7 @@ export function AnimeWeekOverview({
                     ))}
                   </div>
                 ) : (
-                  <p className="py-8 text-center text-[11px] text-slate-400">
-                    暂无
-                  </p>
+                  <p className="py-8 text-center text-[11px] text-slate-400">暂无</p>
                 )}
               </div>
             </section>

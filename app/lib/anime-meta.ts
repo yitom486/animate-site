@@ -7,6 +7,7 @@ export type AnimeCardData = {
   id: number;
   name: string;
   name_cn: string;
+  type?: number;
   date?: string;
   air_date?: string;
   platform?: string;
@@ -28,9 +29,7 @@ export function toHttps(url?: string): string | undefined {
 }
 
 /** 列表封面：优先 v0 medium；Legacy 日历接口则改用 large */
-export function getCoverUrl(
-  images?: AnimeCardData["images"],
-): string | undefined {
+export function getCoverUrl(images?: AnimeCardData["images"]): string | undefined {
   if (!images) return undefined;
 
   let url: string | undefined;

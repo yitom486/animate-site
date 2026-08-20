@@ -1,8 +1,8 @@
-import { bgmGetLegacy } from "./client";
-import { BGM_API_ROUTES } from "./urls";
-import { trimSubjects } from "./trim";
-import type { CalendarDayGroup } from "./types";
-import type { RawSubject } from "./types";
+import { bgmGetLegacy } from "./client.server";
+import { BGM_API_ROUTES } from "./api-routes.server";
+import { trimSubjects } from "./trim.server";
+import type { CalendarDayGroup } from "../types";
+import type { RawSubject } from "./api-types.server";
 
 type CalendarResponse = Array<{
   weekday: CalendarDayGroup["weekday"];
@@ -18,9 +18,7 @@ export async function fetchCalendarSchedule(): Promise<{
 
   const schedule = cal.map((day) => ({
     weekday: day.weekday,
-    items: trimSubjects(day.items).sort(
-      (a, b) => (b.rating?.score ?? 0) - (a.rating?.score ?? 0),
-    ),
+    items: trimSubjects(day.items).sort((a, b) => (b.rating?.score ?? 0) - (a.rating?.score ?? 0)),
   }));
 
   const total = schedule.reduce((n, d) => n + d.items.length, 0);

@@ -1,6 +1,6 @@
 import type { Route } from "./+types/bgm-blog";
-import { fetchBgmAnimeBlogPage } from "~/lib/bangumi/fetch-blog-html";
-import { fetchBgmSubjectBlog } from "~/lib/bangumi/fetch-blog-rss";
+import { fetchBgmAnimeBlogPage } from "~/lib/bangumi/server/blog/list.server";
+import { fetchBgmSubjectBlog } from "~/lib/bangumi/server/blog/rss.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);

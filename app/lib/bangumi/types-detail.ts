@@ -26,3 +26,9 @@ export type SubjectDetail = {
   tags?: Array<{ name: string; count: number }>;
   infobox?: InfoboxItem[];
 };
+
+export type DetailPayload = {
+  subject: SubjectDetail;
+  staff: Record<string, string>;
+  episodes: Episode[];
+};

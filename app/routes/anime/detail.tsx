@@ -1,19 +1,11 @@
-import {
-  isRouteErrorResponse,
-  Link,
-  useOutletContext,
-  useSearchParams,
-} from "react-router";
+import { isRouteErrorResponse, Link, useOutletContext, useSearchParams } from "react-router";
 import { Maximize2, Minimize2, X } from "lucide-react";
 import type { Route } from "./+types/detail";
 import type { AnimeOutletContext } from "./layout";
 import { Badge } from "~/components/ui/badge";
-import type { Episode, SubjectDetail } from "~/lib/bangumi/types-detail";
-import {
-  fetchCachedDetail,
-  createCache,
-  type DetailPayload,
-} from "~/lib/bangumi";
+import { createCache } from "~/lib/cache";
+import type { DetailPayload, Episode, SubjectDetail } from "~/lib/bangumi/types-detail";
+import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
 import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
@@ -22,7 +14,9 @@ import { fetchComicatForAnime, type ComicatItem } from "~/lib/comicat";
 import { BilibiliPlayer } from "~/components/bilibili-player";
 import { BgmBlogPanel } from "~/components/bgm-blog-panel";
 import { ComicatDownloads } from "~/components/comicat-downloads";
-import { BGM_WEB_ROUTES_BLOG, fetchBgmSubjectBlog, type BgmBlogItem } from "~/lib/bangumi/fetch-blog-rss";
+import { fetchBgmSubjectBlog } from "~/lib/bangumi/server/blog/rss.server";
+import type { BgmBlogItem } from "~/lib/bangumi/types-blog";
+import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/web-urls";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<AnimeDetailData>();
@@ -33,9 +27,7 @@ type AnimeDetailData = DetailPayload & {
   bgmBlog: BgmBlogItem[];
 };
 
-async function loadBilibiliMatch(
-  subject: DetailPayload["subject"],
-): Promise<BilibiliMatch | null> {
+async function loadBilibiliMatch(subject: DetailPayload["subject"]): Promise<BilibiliMatch | null> {
   const keywords = [subject.name_cn, subject.name].filter(Boolean) as string[];
   for (const keyword of keywords) {
     const match = await searchBilibiliBangumi(keyword).catch(() => null);
@@ -196,39 +188,39 @@ function CompactView({
       {subject.rating?.score ? (
         <div className="rounded-lg border border-rose-100 bg-white/64 p-4 shadow-sm">
           <div className="flex items-center gap-2">
-          <Stars score={subject.rating.score} />
-          <span className="font-mono text-2xl font-bold text-amber-500">
-            {subject.rating.score}
-          </span>
-          <span className="text-xs text-slate-500">
-            #{subject.rating.rank} · {subject.rating.total} 人
-          </span>
+            <Stars score={subject.rating.score} />
+            <span className="font-mono text-2xl font-bold text-amber-500">
+              {subject.rating.score}
+            </span>
+            <span className="text-xs text-slate-500">
+              #{subject.rating.rank} · {subject.rating.total} 人
+            </span>
           </div>
         </div>
       ) : null}
 
       <div className="rounded-lg border border-white/75 bg-white/58 p-3 shadow-sm">
-      <div className="flex gap-3">
-        {subject.images?.large ? (
-          <button type="button" onClick={onExpand} className="shrink-0">
-            <img
-              src={subject.images.large}
-              alt={title}
-              referrerPolicy="no-referrer"
-              className="h-44 w-32 rounded-lg border border-rose-100 object-cover shadow-sm transition-transform hover:scale-[1.03]"
-            />
-          </button>
-        ) : null}
-        <dl className="space-y-1.5 text-xs">
-          <Row k="中文名" v={subject.name_cn} />
-          <Row k="原名" v={subject.name} />
-          <Row k="话数" v={String(eps)} />
-          <Row k="放送开始" v={subject.date} />
-          <Row k="原作" v={staff.原作} />
-          <Row k="制作" v={staff.制作} />
-          <Row k="监督" v={staff.监督} />
-        </dl>
-      </div>
+        <div className="flex gap-3">
+          {subject.images?.large ? (
+            <button type="button" onClick={onExpand} className="shrink-0">
+              <img
+                src={subject.images.large}
+                alt={title}
+                referrerPolicy="no-referrer"
+                className="h-44 w-32 rounded-lg border border-rose-100 object-cover shadow-sm transition-transform hover:scale-[1.03]"
+              />
+            </button>
+          ) : null}
+          <dl className="space-y-1.5 text-xs">
+            <Row k="中文名" v={subject.name_cn} />
+            <Row k="原名" v={subject.name} />
+            <Row k="话数" v={String(eps)} />
+            <Row k="放送开始" v={subject.date} />
+            <Row k="原作" v={staff.原作} />
+            <Row k="制作" v={staff.制作} />
+            <Row k="监督" v={staff.监督} />
+          </dl>
+        </div>
       </div>
 
       {tags.length ? (
@@ -290,57 +282,55 @@ function FullView({
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="rounded-lg border border-white/75 bg-white/58 p-4 shadow-sm">
-      <div className="flex flex-col gap-6 md:flex-row">
-        {subject.images?.large ? (
-          <img
-            src={subject.images.large}
-            alt={title}
-            referrerPolicy="no-referrer"
-            className="h-72 w-52 shrink-0 self-start rounded-lg border border-rose-100 object-cover shadow-md"
-          />
-        ) : null}
-        <div className="min-w-0 flex-1 space-y-3">
-          <h1 className="font-serif text-2xl font-bold text-slate-800">
-            {title}
-          </h1>
-          {subject.name_cn && subject.name !== subject.name_cn ? (
-            <p className="font-mono text-sm text-slate-500">{subject.name}</p>
+        <div className="flex flex-col gap-6 md:flex-row">
+          {subject.images?.large ? (
+            <img
+              src={subject.images.large}
+              alt={title}
+              referrerPolicy="no-referrer"
+              className="h-72 w-52 shrink-0 self-start rounded-lg border border-rose-100 object-cover shadow-md"
+            />
           ) : null}
-          {subject.rating?.score ? (
-            <div className="flex items-center gap-2">
-              <Stars score={subject.rating.score} />
-              <span className="font-mono text-3xl font-bold text-amber-500">
-                {subject.rating.score}
-              </span>
-              <span className="text-xs text-slate-500">
-                #{subject.rating.rank} · {subject.rating.total} 人评分
-              </span>
-            </div>
-          ) : null}
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
-            <Row k="话数" v={String(eps)} />
-            <Row k="放送开始" v={subject.date} />
-            <Row k="原作" v={staff.原作} />
-            <Row k="制作" v={staff.制作} />
-            <Row k="监督" v={staff.监督} />
-            <Row k="平台" v={subject.platform} />
-          </dl>
-          {tags.length ? (
-            <div className="flex flex-wrap gap-1">
-              {tags.map((t) => (
-                <Badge
-                  key={t.name}
-                  variant="secondary"
-                  className="border border-rose-100 bg-rose-50 text-rose-700"
-                >
-                  {t.name}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
-          <JumpLinks links={links} />
+          <div className="min-w-0 flex-1 space-y-3">
+            <h1 className="font-serif text-2xl font-bold text-slate-800">{title}</h1>
+            {subject.name_cn && subject.name !== subject.name_cn ? (
+              <p className="font-mono text-sm text-slate-500">{subject.name}</p>
+            ) : null}
+            {subject.rating?.score ? (
+              <div className="flex items-center gap-2">
+                <Stars score={subject.rating.score} />
+                <span className="font-mono text-3xl font-bold text-amber-500">
+                  {subject.rating.score}
+                </span>
+                <span className="text-xs text-slate-500">
+                  #{subject.rating.rank} · {subject.rating.total} 人评分
+                </span>
+              </div>
+            ) : null}
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+              <Row k="话数" v={String(eps)} />
+              <Row k="放送开始" v={subject.date} />
+              <Row k="原作" v={staff.原作} />
+              <Row k="制作" v={staff.制作} />
+              <Row k="监督" v={staff.监督} />
+              <Row k="平台" v={subject.platform} />
+            </dl>
+            {tags.length ? (
+              <div className="flex flex-wrap gap-1">
+                {tags.map((t) => (
+                  <Badge
+                    key={t.name}
+                    variant="secondary"
+                    className="border border-rose-100 bg-rose-50 text-rose-700"
+                  >
+                    {t.name}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+            <JumpLinks links={links} />
+          </div>
         </div>
-      </div>
       </div>
 
       <BilibiliPlayer match={bilibili} fallbackKeyword={title} />
@@ -356,9 +346,7 @@ function FullView({
 
       {subject.summary ? (
         <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
-          <h2 className="mb-2 font-serif text-lg font-bold text-slate-800">
-            简介
-          </h2>
+          <h2 className="mb-2 font-serif text-lg font-bold text-slate-800">简介</h2>
           <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-slate-700">
             {subject.summary}
           </p>
@@ -376,16 +364,10 @@ function FullView({
                 key={e.id}
                 className="flex items-baseline gap-2 rounded-lg border border-transparent px-2 py-1.5 text-sm transition-colors hover:border-rose-100 hover:bg-white/72"
               >
-                <span className="w-8 shrink-0 text-right font-mono text-slate-400">
-                  {e.sort}
-                </span>
-                <span className="min-w-0 flex-1 truncate">
-                  {e.name_cn || e.name || "—"}
-                </span>
+                <span className="w-8 shrink-0 text-right font-mono text-slate-400">{e.sort}</span>
+                <span className="min-w-0 flex-1 truncate">{e.name_cn || e.name || "—"}</span>
                 {e.airdate ? (
-                  <span className="shrink-0 font-mono text-xs text-rose-700">
-                    {e.airdate}
-                  </span>
+                  <span className="shrink-0 font-mono text-xs text-rose-700">{e.airdate}</span>
                 ) : null}
               </li>
             ))}
@@ -447,9 +429,7 @@ function Stars({ score }: { score: number }) {
 
 // 局部错误边界：详情加载失败只影响右栏
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  const msg = isRouteErrorResponse(error)
-    ? `${error.status} ${error.statusText}`
-    : "加载详情失败";
+  const msg = isRouteErrorResponse(error) ? `${error.status} ${error.statusText}` : "加载详情失败";
   return (
     <div className="flex h-full items-center justify-center text-sm text-slate-500">
       <p>{msg}</p>

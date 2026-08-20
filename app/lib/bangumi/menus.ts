@@ -10,7 +10,8 @@ import {
   Tv,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { SUBJECT_TYPE } from "./types";
+import { ANIME_CAT, SUBJECT_TYPE } from "./types";
+import { buildListHref } from "./params";
 
 export type MenuLink = {
   to: string;
@@ -32,31 +33,36 @@ const CURRENT_MONTH = String(now.getMonth() + 1);
 function animeLinks(): MenuLink[] {
   const links: MenuLink[] = [
     {
-      to: `/anime?type=${SUBJECT_TYPE.anime}`,
+      to: buildListHref({ type: SUBJECT_TYPE.anime }),
       title: "每日放送",
       desc: "按星期 · 首页",
       icon: CalendarDays,
     },
     {
-      to: `/anime?type=${SUBJECT_TYPE.anime}&view=heat`,
+      to: buildListHref({ type: SUBJECT_TYPE.anime, view: "heat" }),
       title: "近期注目",
       desc: "当季收藏热度",
       icon: Flame,
     },
     {
-      to: `/anime?type=${SUBJECT_TYPE.anime}&sort=rank`,
+      to: buildListHref({ type: SUBJECT_TYPE.anime, sort: "rank" }),
       title: "排行榜",
       desc: "评分最高",
       icon: TrendingUp,
     },
     {
-      to: `/anime?type=${SUBJECT_TYPE.anime}&sort=date`,
+      to: buildListHref({ type: SUBJECT_TYPE.anime, sort: "date" }),
       title: "最新发布",
       desc: "按放送时间",
       icon: Sparkles,
     },
     {
-      to: `/anime?type=${SUBJECT_TYPE.anime}&view=season&year=${CURRENT_YEAR}&month=${CURRENT_MONTH}`,
+      to: buildListHref({
+        type: SUBJECT_TYPE.anime,
+        view: "season",
+        year: CURRENT_YEAR,
+        month: CURRENT_MONTH,
+      }),
       title: "当季新番",
       desc: `${CURRENT_YEAR}年${CURRENT_MONTH}月`,
       icon: Tv,
@@ -64,13 +70,13 @@ function animeLinks(): MenuLink[] {
   ];
 
   for (const [cat, label] of [
-    ["1", "TV"],
-    ["2", "OVA"],
-    ["3", "剧场版"],
-    ["5", "WEB"],
+    [ANIME_CAT.tv, "TV"],
+    [ANIME_CAT.ova, "OVA"],
+    [ANIME_CAT.movie, "剧场版"],
+    [ANIME_CAT.web, "WEB"],
   ] as const) {
     links.push({
-      to: `/anime?type=${SUBJECT_TYPE.anime}&view=cat&cat=${cat}`,
+      to: buildListHref({ type: SUBJECT_TYPE.anime, view: "cat", cat }),
       title: label,
       desc: "分类浏览",
       icon: Clapperboard,
@@ -83,18 +89,18 @@ function animeLinks(): MenuLink[] {
 function simpleLinks(type: string): MenuLink[] {
   return [
     {
-      to: `/anime?type=${type}&sort=rank`,
+      to: buildListHref({ type, sort: "rank" }),
       title: "排行榜",
       desc: "评分最高 · 首页",
       icon: TrendingUp,
     },
     {
-      to: `/anime?type=${type}&view=heat`,
+      to: buildListHref({ type, view: "heat" }),
       title: "近期注目",
       icon: Flame,
     },
     {
-      to: `/anime?type=${type}&sort=date`,
+      to: buildListHref({ type, sort: "date" }),
       title: "最新发布",
       icon: Sparkles,
     },

@@ -1,4 +1,4 @@
-import { createCache, withCache } from "~/lib/bangumi/cache";
+import { createCache, withCache } from "~/lib/cache";
 import { CACHE_TTL_NEWS_MS } from "./constants";
 import { fetchAniNews } from "./fetch-aninews";
 import { fetchBahamutNews } from "./fetch-bahamut";
@@ -41,9 +41,7 @@ function dedupeItems(items: NewsItem[]): NewsItem[] {
 }
 
 function sortByDate(items: NewsItem[]): NewsItem[] {
-  return [...items].sort(
-    (a, b) => parseTime(b.publishedAt) - parseTime(a.publishedAt),
-  );
+  return [...items].sort((a, b) => parseTime(b.publishedAt) - parseTime(a.publishedAt));
 }
 
 /** 聚合中文（Google News + RSSHub 可选）+ 英文 AniNews */

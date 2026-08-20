@@ -1,7 +1,5 @@
-import {
-  fetchBgmAnimeBlog,
-  type BgmBlogItem,
-} from "~/lib/bangumi/fetch-blog-rss";
+import { fetchBgmAnimeBlog } from "~/lib/bangumi/server/blog/rss.server";
+import type { BgmBlogItem } from "~/lib/bangumi/types-blog";
 import type { NewsItem, NewsSourceStatus } from "./types";
 
 const SOURCE_ID = "bgm-anime-blog";
@@ -30,17 +28,13 @@ export async function fetchBgmBlogNews(): Promise<{
 
     return {
       items,
-      sources: [
-        { id: SOURCE_ID, label: SOURCE_LABEL, ok: true, count: items.length },
-      ],
+      sources: [{ id: SOURCE_ID, label: SOURCE_LABEL, ok: true, count: items.length }],
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "未知错误";
     return {
       items: [],
-      sources: [
-        { id: SOURCE_ID, label: SOURCE_LABEL, ok: false, count: 0, error: message },
-      ],
+      sources: [{ id: SOURCE_ID, label: SOURCE_LABEL, ok: false, count: 0, error: message }],
     };
   }
 }

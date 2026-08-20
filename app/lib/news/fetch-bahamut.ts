@@ -1,9 +1,8 @@
 import { FETCH_TIMEOUT_MS } from "./constants";
-import { parseRss2, rssDateToIso, stripHtml } from "./parse-rss";
+import { parseRss2, rssDateToIso, stripHtml } from "~/lib/rss";
 import type { NewsItem, NewsSourceStatus } from "./types";
 
-const UA =
-  "yhang/anime-site (https://github.com/yitom486/animate-site)";
+const UA = "yhang/anime-site (https://github.com/yitom486/animate-site)";
 
 /** 巴哈 GNN 主 feed 游戏占多数，用 ACG 关键词只留动漫/漫画相关 */
 const ACG_KEYWORDS =
@@ -45,9 +44,7 @@ export async function fetchBahamutNews(): Promise<{
 
     return {
       items,
-      sources: [
-        { id: BAHAMUT_FEED.id, label: BAHAMUT_FEED.label, ok: true, count: items.length },
-      ],
+      sources: [{ id: BAHAMUT_FEED.id, label: BAHAMUT_FEED.label, ok: true, count: items.length }],
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "未知错误";

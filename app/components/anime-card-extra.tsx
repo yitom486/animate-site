@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { X } from "lucide-react";
-import type { CardExtra } from "~/lib/bangumi";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import type { CardExtra } from "~/lib/bangumi/types-card";
 
 /** 浏览器内存缓存 + 在途去重，切换星期/重渲染不会重复请求 */
 const clientCache = new Map<number, CardExtra>();
@@ -62,9 +67,7 @@ function useInViewOnce<T extends Element>(rootMargin = "200px") {
 /** 卡片懒加载增强数据：进入视口后异步拉取详情字段 */
 export function useCardExtra<T extends Element>(id: number) {
   const { ref, inView } = useInViewOnce<T>();
-  const [data, setData] = useState<CardExtra | null>(
-    () => clientCache.get(id) ?? null,
-  );
+  const [data, setData] = useState<CardExtra | null>(() => clientCache.get(id) ?? null);
 
   useEffect(() => {
     if (!inView || data) return;
@@ -94,47 +97,23 @@ export function SummaryModal({
   summary: string;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <div
-        className="flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/85 bg-white/95 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3 border-b border-rose-100 px-6 py-4">
-          <h2 className="font-serif text-lg font-bold leading-snug text-slate-800">
+      <DialogContent className="flex max-h-[80vh] flex-col gap-0 overflow-hidden border-white/85 bg-white/95 p-0 shadow-2xl sm:max-w-2xl">
+        <DialogHeader className="border-b border-rose-100 px-6 py-4 pr-14">
+          <DialogTitle className="font-serif text-lg font-bold leading-snug text-slate-800">
             {title}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="关闭"
-            className="shrink-0 rounded-lg border border-rose-100 bg-white/70 p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-rose-700"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="overflow-y-auto px-6 py-5">
-          <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-slate-700">
-            {summary}
-          </p>
-        </div>
-      </div>
-    </div>,
-    document.body,
+          </DialogTitle>
+        </DialogHeader>
+        <DialogDescription className="overflow-y-auto whitespace-pre-line px-6 py-5 font-serif leading-relaxed text-slate-700">
+          {summary}
+        </DialogDescription>
+      </DialogContent>
+    </Dialog>
   );
 }

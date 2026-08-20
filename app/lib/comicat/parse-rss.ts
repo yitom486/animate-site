@@ -1,4 +1,4 @@
-import { parseRss2, rssDateToIso } from "~/lib/news/parse-rss";
+import { parseRss2, rssDateToIso } from "~/lib/rss";
 import type { ComicatItem } from "./types";
 
 function decodeEntities(text: string): string {

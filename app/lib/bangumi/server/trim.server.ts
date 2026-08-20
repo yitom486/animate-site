@@ -1,5 +1,5 @@
 import type { AnimeCardData } from "~/lib/anime-meta";
-import type { RawSubject } from "./types";
+import type { RawSubject } from "./api-types.server";
 
 /** 只保留卡片所需字段，缩小传输体积（利于 HTML 嵌入与 KV 缓存） */
 export function trimSubject(raw: RawSubject): AnimeCardData {
@@ -7,6 +7,7 @@ export function trimSubject(raw: RawSubject): AnimeCardData {
     id: raw.id,
     name: raw.name,
     name_cn: raw.name_cn,
+    type: raw.type,
     date: raw.date,
     air_date: raw.air_date,
     platform: raw.platform,

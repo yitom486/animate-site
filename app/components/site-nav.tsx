@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Form, Link, useLocation } from "react-router";
-import { ChevronDown, Home, Leaf, Menu, MessageSquareText, Search, X } from "lucide-react";
+import { Link, useLocation } from "react-router";
+import { ChevronDown, Home, Leaf, Menu, MessageSquareText, X } from "lucide-react";
+import { SearchForm } from "~/components/search-form";
 import { cn } from "~/lib/utils";
-import { BGM_MENUS, SUBJECT_TYPE } from "~/lib/bangumi";
+import { BGM_MENUS } from "~/lib/bangumi/menus";
+import { SUBJECT_TYPE, SUBJECT_TYPE_ALL } from "~/lib/bangumi/types";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -18,7 +20,7 @@ type SiteNavProps = {
   searchType?: string;
 };
 
-export function SiteNav({ activeType, searchType = SUBJECT_TYPE.anime }: SiteNavProps) {
+export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavProps) {
   const location = useLocation();
   // 受控菜单值：路由变化后自动收起下拉（base-ui 在 SPA 跳转后不会自动关闭）
   const [menuValue, setMenuValue] = useState<string | null>(null);
@@ -42,11 +44,7 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE.anime }: SiteNav
             <Menu className="size-5" />
           </button>
 
-          <Link
-            to="/"
-            prefetch="intent"
-            className="flex shrink-0 items-center gap-3"
-          >
+          <Link to="/" prefetch="intent" className="flex shrink-0 items-center gap-3">
             <span className="flex size-10 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-inner">
               <Leaf className="size-5" />
             </span>
@@ -90,11 +88,7 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE.anime }: SiteNav
         </div>
 
         <nav className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-1 lg:flex">
-          <NavigationMenu
-            align="center"
-            value={menuValue}
-            onValueChange={setMenuValue}
-          >
+          <NavigationMenu align="center" value={menuValue} onValueChange={setMenuValue}>
             <NavigationMenuList className="gap-1">
               {BGM_MENUS.map((m) => (
                 <NavigationMenuItem key={m.type} value={m.type}>
@@ -110,20 +104,14 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE.anime }: SiteNav
                     <ul
                       className={cn(
                         "grid max-h-[min(70vh,480px)] gap-1 overflow-y-auto p-2",
-                        m.type === SUBJECT_TYPE.anime
-                          ? "w-[320px]"
-                          : "w-[220px]",
+                        m.type === SUBJECT_TYPE.anime ? "w-[320px]" : "w-[220px]",
                       )}
                     >
                       {m.links.map(({ to, title, desc, icon: Icon }) => (
                         <li key={to}>
                           <NavigationMenuLink
                             render={
-                              <Link
-                                to={to}
-                                prefetch="intent"
-                                onClick={() => setMenuValue(null)}
-                              />
+                              <Link to={to} prefetch="intent" onClick={() => setMenuValue(null)} />
                             }
                             className="flex-col items-start gap-0.5"
                           >
@@ -132,9 +120,7 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE.anime }: SiteNav
                               {title}
                             </span>
                             {desc ? (
-                              <span className="pl-6 text-xs text-muted-foreground">
-                                {desc}
-                              </span>
+                              <span className="pl-6 text-xs text-muted-foreground">{desc}</span>
                             ) : null}
                           </NavigationMenuLink>
                         </li>
@@ -147,30 +133,10 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE.anime }: SiteNav
           </NavigationMenu>
         </nav>
 
-        <Form
-          method="get"
-          action="/anime"
-          className="ml-auto flex min-w-0 max-w-sm flex-1 items-center gap-1.5"
-        >
-          <input type="hidden" name="type" value={searchType} />
-          <input type="hidden" name="view" value="search" />
-          <div className="relative w-full">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-rose-600" />
-            <input
-              name="q"
-              type="search"
-              placeholder="搜索…"
-              className="h-10 w-full rounded-lg border border-rose-100 bg-white/70 py-1 pr-3 pl-9 text-sm text-slate-800 outline-none transition focus-visible:border-rose-300 focus-visible:ring-2 focus-visible:ring-rose-500/20"
-            />
-          </div>
-        </Form>
+        <SearchForm variant="nav" defaultType={searchType} className="ml-auto max-w-sm flex-1" />
       </div>
 
-      <MobileNav
-        open={mobileOpen}
-        activeType={activeType}
-        onClose={() => setMobileOpen(false)}
-      />
+      <MobileNav open={mobileOpen} activeType={activeType} onClose={() => setMobileOpen(false)} />
     </header>
   );
 }
@@ -213,10 +179,7 @@ function MobileNav({
 
   return createPortal(
     <div className="fixed inset-0 z-50 lg:hidden">
-      <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute inset-y-0 left-0 flex w-[82%] max-w-sm flex-col bg-white/95 shadow-2xl">
         <div className="flex items-center justify-between border-b border-rose-100 px-4 py-4">
           <span className="flex items-center gap-2">
@@ -285,9 +248,7 @@ function MobileNav({
                               {title}
                             </span>
                             {desc ? (
-                              <span className="block text-xs text-slate-400">
-                                {desc}
-                              </span>
+                              <span className="block text-xs text-slate-400">{desc}</span>
                             ) : null}
                           </span>
                         </Link>

@@ -1,6 +1,6 @@
 import { ExternalLink, MessageSquareText } from "lucide-react";
-import type { BgmBlogItem } from "~/lib/bangumi/fetch-blog-rss";
-import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/fetch-blog-rss";
+import type { BgmBlogItem } from "~/lib/bangumi/types-blog";
+import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/web-urls";
 
 type BgmBlogPanelProps = {
   items: BgmBlogItem[];
@@ -57,12 +57,7 @@ export function BgmBlogPanel({
               key={item.id}
               className="rounded-lg border border-rose-100/80 bg-white/70 px-3 py-2.5"
             >
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noreferrer"
-                className="group block"
-              >
+              <a href={item.link} target="_blank" rel="noreferrer" className="group block">
                 <div className="flex items-start justify-between gap-2">
                   <span
                     className={`font-medium leading-snug text-slate-800 group-hover:text-rose-800 ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
