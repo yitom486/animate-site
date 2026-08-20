@@ -84,7 +84,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   ];
 
   return (
-    <div className="celadon-page relative min-h-screen overflow-hidden text-slate-800 selection:bg-rose-500/20 selection:text-rose-900">
+    <div className="celadon-page relative min-h-screen text-slate-800 selection:bg-rose-500/20 selection:text-rose-900">
       <SiteNav />
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">

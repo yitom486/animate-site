@@ -11,24 +11,10 @@ import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
 import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
-import { searchBilibiliBangumi, type BilibiliMatch } from "~/lib/bilibili";
 import { BilibiliPlayer } from "~/components/bilibili-player";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
-const clientDetailCache = createCache<AnimeDetailData>();
-
-type AnimeDetailData = DetailPayload & {
-  bilibili: BilibiliMatch | null;
-};
-
-async function loadBilibiliMatch(subject: DetailPayload["subject"]): Promise<BilibiliMatch | null> {
-  const keywords = [subject.name_cn, subject.name].filter(Boolean) as string[];
-  for (const keyword of keywords) {
-    const match = await searchBilibiliBangumi(keyword).catch(() => null);
-    if (match) return match;
-  }
-  return null;
-}
+const clientDetailCache = createCache<DetailPayload>();
 
 export async function loader({ params }: Route.LoaderArgs) {
   const id = params.id;
@@ -49,30 +35,27 @@ export async function loader({ params }: Route.LoaderArgs) {
     }
   }
 
-  // 下载资源改为详情页内懒加载（双源较慢，避免阻塞详情首屏）
-  const bilibili = await loadBilibiliMatch(clonedData.subject);
-
-  return { ...clonedData, bilibili };
+  return clonedData;
 }
 
 export async function clientLoader({
   params,
   serverLoader,
-}: Route.ClientLoaderArgs): Promise<AnimeDetailData> {
+}: Route.ClientLoaderArgs): Promise<DetailPayload> {
   const id = params.id;
   if (!id) throw new Error("缺少 id");
 
   const cached = clientDetailCache.get(id);
   if (cached) return cached;
 
-  const data = (await serverLoader()) as AnimeDetailData;
+  const data = (await serverLoader()) as DetailPayload;
   clientDetailCache.set(id, data);
   return data;
 }
 clientLoader.hydrate = true as const;
 
 export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
-  const { subject, staff, episodes, bilibili } = loaderData;
+  const { subject, staff, episodes } = loaderData;
   const { expanded, setExpanded } = useOutletContext<AnimeOutletContext>();
   const [searchParams] = useSearchParams();
   const listBackUrl = buildListUrl(listParamsFromSearch(searchParams));
@@ -125,7 +108,6 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
             tags={tags}
             eps={eps}
             links={links}
-            bilibili={bilibili}
             onCollapse={() => setExpanded(false)}
           />
         ) : (
@@ -135,7 +117,6 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
             tags={tags}
             eps={eps}
             links={links}
-            bilibili={bilibili}
             onExpand={() => setExpanded(true)}
           />
         )}
@@ -151,7 +132,6 @@ function CompactView({
   tags,
   eps,
   links,
-  bilibili,
   onExpand,
 }: {
   subject: SubjectDetail;
@@ -159,7 +139,6 @@ function CompactView({
   tags: Array<{ name: string }>;
   eps: string | number;
   links: Record<string, string>;
-  bilibili: BilibiliMatch | null;
   onExpand: () => void;
 }) {
   const title = subject.name_cn || subject.name;
@@ -217,7 +196,7 @@ function CompactView({
         </div>
       ) : null}
 
-      <BilibiliPlayer match={bilibili} fallbackKeyword={title} />
+      <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
 
       <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
 
@@ -234,7 +213,6 @@ function FullView({
   tags,
   eps,
   links,
-  bilibili,
 }: {
   subject: SubjectDetail;
   staff: Record<string, string>;
@@ -242,7 +220,6 @@ function FullView({
   tags: Array<{ name: string }>;
   eps: string | number;
   links: Record<string, string>;
-  bilibili: BilibiliMatch | null;
   onCollapse: () => void;
 }) {
   const title = subject.name_cn || subject.name;
@@ -301,7 +278,7 @@ function FullView({
         </div>
       </div>
 
-      <BilibiliPlayer match={bilibili} fallbackKeyword={title} />
+      <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
 
       <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
 

@@ -69,11 +69,9 @@ function LoadMore({
 }
 
 export function SubjectComments({ id }: { id: string }) {
-  const [data, setData] = useState<Loaded | null>(
-    () => clientCache.get(id) ?? null,
-  );
-  const [state, setState] = useState<"idle" | "loading" | "error">(
-    () => (clientCache.has(id) ? "idle" : "loading"),
+  const [data, setData] = useState<Loaded | null>(() => clientCache.get(id) ?? null);
+  const [state, setState] = useState<"idle" | "loading" | "error">(() =>
+    clientCache.has(id) ? "idle" : "loading",
   );
   const [loadingComments, setLoadingComments] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(false);
@@ -172,9 +170,7 @@ export function SubjectComments({ id }: { id: string }) {
         <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
           <h2 className="mb-3 flex items-baseline gap-2 font-serif text-lg font-bold text-slate-800">
             评论
-            <span className="font-mono text-sm text-slate-500">
-              ({reviewsTotal})
-            </span>
+            <span className="font-mono text-sm text-slate-500">({reviewsTotal})</span>
           </h2>
           <ul className="space-y-3">
             {reviews.map((r) => (
@@ -216,9 +212,7 @@ export function SubjectComments({ id }: { id: string }) {
         <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
           <h2 className="mb-3 flex items-baseline gap-2 font-serif text-lg font-bold text-slate-800">
             吐槽
-            <span className="font-mono text-sm text-slate-500">
-              ({commentsTotal})
-            </span>
+            <span className="font-mono text-sm text-slate-500">({commentsTotal})</span>
           </h2>
           <ul className="space-y-3">
             {comments.map((c) => (

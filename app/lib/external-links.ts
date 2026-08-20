@@ -12,7 +12,7 @@ export const BGM_WEB_ROUTES = {
 export const THIRD_PARTY_SEARCH = {
   online: {
     label: "B站搜索",
-    build: (kw: string) => `https://search.bilibili.com/all?keyword=${encodeURIComponent(kw)}`,
+    build: (kw: string) => `https://search.bilibili.com/bangumi?keyword=${encodeURIComponent(kw)}`,
   },
   download: {
     label: "漫猫搜索",

@@ -7,6 +7,7 @@ export default [
   route("api/anime/card/:id", "routes/api/anime.card.$id.ts"),
   route("api/anime/comments/:id", "routes/api/anime.comments.$id.ts"),
   route("api/anime/downloads/:id", "routes/api/anime.downloads.$id.ts"),
+  route("api/anime/bilibili/:id", "routes/api/anime.bilibili.$id.ts"),
   route("api/news", "routes/api/news.ts"),
   route("api/bgm-blog", "routes/api/bgm-blog.ts"),
   // /anime/blog 是独立全屏页（动画日志，无限滚动），不进三栏壳；

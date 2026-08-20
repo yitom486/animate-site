@@ -1,4 +1,4 @@
-import { createCache, withCache } from "~/lib/bangumi/cache";
+import { createCache, withCache } from "~/lib/cache";
 import {
   btihFromMagnet,
   classifyBatch,
@@ -82,9 +82,7 @@ async function searchByKeyword(keyword: string): Promise<DownloadItem[]> {
   });
 }
 
-export async function fetchDmhyDownloads(
-  keywords: string[],
-): Promise<DownloadItem[]> {
+export async function fetchDmhyDownloads(keywords: string[]): Promise<DownloadItem[]> {
   const lists = await Promise.all(
     keywords.map((kw) => searchByKeyword(kw).catch(() => [] as DownloadItem[])),
   );

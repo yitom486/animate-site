@@ -24,12 +24,11 @@ function interleave<T>(a: T[], b: T[]): T[] {
  * 漫猫 + 動漫花園 双源搜索，按 info-hash 跨源去重，按「合集 / 单集」分组。
  * 漫猫优先（带文件大小、整季典藏版更全），dmhy 补充。
  */
-export async function fetchDownloads(
-  keywords: string[],
-): Promise<GroupedDownloads> {
-  const terms = [
-    ...new Set(keywords.map((k) => k.trim()).filter((k) => k.length >= 2)),
-  ].slice(0, MAX_KEYWORDS);
+export async function fetchDownloads(keywords: string[]): Promise<GroupedDownloads> {
+  const terms = [...new Set(keywords.map((k) => k.trim()).filter((k) => k.length >= 2))].slice(
+    0,
+    MAX_KEYWORDS,
+  );
   if (!terms.length) return { batch: [], single: [], total: 0 };
 
   const [comicat, dmhy] = await Promise.all([

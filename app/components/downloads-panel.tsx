@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Magnet, Package, Film } from "lucide-react";
-import type {
-  DownloadItem,
-  DownloadSource,
-  GroupedDownloads,
-} from "~/lib/downloads";
+import type { DownloadItem, DownloadSource, GroupedDownloads } from "~/lib/downloads";
 
 type DownloadsPanelProps = {
   id: string;
@@ -24,15 +20,10 @@ const SOURCE_LABEL: Record<DownloadSource, string> = {
 function DownloadRow({ item }: { item: DownloadItem }) {
   return (
     <li className="rounded-lg border border-rose-100/80 bg-white/70 px-3 py-2.5">
-      <p className="text-xs font-medium leading-snug text-slate-800">
-        {item.title}
-      </p>
+      <p className="text-xs font-medium leading-snug text-slate-800">{item.title}</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
         {item.sources.map((s) => (
-          <span
-            key={s}
-            className="rounded bg-rose-50 px-1.5 py-0.5 font-mono text-rose-700"
-          >
+          <span key={s} className="rounded bg-rose-50 px-1.5 py-0.5 font-mono text-rose-700">
             {SOURCE_LABEL[s]}
           </span>
         ))}
@@ -79,9 +70,7 @@ function Group({
       <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
         <Icon className="size-3.5 text-rose-600" />
         {label}
-        <span className="font-mono text-[11px] font-normal text-slate-400">
-          ({items.length})
-        </span>
+        <span className="font-mono text-[11px] font-normal text-slate-400">({items.length})</span>
       </h4>
       <ul className="space-y-2">
         {items.map((item) => (
@@ -93,11 +82,9 @@ function Group({
 }
 
 export function DownloadsPanel({ id, searchKeyword }: DownloadsPanelProps) {
-  const [data, setData] = useState<GroupedDownloads | null>(
-    () => clientCache.get(id) ?? null,
-  );
-  const [state, setState] = useState<"idle" | "loading" | "error">(
-    () => (clientCache.has(id) ? "idle" : "loading"),
+  const [data, setData] = useState<GroupedDownloads | null>(() => clientCache.get(id) ?? null);
+  const [state, setState] = useState<"idle" | "loading" | "error">(() =>
+    clientCache.has(id) ? "idle" : "loading",
   );
 
   useEffect(() => {
@@ -194,9 +181,7 @@ export function DownloadsPanel({ id, searchKeyword }: DownloadsPanelProps) {
       ) : null}
 
       {state === "loading" ? (
-        <p className="px-3 py-4 text-center text-xs text-slate-400">
-          搜索下载资源中…
-        </p>
+        <p className="px-3 py-4 text-center text-xs text-slate-400">搜索下载资源中…</p>
       ) : state === "error" ? (
         <p className="rounded-lg border border-dashed border-rose-100 bg-rose-50/40 px-3 py-4 text-center text-xs text-slate-500">
           下载资源加载失败，可点上方「在漫猫搜索」手动查找。

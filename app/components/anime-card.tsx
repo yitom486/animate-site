@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, type PrefetchBehavior } from "react-router";
 import { Star } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { AnimeCover } from "~/components/anime-cover";
@@ -10,16 +10,25 @@ type AnimeCardProps = {
   active?: boolean;
   priority?: boolean;
   rank?: number;
+  /** 默认 intent：仅 hover/focus 时预取详情。viewport 留给后续小范围实验。 */
+  prefetch?: PrefetchBehavior;
 };
 
-export function AnimeCard({ item, to, active, priority, rank }: AnimeCardProps) {
+export function AnimeCard({
+  item,
+  to,
+  active,
+  priority,
+  rank,
+  prefetch = "intent",
+}: AnimeCardProps) {
   const { title, subtitle, score, ratingTotal } = buildCardMeta(item);
   const cover = getCoverUrl(item.images);
 
   return (
     <Link
       to={to}
-      prefetch="viewport"
+      prefetch={prefetch}
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
         "group flex flex-col overflow-hidden rounded-lg border border-white/75 bg-white/62 shadow-sm transition-all duration-300",

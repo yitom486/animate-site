@@ -21,11 +21,9 @@ export async function loader({ params }: Route.LoaderArgs) {
   if (!id) throw new Response("缺少 id", { status: 400 });
 
   const { subject } = await fetchCachedDetail(id);
-  const keywords = [
-    subject.name_cn,
-    subject.name,
-    ...aliases(subject.infobox),
-  ].filter(Boolean) as string[];
+  const keywords = [subject.name_cn, subject.name, ...aliases(subject.infobox)].filter(
+    Boolean,
+  ) as string[];
 
   return fetchDownloads(keywords);
 }

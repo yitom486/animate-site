@@ -21,15 +21,15 @@ bun run dev
 
 ## 常用命令
 
-| 命令 | 说明 |
-| --- | --- |
-| `bun install` | 安装 / 同步依赖（写入 `bun.lock`） |
-| `bun run dev` | 本地开发，带热更新 |
-| `bun run typecheck` | 生成路由类型 + `tsc` 全量类型检查 |
-| `bun run fmt` | 用 Oxfmt 格式化 |
-| `bun run lint` | 用 Oxlint 检查 |
-| `bun run build` | 生产构建，产物在 `build/`（`client/` 静态资源，`server/` 服务端代码） |
-| `bun run start` | 用 `wrangler pages dev` 在本地预览构建产物（贴近线上 Cloudflare 环境） |
+| 命令                | 说明                                                                   |
+| ------------------- | ---------------------------------------------------------------------- |
+| `bun install`       | 安装 / 同步依赖（写入 `bun.lock`）                                     |
+| `bun run dev`       | 本地开发，带热更新                                                     |
+| `bun run typecheck` | 生成路由类型 + `tsc` 全量类型检查                                      |
+| `bun run fmt`       | 用 Oxfmt 格式化                                                        |
+| `bun run lint`      | 用 Oxlint 检查                                                         |
+| `bun run build`     | 生产构建，产物在 `build/`（`client/` 静态资源，`server/` 服务端代码）  |
+| `bun run start`     | 用 `wrangler pages dev` 在本地预览构建产物（贴近线上 Cloudflare 环境） |
 
 ## 部署（Cloudflare Pages）
 
