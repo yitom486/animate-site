@@ -8,6 +8,7 @@ import { DownloadsPanel } from "~/components/downloads-panel";
 import { createCache } from "~/lib/cache";
 import type { DetailPayload, Episode, SubjectDetail } from "~/lib/bangumi/types-detail";
 import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
@@ -15,7 +16,10 @@ import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { BilibiliPlayer } from "~/components/bilibili-player";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
-const clientDetailCache = createCache<DetailPayload>();
+const clientDetailCache = createCache<DetailPayload>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientDetail,
+});
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const id = params.id;

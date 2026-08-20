@@ -1,13 +1,17 @@
 import { parseRss2, rssDateToIso, stripHtml } from "~/lib/rss";
 import { createCache, withCache } from "~/lib/cache";
 import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
+import { CACHE_MAX_ENTRIES } from "../../constants";
 import type { BgmBlogItem } from "../../types-blog";
 import { BGM_WEB, BGM_WEB_ROUTES_BLOG } from "../../web-urls";
 
 /** 全站动画日志 RSS（页面 head autodiscovery 给的正确路径；旧 /blog/rss/2 已返回空） */
 export const BGM_ANIME_BLOG_RSS = `${BGM_WEB}/feed/blog/anime`;
 
-const blogCache = createCache<BgmBlogItem[]>(CACHE_TTL_DETAIL_MS);
+const blogCache = createCache<BgmBlogItem[]>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.blog,
+});
 
 const BGM_RSS_HEADERS = {
   "User-Agent": BGM_USER_AGENT,

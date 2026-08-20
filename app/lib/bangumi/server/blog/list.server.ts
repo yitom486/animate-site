@@ -1,5 +1,6 @@
 import { createCache, withCache } from "~/lib/cache";
 import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
+import { CACHE_MAX_ENTRIES } from "../../constants";
 import type { BgmBlogItem, BgmBlogPage } from "../../types-blog";
 import { BGM_WEB } from "../../web-urls";
 const FETCH_TIMEOUT_MS = 10_000;
@@ -13,7 +14,10 @@ const HEADERS = {
   Referer: `${BGM_WEB}/anime/blog`,
 } as const;
 
-const pageCache = createCache<BgmBlogPage>(CACHE_TTL_DETAIL_MS);
+const pageCache = createCache<BgmBlogPage>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.blog,
+});
 
 function decodeEntities(s: string): string {
   return s

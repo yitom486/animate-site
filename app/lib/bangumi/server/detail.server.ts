@@ -1,15 +1,16 @@
 import { bgmGet } from "./client.server";
 import { BGM_API_ROUTES } from "./api-routes.server";
 import type { DetailPayload, Episode, Person, SubjectDetail } from "../types-detail";
-import { createCache } from "~/lib/cache";
-import { isAbortLike } from "~/lib/upstream";
+import { createCache, withCache } from "~/lib/cache";
 import type { UpstreamRequestOptions } from "~/lib/upstream";
-import { BGM_TIMEOUT_MS, CACHE_TTL_DETAIL_MS } from "./config.server";
+import { BGM_TIMEOUT_MS, CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "./config.server";
 
-export const serverDetailCache = createCache<DetailPayload>(CACHE_TTL_DETAIL_MS);
+export const serverDetailCache = createCache<DetailPayload>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.detail,
+});
 
 const detailOpts = (options?: UpstreamRequestOptions): UpstreamRequestOptions => ({
-  ...options,
   timeoutMs: options?.timeoutMs ?? BGM_TIMEOUT_MS.detail,
 });
 
@@ -57,36 +58,27 @@ export function pickStaff(persons: Person[]) {
   };
 }
 
-/** 复合查询详情接口（包含基本信息、人员、章节），并自动存入共享服务端缓存 */
+/** 复合查询详情接口（包含基本信息、人员、章节），带 LRU + single-flight */
 export async function fetchCachedDetail(
   id: string,
   options?: UpstreamRequestOptions,
 ): Promise<DetailPayload> {
-  const cacheKey = `detail:${id}`;
-  const cached = serverDetailCache.get(cacheKey);
-  if (cached) return cached;
-
-  const opts = detailOpts(options);
-  try {
-    const [subject, persons, episodes] = await Promise.all([
-      fetchSubjectDetail(id, opts),
-      fetchSubjectPersons(id, opts),
-      fetchSubjectEpisodes(id, 100, opts),
-    ]);
-
-    if (opts.signal?.aborted) {
-      throw opts.signal.reason;
-    }
-
-    const data = {
-      subject,
-      staff: pickStaff(persons),
-      episodes,
-    };
-    serverDetailCache.set(cacheKey, data);
-    return data;
-  } catch (error) {
-    if (isAbortLike(error)) throw error;
-    throw error;
-  }
+  return withCache(
+    serverDetailCache,
+    `detail:${id}`,
+    async () => {
+      const opts = detailOpts(options);
+      const [subject, persons, episodes] = await Promise.all([
+        fetchSubjectDetail(id, opts),
+        fetchSubjectPersons(id, opts),
+        fetchSubjectEpisodes(id, 100, opts),
+      ]);
+      return {
+        subject,
+        staff: pickStaff(persons),
+        episodes,
+      };
+    },
+    { signal: options?.signal, useEdge: true },
+  );
 }

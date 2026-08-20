@@ -21,9 +21,13 @@ import {
 } from "~/lib/bangumi/params";
 import { loadCachedAnimeListFromRequest } from "~/lib/bangumi/server/list-load.server";
 import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bangumi/types";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
 import { isAbortLike, throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 
-const clientCache = createCache<AnimeListResult>();
+const clientCache = createCache<AnimeListResult>({
+  ttlMs: CACHE_TTL_LIST_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientList,
+});
 
 export async function loader({ request }: Route.LoaderArgs) {
   try {

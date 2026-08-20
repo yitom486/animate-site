@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Magnet, Package, Film } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
+import { createCache } from "~/lib/cache";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import type { DownloadItem, DownloadSource, GroupedDownloads } from "~/lib/downloads";
 
 type DownloadsPanelProps = {
@@ -11,7 +13,10 @@ type DownloadsPanelProps = {
 type SourceFilter = "all" | DownloadSource;
 
 /** 浏览器内存缓存：详情来回切换不重复请求 */
-const clientCache = new Map<string, GroupedDownloads>();
+const clientCache = createCache<GroupedDownloads>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.downloads,
+});
 
 const SOURCE_LABEL: Record<DownloadSource, string> = {
   comicat: "漫猫",
@@ -117,12 +122,13 @@ function Group({
 export function DownloadsPanel({ id, searchKeyword }: DownloadsPanelProps) {
   const [data, setData] = useState<GroupedDownloads | null>(() => clientCache.get(id) ?? null);
   const [state, setState] = useState<"idle" | "loading" | "error">(() =>
-    clientCache.has(id) ? "idle" : "loading",
+    clientCache.get(id) ? "idle" : "loading",
   );
 
   useEffect(() => {
-    if (clientCache.has(id)) {
-      setData(clientCache.get(id)!);
+    const cached = clientCache.get(id);
+    if (cached) {
+      setData(cached);
       setState("idle");
       return;
     }

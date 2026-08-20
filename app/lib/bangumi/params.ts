@@ -148,18 +148,26 @@ export function buildDetailUrl(id: string | number, listParams: URLSearchParams)
   return qs ? `/anime/${id}?${qs}` : `/anime/${id}`;
 }
 
+/**
+ * 列表缓存键：基于 parseListQuery 的规范业务值，带版本前缀。
+ * 语义等价输入（缺省 page、默认 sort/view、首尾空白）映射为同一 key。
+ */
 export function listCacheKey(searchParams: URLSearchParams): string {
-  const rawView = searchParams.get("view") ?? "";
-  const type = parseListType(searchParams, rawView);
-  const view = resolveView(searchParams, type);
-
-  const keys = view === "calendar" ? LIST_PARAM_KEYS.filter((k) => k !== "page") : LIST_PARAM_KEYS;
-
-  const parts = keys.map((k) => {
-    if (k === "view" && !rawView && view === "calendar") return "view=calendar";
-    return `${k}=${searchParams.get(k) ?? ""}`;
-  });
-
+  const query = parseListQuery(searchParams);
+  const parts = [
+    "list:v1",
+    `type=${query.type}`,
+    `view=${query.view}`,
+    `sort=${query.sort}`,
+    `cat=${query.cat}`,
+    `tag=${query.tag.trim()}`,
+    `q=${query.q.trim()}`,
+    `year=${query.year}`,
+    `month=${query.month}`,
+  ];
+  if (query.view !== "calendar") {
+    parts.push(`page=${query.page}`);
+  }
   return parts.join("&");
 }
 

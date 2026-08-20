@@ -20,7 +20,10 @@ const HEADERS = {
   Accept: "application/rss+xml, application/xml, text/xml, */*",
 } as const;
 
-const cache = createCache<DownloadItem[]>(CACHE_TTL_MS);
+const cache = createCache<DownloadItem[]>({
+  ttlMs: CACHE_TTL_MS,
+  maxEntries: 100,
+});
 
 function decodeEntities(text: string): string {
   return text

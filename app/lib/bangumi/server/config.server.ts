@@ -12,9 +12,7 @@ export const BGM_SEARCH_PAGE_SIZE = 20;
 /** 全类型搜索每个分类预览条数（不超过 BGM_SEARCH_PAGE_SIZE） */
 export const SEARCH_GROUP_PAGE_SIZE = 10;
 
-/** 本地 / Worker 内存缓存 TTL（部署 Cloudflare 后可换 KV，TTL 建议保持一致） */
-export const CACHE_TTL_LIST_MS = 5 * 60 * 1000;
-export const CACHE_TTL_DETAIL_MS = 30 * 60 * 1000;
+export { CACHE_TTL_LIST_MS, CACHE_TTL_DETAIL_MS, CACHE_MAX_ENTRIES } from "../constants";
 
 /** Bangumi 上游请求超时（毫秒）；后续可按 P95 采样调整 */
 export const BGM_TIMEOUT_MS = {

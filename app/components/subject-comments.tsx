@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { MessageSquare, Star } from "lucide-react";
+import { createCache } from "~/lib/cache";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import type {
   CommentPage,
   ReviewPage,
@@ -17,7 +19,10 @@ type Loaded = {
 };
 
 /** 浏览器内存缓存：保存累计加载的页，详情来回切换不丢已展开内容 */
-const clientCache = new Map<string, Loaded>();
+const clientCache = createCache<Loaded>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientDetail,
+});
 
 function formatDate(ts: number): string {
   if (!ts) return "";
@@ -71,14 +76,15 @@ function LoadMore({
 export function SubjectComments({ id }: { id: string }) {
   const [data, setData] = useState<Loaded | null>(() => clientCache.get(id) ?? null);
   const [state, setState] = useState<"idle" | "loading" | "error">(() =>
-    clientCache.has(id) ? "idle" : "loading",
+    clientCache.get(id) ? "idle" : "loading",
   );
   const [loadingComments, setLoadingComments] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(false);
 
   useEffect(() => {
-    if (clientCache.has(id)) {
-      setData(clientCache.get(id)!);
+    const cached = clientCache.get(id);
+    if (cached) {
+      setData(cached);
       setState("idle");
       return;
     }

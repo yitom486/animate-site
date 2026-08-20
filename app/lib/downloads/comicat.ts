@@ -23,7 +23,10 @@ const HEADERS = {
   Accept: "text/html,application/xhtml+xml,*/*",
 } as const;
 
-const cache = createCache<DownloadItem[]>(CACHE_TTL_MS);
+const cache = createCache<DownloadItem[]>({
+  ttlMs: CACHE_TTL_MS,
+  maxEntries: 100,
+});
 
 function stripTags(html: string): string {
   return html

@@ -6,6 +6,8 @@ import type {
   BilibiliMatchStatus,
 } from "~/lib/bilibili";
 import { THIRD_PARTY_SEARCH } from "~/lib/external-links";
+import { createCache } from "~/lib/cache";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import { buttonVariants } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
@@ -20,7 +22,10 @@ type PanelState =
   | { kind: "matched"; match: BilibiliMatch }
   | { kind: "idle"; status: Exclude<BilibiliMatchStatus, "matched"> };
 
-const clientCache = new Map<string, BilibiliMatchResponse>();
+const clientCache = createCache<BilibiliMatchResponse>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientDetail,
+});
 
 const HINT: Record<Exclude<BilibiliMatchStatus, "matched">, string> = {
   empty: "B 站番剧类目里没有自动匹配到对应条目。可用下方搜索页手动查找。",

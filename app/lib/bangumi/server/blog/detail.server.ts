@@ -1,6 +1,7 @@
 import sanitizeHtml from "sanitize-html";
 import { createCache, withCache } from "~/lib/cache";
 import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
+import { CACHE_MAX_ENTRIES } from "../../constants";
 import type { BgmBlogDetail } from "../../types-blog";
 import { BGM_WEB } from "../../web-urls";
 const FETCH_TIMEOUT_MS = 10_000;
@@ -11,7 +12,10 @@ const HEADERS = {
   Referer: `${BGM_WEB}/anime/blog`,
 } as const;
 
-const detailCache = createCache<BgmBlogDetail>(CACHE_TTL_DETAIL_MS);
+const detailCache = createCache<BgmBlogDetail>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.blog,
+});
 
 /** 正文是第三方用户 HTML：白名单消毒，去脚本/事件/危险协议，规范图片与外链 */
 const SANITIZE_OPTS: sanitizeHtml.IOptions = {

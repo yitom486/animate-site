@@ -3,19 +3,28 @@ import { listCacheKey } from "../params";
 import type { AnimeListResult } from "../types";
 import type { UpstreamRequestOptions } from "~/lib/upstream";
 import { upstreamFromRequest } from "~/lib/upstream";
-import { CACHE_TTL_LIST_MS } from "./config.server";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "./config.server";
 import { fetchAnimeList } from "./list.server";
 
 /** 列表 SSR / API 共用进程内缓存（部署 Cloudflare 后可换 KV） */
-export const serverListCache = createCache<AnimeListResult>(CACHE_TTL_LIST_MS);
+export const serverListCache = createCache<AnimeListResult>({
+  ttlMs: CACHE_TTL_LIST_MS,
+  maxEntries: CACHE_MAX_ENTRIES.list,
+});
 
-/** 按 URL 查询参数加载列表，带服务端缓存 */
+/** 按 URL 查询参数加载列表，带服务端缓存 + single-flight */
 export async function loadCachedAnimeList(
   searchParams: URLSearchParams,
   options?: UpstreamRequestOptions,
 ): Promise<AnimeListResult> {
   const key = listCacheKey(searchParams);
-  return withCache(serverListCache, key, () => fetchAnimeList(searchParams, options), options);
+  return withCache(
+    serverListCache,
+    key,
+    // 共享任务只带 timeout，不绑定单次请求的 abort，避免一人取消拖死其他等待者
+    () => fetchAnimeList(searchParams, { timeoutMs: options?.timeoutMs }),
+    { signal: options?.signal, useEdge: true },
+  );
 }
 
 /** 从 Request 解析参数并加载；供 route loader 直接调用，避免 HTTP 回环 */

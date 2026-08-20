@@ -6,36 +6,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { createCache, withCache } from "~/lib/cache";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import type { CardExtra } from "~/lib/bangumi/types-card";
 
-/** 浏览器内存缓存 + 在途去重，切换星期/重渲染不会重复请求 */
-const clientCache = new Map<number, CardExtra>();
-const inFlight = new Map<number, Promise<CardExtra>>();
+/** 浏览器内存缓存 + single-flight，切换星期/重渲染不会重复请求 */
+const clientCache = createCache<CardExtra>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.card,
+});
 
 async function loadCardExtra(id: number): Promise<CardExtra> {
-  const cached = clientCache.get(id);
-  if (cached) return cached;
-
-  const existing = inFlight.get(id);
-  if (existing) return existing;
-
-  const p = fetch(`/api/anime/card/${id}`)
-    .then((res) => {
-      if (!res.ok) throw new Error(`card ${id} failed: ${res.status}`);
-      return res.json() as Promise<CardExtra>;
-    })
-    .then((data) => {
-      clientCache.set(id, data);
-      inFlight.delete(id);
-      return data;
-    })
-    .catch((err) => {
-      inFlight.delete(id);
-      throw err;
-    });
-
-  inFlight.set(id, p);
-  return p;
+  return withCache(clientCache, `card:${id}`, async () => {
+    const res = await fetch(`/api/anime/card/${id}`);
+    if (!res.ok) throw new Error(`card ${id} failed: ${res.status}`);
+    return res.json() as Promise<CardExtra>;
+  });
 }
 
 /** 元素进入视口（含临近 200px）触发一次，用于懒加载——可视的优先、其余滚动到临近时补全 */
@@ -67,7 +53,7 @@ function useInViewOnce<T extends Element>(rootMargin = "200px") {
 /** 卡片懒加载增强数据：进入视口后异步拉取详情字段 */
 export function useCardExtra<T extends Element>(id: number) {
   const { ref, inView } = useInViewOnce<T>();
-  const [data, setData] = useState<CardExtra | null>(() => clientCache.get(id) ?? null);
+  const [data, setData] = useState<CardExtra | null>(() => clientCache.get(`card:${id}`) ?? null);
 
   useEffect(() => {
     if (!inView || data) return;

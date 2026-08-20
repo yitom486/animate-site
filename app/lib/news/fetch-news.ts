@@ -18,7 +18,10 @@ function normalizeZh(item: NewsItem): NewsItem {
   };
 }
 
-const newsCache = createCache<NewsFeed>(CACHE_TTL_NEWS_MS);
+const newsCache = createCache<NewsFeed>({
+  ttlMs: CACHE_TTL_NEWS_MS,
+  maxEntries: 32,
+});
 
 function parseTime(iso?: string): number {
   if (!iso) return 0;
@@ -46,64 +49,69 @@ function sortByDate(items: NewsItem[]): NewsItem[] {
 
 /** 聚合中文（Google News + RSSHub 可选）+ 英文 AniNews */
 export async function fetchNewsFeed(limit = 24): Promise<NewsFeed> {
-  return withCache(newsCache, `news:v6:${limit}`, async () => {
-    const sources: NewsSourceStatus[] = [];
-    let items: NewsItem[] = [];
+  return withCache(
+    newsCache,
+    `news:v6:${limit}`,
+    async () => {
+      const sources: NewsSourceStatus[] = [];
+      let items: NewsItem[] = [];
 
-    const [googleZh, bahamut, bgmBlog, rsshub, aninewsResult] = await Promise.all([
-      fetchGoogleNewsZh(),
-      fetchBahamutNews(),
-      fetchBgmBlogNews(),
-      fetchRssHubNews(),
-      fetchAniNews(12).then(
-        (rows) => ({ ok: true as const, rows }),
-        (err: unknown) => ({
-          ok: false as const,
-          rows: [] as NewsItem[],
-          error: err instanceof Error ? err.message : "未知错误",
-        }),
-      ),
-    ]);
+      const [googleZh, bahamut, bgmBlog, rsshub, aninewsResult] = await Promise.all([
+        fetchGoogleNewsZh(),
+        fetchBahamutNews(),
+        fetchBgmBlogNews(),
+        fetchRssHubNews(),
+        fetchAniNews(12).then(
+          (rows) => ({ ok: true as const, rows }),
+          (err: unknown) => ({
+            ok: false as const,
+            rows: [] as NewsItem[],
+            error: err instanceof Error ? err.message : "未知错误",
+          }),
+        ),
+      ]);
 
-    sources.push(...googleZh.sources);
-    items.push(...googleZh.items);
+      sources.push(...googleZh.sources);
+      items.push(...googleZh.items);
 
-    sources.push(...bahamut.sources);
-    items.push(...bahamut.items);
+      sources.push(...bahamut.sources);
+      items.push(...bahamut.items);
 
-    sources.push(...bgmBlog.sources);
-    items.push(...bgmBlog.items);
+      sources.push(...bgmBlog.sources);
+      items.push(...bgmBlog.items);
 
-    sources.push(...rsshub.sources);
-    items.push(...rsshub.items);
+      sources.push(...rsshub.sources);
+      items.push(...rsshub.items);
 
-    if (aninewsResult.ok) {
-      sources.push({
-        id: "aninews",
-        label: "AniNews",
-        ok: true,
-        count: aninewsResult.rows.length,
-      });
-      items.push(...aninewsResult.rows);
-    } else {
-      sources.push({
-        id: "aninews",
-        label: "AniNews",
-        ok: false,
-        count: 0,
-        error: aninewsResult.error,
-      });
-    }
+      if (aninewsResult.ok) {
+        sources.push({
+          id: "aninews",
+          label: "AniNews",
+          ok: true,
+          count: aninewsResult.rows.length,
+        });
+        items.push(...aninewsResult.rows);
+      } else {
+        sources.push({
+          id: "aninews",
+          label: "AniNews",
+          ok: false,
+          count: 0,
+          error: aninewsResult.error,
+        });
+      }
 
-    const merged = sortByDate(dedupeItems(items)).map(normalizeZh);
-    const zh = merged.filter((x) => x.locale === "zh").slice(0, 16);
-    const en = merged.filter((x) => x.locale === "en").slice(0, 12);
-    items = [...zh, ...en].slice(0, limit);
+      const merged = sortByDate(dedupeItems(items)).map(normalizeZh);
+      const zh = merged.filter((x) => x.locale === "zh").slice(0, 16);
+      const en = merged.filter((x) => x.locale === "en").slice(0, 12);
+      items = [...zh, ...en].slice(0, limit);
 
-    return {
-      items,
-      fetchedAt: new Date().toISOString(),
-      sources,
-    };
-  });
+      return {
+        items,
+        fetchedAt: new Date().toISOString(),
+        sources,
+      };
+    },
+    { useEdge: true },
+  );
 }
