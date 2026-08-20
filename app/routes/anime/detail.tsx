@@ -14,6 +14,7 @@ import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { BilibiliPlayer } from "~/components/bilibili-player";
+import { SubjectRelationsPanel } from "~/components/subject-relations";
 import {
   isAnimeSubjectType,
   subjectCountLabel,
@@ -161,9 +162,9 @@ function DetailOverview({
   onExpand: () => void;
 }) {
   const title = subject.name_cn || subject.name;
-  const isAnime = isAnimeSubjectType(subject.type);
   const countLabel = subjectCountLabel(subject.type);
   const dateLabel = subjectDateLabel(subject.type);
+  const staffRows = Object.entries(staff).filter(([, v]) => Boolean(v));
 
   return (
     <section
@@ -235,13 +236,9 @@ function DetailOverview({
             <Row k="原名" v={subject.name} />
             {countValue ? <Row k={countLabel} v={String(countValue)} /> : null}
             <Row k={dateLabel} v={subject.date} />
-            <Row k="原作" v={staff.原作} />
-            {isAnime ? (
-              <>
-                <Row k="制作" v={staff.制作} />
-                <Row k="监督" v={staff.监督} />
-              </>
-            ) : null}
+            {staffRows.map(([k, v]) => (
+              <Row key={k} k={k} v={v} />
+            ))}
             <Row k="平台" v={subject.platform} />
           </dl>
           {tags.length ? (
@@ -308,6 +305,7 @@ function FullExtras({
       ) : null}
 
       <SubjectComments id={String(subject.id)} />
+      <SubjectRelationsPanel id={String(subject.id)} enabled />
     </>
   );
 }

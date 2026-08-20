@@ -4,6 +4,7 @@ import { createCache, withCache } from "~/lib/cache";
 import type { UpstreamRequestOptions } from "~/lib/upstream";
 import { BGM_TIMEOUT_MS, CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "./config.server";
 import type { InfoboxItem } from "~/lib/anime-meta";
+import { staffFromInfobox } from "../staff-by-type";
 import type { CardExtra, CardExtraBatchResult, SubjectCollection } from "../types-card";
 
 /** 单批最多 ID 数；与客户端批大小对齐 */
@@ -13,6 +14,7 @@ export const CARD_BATCH_UPSTREAM_CONCURRENCY = 4;
 
 /** 详情接口里卡片需要的原始字段（/calendar 不返回，需单独取 /v0/subjects/{id}） */
 type RawCardSubject = {
+  type?: number;
   name?: string;
   summary?: string;
   tags?: Array<{ name: string; count: number }>;
@@ -26,24 +28,6 @@ const cardExtraCache = createCache<CardExtra>({
   maxEntries: CACHE_MAX_ENTRIES.card,
 });
 
-/** 将 infobox 某一项的值拍平成字符串（值可能是字符串或 {v} 数组） */
-function infoboxValue(infobox: InfoboxItem[] | undefined, ...keys: string[]): string {
-  if (!infobox) return "";
-  for (const key of keys) {
-    const item = infobox.find((i) => i.key === key);
-    if (!item) continue;
-    const { value } = item;
-    if (typeof value === "string") return value;
-    if (Array.isArray(value)) {
-      return value
-        .map((v) => (typeof v === "string" ? v : v.v))
-        .filter(Boolean)
-        .join("、");
-    }
-  }
-  return "";
-}
-
 function toCardExtra(raw: RawCardSubject): CardExtra {
   return {
     nameJa: raw.name ?? "",
@@ -51,11 +35,7 @@ function toCardExtra(raw: RawCardSubject): CardExtra {
     tags: (raw.tags ?? []).slice(0, 3).map((t) => t.name),
     metaTags: raw.meta_tags ?? [],
     collection: raw.collection ?? {},
-    staff: {
-      原作: infoboxValue(raw.infobox, "原作"),
-      导演: infoboxValue(raw.infobox, "导演", "監督", "监督"),
-      制作: infoboxValue(raw.infobox, "动画制作", "動畫制作", "製作", "动画制作公司"),
-    },
+    staff: staffFromInfobox(raw.type ?? 2, raw.infobox),
   };
 }
 
@@ -66,7 +46,7 @@ export async function fetchCardExtra(
 ): Promise<CardExtra> {
   return withCache(
     cardExtraCache,
-    `card:${id}`,
+    `card:v2:${id}`,
     async () => {
       const raw = await bgmGet<RawCardSubject>(BGM_API_ROUTES.subjectDetail(id), undefined, {
         timeoutMs: options?.timeoutMs ?? BGM_TIMEOUT_MS.detail,

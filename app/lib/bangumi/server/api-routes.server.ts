@@ -8,6 +8,12 @@ export const BGM_API_ROUTES = {
   /** 制作人员 / 声优 */
   subjectPersons: (id: string | number) => `/subjects/${id}/persons`,
 
+  /** 关联条目 */
+  subjectRelated: (id: string | number) => `/subjects/${id}/subjects`,
+
+  /** 角色 */
+  subjectCharacters: (id: string | number) => `/subjects/${id}/characters`,
+
   /** 章节列表 */
   episodes: () => `/episodes`,
 

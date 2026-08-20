@@ -110,7 +110,7 @@ npm ls --depth=0   通过
 | [017](./017-cloudflare-env.md)                   | Cloudflare 环境变量读取      | P1     | 待实施           | 提高生产配置可靠性和可测试性                          |
 | [018](./018-testing-and-lint.md)                 | 测试与 Lint 基础设施         | P1     | 待实施           | 为后续逐项优化建立回归保护                            |
 | [019](./019-package-manager-lockfile.md)         | 包管理器与锁文件统一         | P3     | 待实施           | 保证本地、CI 和部署依赖可复现                         |
-| [020](./020-multi-type-subject-expansion.md)     | 对齐官网多类型导航与板块日志 | P1/P2  | 第 0～2 期已完成 | 日志+分类/平台已通；标签暂缓；第 3 期可选             |
+| [020](./020-multi-type-subject-expansion.md)     | 对齐官网多类型导航与板块日志 | P1/P2  | 第 0～3 期已完成 | 日志+分类/平台+详情增强已通；标签暂缓；路径中性化未做 |
 
 ## 推荐推进顺序
 

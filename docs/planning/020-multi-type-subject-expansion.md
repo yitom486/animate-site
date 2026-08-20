@@ -4,7 +4,7 @@
 
 | 字段       | 值                                                                                                               |
 | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| 状态       | 第 0～2 期已完成；第 3 期可选；标签浏览暂缓                                                                      |
+| 状态       | 第 0～3 期已完成；标签浏览暂缓；`/anime` 路径中性化未做                                                          |
 | 优先级     | **P1（各类型板块日志）** / P2（分类·标签·详情收敛等其余官网对齐项）                                              |
 | 类别       | 产品扩展 / 对齐 bgm.tv 导航 / 多类型社区日志                                                                     |
 | 证据置信度 | 高：本站动画日志链路与官网菜单结构已确认；其它类型 `/book/blog` 等与 `/feed/blog/{type}` 已有公开页面与 RSS 证据 |
@@ -236,6 +236,20 @@ fetchBlogDetail(id: string) // 单篇跨类型，可不传 section
 ```
 
 （尚无实施记录。方案已按「官网对齐 + 日志优先」修订于 2026-08-20。）
+
+### 记录 — 第 3 期（2026-08-20）
+
+- 状态：已完成（详情增强）；**未做** `/anime` 路径中性化
+- 范围：
+  - `pickStaffByType` / `staffFromInfobox`：按条目类型选职员键
+  - 详情概要与日历卡片动态渲染 staff
+  - 非动画跳过 episodes 上游请求（`detail:v2` 缓存键）
+  - 关联条目 + 角色：展开区懒加载 `/api/anime/related/:id`（失败可降级）
+  - card-extra staff 改为 `Record<string, string>`（`card:v2` 缓存键）
+- 关键改动文件：`staff-by-type.ts`、`detail.server.ts`、`card-extra.server.ts`、`types-card.ts`、`subject-relations.tsx`、`api/anime.related.$id.ts`、`routes.ts`、`detail.tsx`、`anime-schedule.tsx`
+- 与方案差异：角色仅展示不链人物页；不做人物/小组；不改 `/anime` URL
+- 验证方式：`bun run typecheck`
+- 备注：020 主线至此可收；标签另开或后续补入口页
 
 ### 记录 — 第 2 期（2026-08-20）
 

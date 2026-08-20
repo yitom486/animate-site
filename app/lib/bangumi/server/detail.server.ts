@@ -4,6 +4,9 @@ import type { DetailPayload, Episode, Person, SubjectDetail } from "../types-det
 import { createCache, withCache } from "~/lib/cache";
 import type { UpstreamRequestOptions } from "~/lib/upstream";
 import { BGM_TIMEOUT_MS, CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "./config.server";
+import { pickStaffByType } from "../staff-by-type";
+import { isAnimeSubjectType } from "../subject-display";
+import { toHttps } from "~/lib/anime-meta";
 
 export const serverDetailCache = createCache<DetailPayload>({
   ttlMs: CACHE_TTL_DETAIL_MS,
@@ -44,18 +47,9 @@ export async function fetchSubjectEpisodes(
   return res.data ?? [];
 }
 
+/** @deprecated 使用 pickStaffByType */
 export function pickStaff(persons: Person[]) {
-  const pick = (relation: string) =>
-    persons
-      .filter((p) => p.relation === relation)
-      .map((p) => p.name)
-      .join("、");
-
-  return {
-    原作: pick("原作"),
-    制作: pick("动画制作"),
-    监督: pick("导演"),
-  };
+  return pickStaffByType(persons, 2);
 }
 
 /** 复合查询详情接口（包含基本信息、人员、章节），带 LRU + single-flight */
@@ -65,19 +59,106 @@ export async function fetchCachedDetail(
 ): Promise<DetailPayload> {
   return withCache(
     serverDetailCache,
-    `detail:${id}`,
+    `detail:v2:${id}`,
     async () => {
       const opts = detailOpts(options);
-      const [subject, persons, episodes] = await Promise.all([
+      const [subject, persons] = await Promise.all([
         fetchSubjectDetail(id, opts),
         fetchSubjectPersons(id, opts),
-        fetchSubjectEpisodes(id, 100, opts),
       ]);
+
+      const episodes = isAnimeSubjectType(subject.type)
+        ? await fetchSubjectEpisodes(id, 100, opts)
+        : [];
+
       return {
         subject,
-        staff: pickStaff(persons),
+        staff: pickStaffByType(persons, subject.type),
         episodes,
       };
+    },
+    { signal: options?.signal, useEdge: true },
+  );
+}
+
+export type RelatedSubjectLite = {
+  id: number;
+  name: string;
+  nameCn: string;
+  relation: string;
+  type: number;
+  image?: string;
+};
+
+export type CharacterLite = {
+  id: number;
+  name: string;
+  relation: string;
+  image?: string;
+};
+
+export type SubjectRelationsPayload = {
+  related: RelatedSubjectLite[];
+  characters: CharacterLite[];
+};
+
+type RawRelated = {
+  id: number;
+  name?: string;
+  name_cn?: string;
+  relation?: string;
+  type?: number;
+  images?: { grid?: string; small?: string; medium?: string };
+};
+
+type RawCharacter = {
+  id: number;
+  name?: string;
+  relation?: string;
+  images?: { grid?: string; small?: string; medium?: string };
+};
+
+const relationsCache = createCache<SubjectRelationsPayload>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.detail,
+});
+
+/** 关联条目 + 角色（详情增强；与核心详情分离，避免拉长首屏） */
+export async function fetchSubjectRelations(
+  id: string,
+  options?: UpstreamRequestOptions,
+): Promise<SubjectRelationsPayload> {
+  return withCache(
+    relationsCache,
+    `relations:${id}`,
+    async () => {
+      const opts = detailOpts(options);
+      const [relatedRaw, charactersRaw] = await Promise.all([
+        bgmGet<RawRelated[]>(BGM_API_ROUTES.subjectRelated(id), undefined, opts).catch(
+          () => [] as RawRelated[],
+        ),
+        bgmGet<RawCharacter[]>(BGM_API_ROUTES.subjectCharacters(id), undefined, opts).catch(
+          () => [] as RawCharacter[],
+        ),
+      ]);
+
+      const related: RelatedSubjectLite[] = (relatedRaw ?? []).slice(0, 24).map((row) => ({
+        id: row.id,
+        name: row.name ?? "",
+        nameCn: row.name_cn ?? "",
+        relation: row.relation ?? "",
+        type: row.type ?? 0,
+        image: toHttps(row.images?.grid || row.images?.small || row.images?.medium),
+      }));
+
+      const characters: CharacterLite[] = (charactersRaw ?? []).slice(0, 16).map((row) => ({
+        id: row.id,
+        name: row.name ?? "",
+        relation: row.relation ?? "",
+        image: toHttps(row.images?.grid || row.images?.small || row.images?.medium),
+      }));
+
+      return { related, characters };
     },
     { signal: options?.signal, useEdge: true },
   );

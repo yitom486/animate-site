@@ -14,7 +14,8 @@ export type CardExtra = {
   tags: string[];
   metaTags: string[];
   collection: SubjectCollection;
-  staff: { 原作: string; 导演: string; 制作: string };
+  /** 按条目类型从 infobox 抽取的职员字段（键为展示名） */
+  staff: Record<string, string>;
 };
 
 /** 批量卡片增强响应：部分失败按 id 隔离 */

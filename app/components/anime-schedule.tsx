@@ -271,27 +271,14 @@ function ScheduleCard({
             </div>
           ) : null}
 
-          {/* staff：导演 / 原作 / 制作 */}
-          {staff && (staff.导演 || staff.原作 || staff.制作) ? (
+          {staff && Object.keys(staff).length > 0 ? (
             <dl className="space-y-0.5 text-[11px] text-slate-500">
-              {staff.导演 ? (
-                <div className="flex gap-1.5">
-                  <dt className="shrink-0 text-slate-400">导演</dt>
-                  <dd className="min-w-0 truncate text-slate-600">{staff.导演}</dd>
+              {Object.entries(staff).map(([k, v]) => (
+                <div key={k} className="flex gap-1.5">
+                  <dt className="shrink-0 text-slate-400">{k}</dt>
+                  <dd className="min-w-0 truncate text-slate-600">{v}</dd>
                 </div>
-              ) : null}
-              {staff.原作 ? (
-                <div className="flex gap-1.5">
-                  <dt className="shrink-0 text-slate-400">原作</dt>
-                  <dd className="min-w-0 truncate text-slate-600">{staff.原作}</dd>
-                </div>
-              ) : null}
-              {staff.制作 ? (
-                <div className="flex gap-1.5">
-                  <dt className="shrink-0 text-slate-400">制作</dt>
-                  <dd className="min-w-0 truncate text-slate-600">{staff.制作}</dd>
-                </div>
-              ) : null}
+              ))}
             </dl>
           ) : null}
 
