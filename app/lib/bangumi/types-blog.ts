@@ -4,7 +4,7 @@ export type BgmBlogItem = {
   link: string;
   excerpt?: string;
   publishedAt?: string;
-  /** 以下字段仅 HTML 列表抓取（/anime/blog）填充，RSS 源没有 */
+  /** 以下字段仅 HTML 列表抓取（/{section}/blog）填充，RSS 源没有 */
   author?: string;
   authorUrl?: string;
   avatar?: string;

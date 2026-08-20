@@ -1,15 +1,25 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Link } from "react-router";
-import type { Route } from "./+types/blog-detail";
+import type { Route } from "./+types/detail";
 import { SiteNav } from "~/components/site-nav";
 import { fetchBgmBlogDetail } from "~/lib/bangumi/server/blog/detail.server";
+import {
+  BLOG_SECTION_LABEL,
+  blogListPath,
+  blogSectionToSubjectType,
+  parseBlogSection,
+} from "~/lib/bangumi/blog-section";
 
 export async function loader({ params }: Route.LoaderArgs) {
-  return fetchBgmBlogDetail(params.id);
+  const section = parseBlogSection(params.section);
+  if (!section) throw new Response("未知日志板块", { status: 404 });
+  const post = await fetchBgmBlogDetail(params.id);
+  return { post, section };
 }
 
 export function meta({ data }: Route.MetaArgs) {
-  return [{ title: `${data?.title ?? "动画日志"} · 亚域空间` }];
+  const fallback = data?.section ? BLOG_SECTION_LABEL[data.section] : "日志";
+  return [{ title: `${data?.post?.title ?? fallback} · 亚域空间` }];
 }
 
 function formatWhen(iso?: string) {
@@ -26,20 +36,21 @@ function formatWhen(iso?: string) {
 }
 
 export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
-  const post = loaderData;
+  const { post, section } = loaderData;
+  const listLabel = BLOG_SECTION_LABEL[section];
 
   return (
     <div className="celadon-page min-h-screen text-slate-800">
-      <SiteNav activeType="2" />
+      <SiteNav activeType={blogSectionToSubjectType(section)} />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
         <Link
-          to="/anime/blog"
+          to={blogListPath(section)}
           prefetch="intent"
           className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 hover:underline"
         >
           <ArrowLeft className="size-3.5" />
-          返回动画日志
+          返回{listLabel}
         </Link>
 
         <article className="celadon-glass mt-3 rounded-lg p-6">
@@ -47,7 +58,6 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
             {post.title}
           </h1>
 
-          {/* 来源标注：尊重原作者，明示转载 + 原文链接 */}
           <div className="mt-3 flex flex-wrap items-center gap-2 border-b border-rose-100/80 pb-4 text-xs text-slate-500">
             {post.avatar ? (
               <img

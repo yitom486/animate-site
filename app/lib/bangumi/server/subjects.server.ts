@@ -14,31 +14,33 @@ type BrowseParams = {
   cat?: string;
   year?: string;
   month?: string;
+  series?: boolean;
+  platform?: string;
   limit?: number;
   offset?: number;
 };
 
-/** GET /v0/subjects — 排行榜 / 最新 / 分类 / 季度 */
+/** GET /v0/subjects — 排行榜 / 最新 / 分类 / 季度 / 平台 / 系列 */
 export async function fetchSubjectsBrowse(
   params: BrowseParams,
   options?: UpstreamRequestOptions,
 ): Promise<{ items: AnimeCardData[]; total: number }> {
-  const body = await bgmGet<SubjectListResponse>(
-    BGM_API_ROUTES.subjects(),
-    {
-      type: params.type,
-      sort: params.sort ?? "rank",
-      cat: params.cat,
-      year: params.year,
-      month: params.month,
-      limit: params.limit ?? LIST_PAGE_SIZE,
-      offset: params.offset ?? 0,
-    },
-    {
-      ...options,
-      timeoutMs: options?.timeoutMs ?? BGM_TIMEOUT_MS.list,
-    },
-  );
+  const query: Record<string, string | number | boolean | undefined> = {
+    type: params.type,
+    sort: params.sort ?? "rank",
+    cat: params.cat,
+    year: params.year,
+    month: params.month,
+    limit: params.limit ?? LIST_PAGE_SIZE,
+    offset: params.offset ?? 0,
+  };
+  if (params.series) query.series = true;
+  if (params.platform) query.platform = params.platform;
+
+  const body = await bgmGet<SubjectListResponse>(BGM_API_ROUTES.subjects(), query, {
+    ...options,
+    timeoutMs: options?.timeoutMs ?? BGM_TIMEOUT_MS.list,
+  });
   return { items: trimSubjects(body.data), total: body.total };
 }
 
@@ -47,7 +49,7 @@ export async function fetchSubjectsList(
   offset: number,
   options?: UpstreamRequestOptions,
 ): Promise<{ items: AnimeCardData[]; total: number }> {
-  const { type, sort, view, cat, year, month } = query;
+  const { type, sort, view, cat, year, month, series, platform } = query;
   const browseType = isSubjectType(type) ? type : SUBJECT_TYPE.anime;
 
   if (view === "cat" && cat) {
@@ -56,6 +58,8 @@ export async function fetchSubjectsList(
         type: browseType,
         sort: "rank",
         cat,
+        series: series || undefined,
+        platform: platform || undefined,
         limit: LIST_PAGE_SIZE,
         offset,
       },
@@ -81,8 +85,11 @@ export async function fetchSubjectsList(
     {
       type: browseType,
       sort,
+      cat: cat || undefined,
       year: year || undefined,
       month: month || undefined,
+      series: series || undefined,
+      platform: platform || undefined,
       limit: LIST_PAGE_SIZE,
       offset,
     },

@@ -78,13 +78,13 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
               prefetch="intent"
               className={cn(
                 "hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-colors sm:inline-flex",
-                location.pathname === "/anime/blog"
+                /^\/(anime|book|music|game|real)\/blog/.test(location.pathname)
                   ? "bg-white/80 text-rose-800 shadow-sm"
                   : "text-slate-600 hover:bg-white/70 hover:text-rose-700",
               )}
             >
               <MessageSquareText className="size-4" />
-              动画日志
+              日志
             </Link>
           </div>
 
@@ -105,7 +105,11 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
                       <ul
                         className={cn(
                           "grid max-h-[min(70vh,480px)] gap-1 overflow-y-auto p-2",
-                          m.type === SUBJECT_TYPE.anime ? "w-[320px]" : "w-[220px]",
+                          m.type === SUBJECT_TYPE.anime || m.type === SUBJECT_TYPE.game
+                            ? "w-[320px]"
+                            : m.type === SUBJECT_TYPE.book || m.type === SUBJECT_TYPE.real
+                              ? "w-[280px]"
+                              : "w-[240px]",
                         )}
                       >
                         {m.links.map(({ to, title, desc, icon: Icon }) => (

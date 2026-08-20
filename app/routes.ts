@@ -11,12 +11,10 @@ export default [
   route("api/anime/bilibili/:id", "routes/api/anime.bilibili.$id.ts"),
   route("api/news", "routes/api/news.ts"),
   route("api/bgm-blog", "routes/api/bgm-blog.ts"),
-  // /anime/blog 是独立全屏页（动画日志，无限滚动），不进三栏壳；
-  // 静态段优先于下方 anime/:id 动态段，不会冲突
-  route("anime/blog", "routes/anime/blog.tsx"),
-  // /anime/blog/:id 站内日志详情（爬 bgm 单篇 + 消毒渲染）
-  route("anime/blog/:id", "routes/anime/blog-detail.tsx"),
-  // /anime 是带子路由的布局：三栏外壳里放 <Outlet/>
+  // 板块日志：须在 anime 布局动态段之前；section ∈ anime|book|music|game|real
+  route(":section/blog", "routes/blog/list.tsx"),
+  route(":section/blog/:id", "routes/blog/detail.tsx"),
+  // /anime 是带子路由的布局：三栏外壳里放 <outlet/>
   route("anime", "routes/anime/layout.tsx", [
     index("routes/anime/index.tsx"), // /anime          → 右栏占位
     route(":id", "routes/anime/detail.tsx"), // /anime/:id → 右栏详情

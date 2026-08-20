@@ -3,21 +3,25 @@ import { BGM_USER_AGENT, CACHE_TTL_DETAIL_MS } from "../config.server";
 import { CACHE_MAX_ENTRIES } from "../../constants";
 import type { BgmBlogItem, BgmBlogPage } from "../../types-blog";
 import { BGM_WEB } from "../../web-urls";
+import type { BlogSection } from "../../blog-section";
+
 const FETCH_TIMEOUT_MS = 10_000;
 
-/** 全站动画日志列表页每页固定 24 条；满页即判定还有下一页 */
+/** 全站板块日志列表页每页约 24 条；满页即判定还有下一页 */
 const PAGE_SIZE = 24;
-
-const HEADERS = {
-  "User-Agent": BGM_USER_AGENT,
-  Accept: "text/html,application/xhtml+xml,*/*",
-  Referer: `${BGM_WEB}/anime/blog`,
-} as const;
 
 const pageCache = createCache<BgmBlogPage>({
   ttlMs: CACHE_TTL_DETAIL_MS,
   maxEntries: CACHE_MAX_ENTRIES.blog,
 });
+
+function headersFor(section: BlogSection) {
+  return {
+    "User-Agent": BGM_USER_AGENT,
+    Accept: "text/html,application/xhtml+xml,*/*",
+    Referer: `${BGM_WEB}/${section}/blog`,
+  } as const;
+}
 
 function decodeEntities(s: string): string {
   return s
@@ -41,7 +45,7 @@ function absolutize(url: string): string {
   return url;
 }
 
-/** Bangumi 时间 "2026-6-23 21:53"（CST / UTC+8）→ ISO；非标准格式手动解析避免 Workers 上 NaN */
+/** Bangumi 时间 "2026-6-23 21:53"（CST / UTC+8）→ ISO */
 function bgmTimeToIso(raw: string): string | undefined {
   const m = raw.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
   if (!m) return undefined;
@@ -50,8 +54,8 @@ function bgmTimeToIso(raw: string): string | undefined {
   return Number.isNaN(ms) ? undefined : new Date(ms).toISOString();
 }
 
-/** 解析 /anime/blog 列表页 HTML（每个日志是一个 .item.clearit 块） */
-function parseBlogList(html: string): BgmBlogItem[] {
+/** 解析 `/{section}/blog` 列表页 HTML（每个日志是一个 .item.clearit 块） */
+function parseBlogList(html: string, section: BlogSection): BgmBlogItem[] {
   const blocks = html.split('<div class="item clearit"').slice(1);
   const items: BgmBlogItem[] = [];
 
@@ -67,7 +71,7 @@ function parseBlogList(html: string): BgmBlogItem[] {
     const contentM = block.match(/<div class="content">\s*<a[^>]*>([\s\S]*?)<\/a>/);
     const excerpt = contentM
       ? stripTags(contentM[1])
-          .replace(/\[https?:\/\/[^\]]+\]/g, "") // 去掉 Bangumi 条目引用 [https://bgm.tv/subject/..]
+          .replace(/\[https?:\/\/[^\]]+\]/g, "")
           .replace(/\s+/g, " ")
           .trim()
           .slice(0, 140) || undefined
@@ -83,7 +87,7 @@ function parseBlogList(html: string): BgmBlogItem[] {
     const repliesM = timeText.match(/(\d+)\s*回复/);
 
     items.push({
-      id: `anime:${id}`,
+      id: `${section}:${id}`,
       title,
       link: `${BGM_WEB}/blog/${id}`,
       excerpt,
@@ -98,13 +102,13 @@ function parseBlogList(html: string): BgmBlogItem[] {
   return items;
 }
 
-/** 全站动画日志分页抓取（HTML，支持无限滚动；RSS 无法分页故用网页） */
-export async function fetchBgmAnimeBlogPage(page = 1): Promise<BgmBlogPage> {
+/** 板块日志分页（HTML；RSS 窗口太短，无限滚动必须用网页） */
+export async function fetchBlogListPage(section: BlogSection, page = 1): Promise<BgmBlogPage> {
   const safePage = Math.max(1, Math.floor(Number(page) || 1));
 
-  return withCache(pageCache, `bgm:blog:html:${safePage}`, async () => {
-    const res = await fetch(`${BGM_WEB}/anime/blog?page=${safePage}`, {
-      headers: HEADERS,
+  return withCache(pageCache, `bgm:blog:html:${section}:${safePage}`, async () => {
+    const res = await fetch(`${BGM_WEB}/${section}/blog?page=${safePage}`, {
+      headers: headersFor(section),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
@@ -113,8 +117,13 @@ export async function fetchBgmAnimeBlogPage(page = 1): Promise<BgmBlogPage> {
     }
 
     const html = await res.text();
-    const items = parseBlogList(html);
+    const items = parseBlogList(html, section);
 
     return { items, page: safePage, hasMore: items.length >= PAGE_SIZE };
   });
+}
+
+/** @deprecated 使用 fetchBlogListPage("anime", page) */
+export async function fetchBgmAnimeBlogPage(page = 1): Promise<BgmBlogPage> {
+  return fetchBlogListPage("anime", page);
 }

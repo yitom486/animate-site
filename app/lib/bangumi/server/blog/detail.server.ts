@@ -9,7 +9,7 @@ const FETCH_TIMEOUT_MS = 10_000;
 const HEADERS = {
   "User-Agent": BGM_USER_AGENT,
   Accept: "text/html,application/xhtml+xml,*/*",
-  Referer: `${BGM_WEB}/anime/blog`,
+  Referer: `${BGM_WEB}/`,
 } as const;
 
 const detailCache = createCache<BgmBlogDetail>({
@@ -128,7 +128,7 @@ export async function fetchBgmBlogDetail(id: string | number): Promise<BgmBlogDe
   const link = `${BGM_WEB}/blog/${numId}`;
 
   return withCache(detailCache, `bgm:blog:detail:${numId}`, async () => {
-    const fallback: BgmBlogDetail = { id: numId, title: "动画日志", link, contentHtml: "" };
+    const fallback: BgmBlogDetail = { id: numId, title: "日志", link, contentHtml: "" };
 
     try {
       const res = await fetch(link, {
@@ -143,7 +143,7 @@ export async function fetchBgmBlogDetail(id: string | number): Promise<BgmBlogDe
       const title =
         (titleM && stripTags(titleM[1])) ||
         stripTags(html.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "") ||
-        "动画日志";
+        "日志";
 
       const card = html.match(/<div class="author user-card">([\s\S]*?)<div class="header">/);
       const cardHtml = card?.[1] ?? "";

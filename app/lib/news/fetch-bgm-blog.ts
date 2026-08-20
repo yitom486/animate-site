@@ -1,4 +1,4 @@
-import { fetchBgmAnimeBlog } from "~/lib/bangumi/server/blog/rss.server";
+import { fetchBlogSectionRss } from "~/lib/bangumi/server/blog/rss.server";
 import type { BgmBlogItem } from "~/lib/bangumi/types-blog";
 import type { NewsItem, NewsSourceStatus } from "./types";
 
@@ -23,7 +23,7 @@ export async function fetchBgmBlogNews(): Promise<{
   sources: NewsSourceStatus[];
 }> {
   try {
-    const rows = await fetchBgmAnimeBlog(12);
+    const rows = await fetchBlogSectionRss("anime", 12);
     const items = rows.map(toNewsItem);
 
     return {

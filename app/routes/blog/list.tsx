@@ -1,22 +1,41 @@
 import { ExternalLink, Loader2, MessageCircle, MessageSquareText } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import type { Route } from "./+types/blog";
+import type { Route } from "./+types/list";
 import { SiteNav } from "~/components/site-nav";
-import { fetchBgmAnimeBlogPage } from "~/lib/bangumi/server/blog/list.server";
+import { fetchBlogListPage } from "~/lib/bangumi/server/blog/list.server";
 import type { BgmBlogItem, BgmBlogPage } from "~/lib/bangumi/types-blog";
 import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/web-urls";
+import {
+  BLOG_SECTION_DESC,
+  BLOG_SECTION_LABEL,
+  BLOG_SECTIONS,
+  blogDetailPath,
+  blogListPath,
+  blogSectionToSubjectType,
+  parseBlogSection,
+  type BlogSection,
+} from "~/lib/bangumi/blog-section";
+import { cn } from "~/lib/utils";
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
+  const section = parseBlogSection(params.section);
+  if (!section) throw new Response("未知日志板块", { status: 404 });
+
   const url = new URL(request.url);
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
-  return fetchBgmAnimeBlogPage(page);
+  const data = await fetchBlogListPage(section, page);
+  return { ...data, section };
 }
 
-export function meta() {
+export function meta({ data }: Route.MetaArgs) {
+  const label = data?.section ? BLOG_SECTION_LABEL[data.section] : "日志";
   return [
-    { title: "动画日志 · 亚域空间" },
-    { name: "description", content: "Bangumi 用户撰写的动画观后感、吐槽与讨论。" },
+    { title: `${label} · 亚域空间` },
+    {
+      name: "description",
+      content: data?.section ? BLOG_SECTION_DESC[data.section] : "Bangumi 社区日志",
+    },
   ];
 }
 
@@ -44,7 +63,8 @@ function dedupe(items: BgmBlogItem[]): BgmBlogItem[] {
   return out;
 }
 
-export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
+export default function BlogListPage({ loaderData }: Route.ComponentProps) {
+  const section = loaderData.section;
   const [items, setItems] = useState<BgmBlogItem[]>(loaderData.items);
   const [page, setPage] = useState(loaderData.page);
   const [hasMore, setHasMore] = useState(loaderData.hasMore);
@@ -52,32 +72,41 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
   const [errored, setErrored] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // 切换板块时重置（同模块多 section 路由可能复用实例）
+  useEffect(() => {
+    setItems(loaderData.items);
+    setPage(loaderData.page);
+    setHasMore(loaderData.hasMore);
+    setErrored(false);
+    setLoading(false);
+  }, [loaderData]);
+
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
     setLoading(true);
     setErrored(false);
     try {
       const next = page + 1;
-      const res = await fetch(`/api/bgm-blog?page=${next}`);
+      const res = await fetch(`/api/bgm-blog?section=${section}&page=${next}`);
       if (!res.ok) throw new Error(String(res.status));
       const data = (await res.json()) as BgmBlogPage;
       setItems((prev) => dedupe([...prev, ...data.items]));
       setPage(next);
       setHasMore(data.hasMore && data.items.length > 0);
     } catch {
+      // 失败不等于没有下一页（014）：保留 hasMore，仅标记 errored
       setErrored(true);
-      setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [loading, hasMore, page, section]);
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) loadMore();
+        if (entries[0]?.isIntersecting) void loadMore();
       },
       { rootMargin: "600px" },
     );
@@ -87,7 +116,7 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="celadon-page min-h-screen text-slate-800">
-      <SiteNav activeType="2" />
+      <SiteNav activeType={blogSectionToSubjectType(section)} />
 
       <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
         <header className="celadon-glass rounded-lg p-5">
@@ -98,14 +127,12 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
               </span>
               <h1 className="mt-1 inline-flex items-center gap-2 font-serif text-2xl font-bold text-slate-800">
                 <MessageSquareText className="size-6 text-rose-600" />
-                动画日志
+                {BLOG_SECTION_LABEL[section]}
               </h1>
-              <p className="mt-1 text-xs text-slate-500">
-                Bangumi 用户撰写的观后感、吐槽与讨论 · 来自 bgm.tv 动画板块
-              </p>
+              <p className="mt-1 text-xs text-slate-500">{BLOG_SECTION_DESC[section]}</p>
             </div>
             <a
-              href={BGM_WEB_ROUTES_BLOG.animeBlog()}
+              href={BGM_WEB_ROUTES_BLOG.sectionBlog(section)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 rounded-lg border border-rose-100 bg-white/70 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
@@ -113,6 +140,24 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
               在 Bangumi 查看 <ExternalLink className="size-3.5" />
             </a>
           </div>
+
+          <nav className="mt-4 flex flex-wrap gap-1.5" aria-label="日志板块">
+            {BLOG_SECTIONS.map((s) => (
+              <Link
+                key={s}
+                to={blogListPath(s)}
+                prefetch="intent"
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  s === section
+                    ? "border-rose-300 bg-rose-50 text-rose-800"
+                    : "border-rose-100 bg-white/60 text-slate-600 hover:border-rose-200 hover:bg-white",
+                )}
+              >
+                {BLOG_SECTION_LABEL[s]}
+              </Link>
+            ))}
+          </nav>
         </header>
 
         {items.length === 0 ? (
@@ -122,7 +167,7 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
         ) : (
           <ul className="mt-5 grid gap-3 sm:grid-cols-2">
             {items.map((item) => (
-              <BlogCard key={item.id} item={item} />
+              <BlogCard key={item.id} item={item} section={section} />
             ))}
           </ul>
         )}
@@ -139,8 +184,7 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
             <button
               type="button"
               onClick={() => {
-                setHasMore(true);
-                loadMore();
+                void loadMore();
               }}
               className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700 hover:border-rose-300"
             >
@@ -157,11 +201,11 @@ export default function AnimeBlogPage({ loaderData }: Route.ComponentProps) {
   );
 }
 
-function BlogCard({ item }: { item: BgmBlogItem }) {
+function BlogCard({ item, section }: { item: BgmBlogItem; section: BlogSection }) {
   const blogId = item.id.replace(/\D/g, "");
   return (
     <li className="group rounded-lg border border-rose-100/80 bg-white/65 p-3.5 transition-colors hover:border-rose-300 hover:bg-white">
-      <Link to={`/anime/blog/${blogId}`} prefetch="intent" className="block">
+      <Link to={blogDetailPath(section, blogId)} prefetch="intent" className="block">
         <div className="flex items-start gap-3">
           {item.avatar ? (
             <img

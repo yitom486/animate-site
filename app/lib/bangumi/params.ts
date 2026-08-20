@@ -9,6 +9,7 @@ import {
   type ListView,
   type SubjectTypeValue,
 } from "./types";
+import { subjectCatLabel } from "./subject-categories";
 
 const LIST_PARAM_KEYS = [
   "type",
@@ -20,6 +21,8 @@ const LIST_PARAM_KEYS = [
   "q",
   "year",
   "month",
+  "series",
+  "platform",
 ] as const;
 
 const DETAIL_BACK_PARAM_KEYS = [...LIST_PARAM_KEYS, "date", "calendar"] as const;
@@ -36,6 +39,8 @@ export type ListHrefParams = {
   month?: string;
   date?: string;
   calendar?: string;
+  series?: string | boolean | number;
+  platform?: string;
 };
 
 export function getDefaultView(type: ListTypeValue): ListView {
@@ -90,6 +95,8 @@ export function parseListQuery(searchParams: URLSearchParams): ListQuery {
     q: searchParams.get("q") ?? "",
     year: searchParams.get("year") ?? "",
     month: searchParams.get("month") ?? "",
+    series: searchParams.get("series") === "1" || searchParams.get("series") === "true",
+    platform: searchParams.get("platform")?.trim() ?? "",
   };
 }
 
@@ -104,6 +111,8 @@ export function buildBaseParams(query: ListQuery): Record<string, string> {
   if (query.q) params.q = query.q;
   if (query.year) params.year = query.year;
   if (query.month) params.month = query.month;
+  if (query.series) params.series = "1";
+  if (query.platform) params.platform = query.platform;
 
   return params;
 }
@@ -133,7 +142,13 @@ export function buildListUrl(listParams: URLSearchParams): string {
 export function buildListHref(params: ListHrefParams = {}): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value == null || value === "") continue;
+    if (value == null || value === "" || value === false) continue;
+    if (key === "series") {
+      if (value === true || value === 1 || value === "1" || value === "true") {
+        search.set("series", "1");
+      }
+      continue;
+    }
     search.set(key, String(value));
   }
   return buildListUrl(search);
@@ -155,7 +170,7 @@ export function buildDetailUrl(id: string | number, listParams: URLSearchParams)
 export function listCacheKey(searchParams: URLSearchParams): string {
   const query = parseListQuery(searchParams);
   const parts = [
-    "list:v1",
+    "list:v2",
     `type=${query.type}`,
     `view=${query.view}`,
     `sort=${query.sort}`,
@@ -164,6 +179,8 @@ export function listCacheKey(searchParams: URLSearchParams): string {
     `q=${query.q.trim()}`,
     `year=${query.year}`,
     `month=${query.month}`,
+    `series=${query.series ? "1" : "0"}`,
+    `platform=${query.platform}`,
   ];
   if (query.view !== "calendar") {
     parts.push(`page=${query.page}`);
@@ -182,8 +199,10 @@ export function getViewLabel(query: ListQuery): string {
       return "每日放送";
     case "heat":
       return "近期注目";
-    case "cat":
-      return ANIME_CAT_LABEL[query.cat] ? `分类 · ${ANIME_CAT_LABEL[query.cat]}` : "分类浏览";
+    case "cat": {
+      const label = subjectCatLabel(query.type, query.cat) ?? ANIME_CAT_LABEL[query.cat];
+      return label ? `分类 · ${label}` : "分类浏览";
+    }
     case "tag":
       return query.tag ? `标签 · ${query.tag}` : "标签浏览";
     case "search":
@@ -197,6 +216,8 @@ export function getViewLabel(query: ListQuery): string {
     case "links":
       return "外链入口";
     default:
+      if (query.platform) return `平台 · ${query.platform}`;
+      if (query.series) return "系列作品";
       if (query.sort === "rank" && query.year) {
         return `${query.year}年排行榜`;
       }

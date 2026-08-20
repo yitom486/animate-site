@@ -79,13 +79,13 @@ async function bgmJson<T>(url: string, init: RequestInit, ctx: FetchContext): Pr
 
 export async function bgmGet<T>(
   path: string,
-  params?: Record<string, string | number | undefined>,
+  params?: Record<string, string | number | boolean | undefined>,
   options?: UpstreamRequestOptions,
 ): Promise<T> {
   const url = new URL(path.startsWith("http") ? path : `${BGM_V0}${path}`);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
+      if (v !== undefined && v !== "" && v !== false) url.searchParams.set(k, String(v));
     }
   }
   return bgmJson<T>(url.toString(), {}, { operation: "bgmGet", path, options });

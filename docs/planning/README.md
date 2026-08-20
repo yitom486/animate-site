@@ -89,27 +89,28 @@ npm ls --depth=0   通过
 
 ## 问题总表
 
-| 编号                                             | 主题                        | 优先级 | 状态          | 核心价值                                              |
-| ------------------------------------------------ | --------------------------- | ------ | ------------- | ----------------------------------------------------- |
-| [001](./001-card-viewport-prefetch.md)           | 控制卡片视口预取成本        | P0     | 待验证        | 避免列表浏览触发大量昂贵详情请求                      |
-| [002](./002-detail-request-waterfall.md)         | 消除详情可选请求瀑布        | P0     | 待验证        | 降低详情尾延迟并隔离第三方故障                        |
-| [003](./003-bangumi-timeout-and-cancellation.md) | Bangumi 超时与取消传播      | P0     | 已实施        | 避免核心请求无限等待和无效占用                        |
-| [004](./004-anime-real-ssr.md)                   | Anime 列表真实 SSR          | P1     | 已实施        | 缩短首屏数据路径并改善无 JS/SEO 能力                  |
-| [005](./005-cache-bounds-and-single-flight.md)   | 有界缓存与 Single-flight    | P1     | L1+L2 已实施  | 控制内存并减少缓存击穿和重复回源                      |
-| [006](./006-font-payload.md)                     | 字体负载精简                | P2     | 方案 A 已实施 | 减少 CSS、部署资源和实际字体请求                      |
-| [007](./007-hero-image.md)                       | Hero 图片优化               | P1     | 方案 B 已实施 | 低成本减少首屏约 1.1 MiB 图片浪费                     |
-| [008](./008-cover-loading.md)                    | 封面优先级与响应式图片      | P1     | A+B 已实施    | 避免过多高优先级大图竞争网络                          |
-| [009](./009-home-news-critical-path.md)          | 新闻退出首页关键路径        | P1     | 待实施        | 避免下方第三方内容阻塞首页 SSR                        |
-| [010](./010-calendar-n-plus-one.md)              | 日历卡片 N+1 请求           | P1     | 方案 B 已实施 | 降低 API 数量、Function 调用和上游压力                |
-| [011](./011-site-nav-bundle.md)                  | SiteNav Bundle 优化         | P2     | 暂缓          | 分析后：大头是 Select+Floating UI，单换菜单收益不足   |
-| [012](./012-calendar-code-splitting.md)          | 日历代码按需拆分            | P2     | 暂缓          | 分析后：非日历约可省数 KiB～9 KiB gzip，暂不整体 lazy |
-| [013](./013-mobile-hydration-layout.md)          | 移动端 hydration 后布局切换 | P2     | 待实施        | 提升首屏视觉稳定性并简化响应式逻辑                    |
-| [014](./014-blog-retry-and-infinite-list.md)     | 博客重试与无限列表          | P1/P2  | 待实施        | 修复确定性重试 bug，并治理长期 DOM 增长               |
-| [015](./015-detail-deep-clone.md)                | 详情深克隆优化              | P3     | 待实施        | 减少不必要序列化并提高数据处理可读性                  |
-| [016](./016-blur-animation-motion.md)            | 模糊与动效降级              | P2     | 待实施        | 改善 reduced-motion 与低性能设备体验                  |
-| [017](./017-cloudflare-env.md)                   | Cloudflare 环境变量读取     | P1     | 待实施        | 提高生产配置可靠性和可测试性                          |
-| [018](./018-testing-and-lint.md)                 | 测试与 Lint 基础设施        | P1     | 待实施        | 为后续逐项优化建立回归保护                            |
-| [019](./019-package-manager-lockfile.md)         | 包管理器与锁文件统一        | P3     | 待实施        | 保证本地、CI 和部署依赖可复现                         |
+| 编号                                             | 主题                         | 优先级 | 状态             | 核心价值                                              |
+| ------------------------------------------------ | ---------------------------- | ------ | ---------------- | ----------------------------------------------------- |
+| [001](./001-card-viewport-prefetch.md)           | 控制卡片视口预取成本         | P0     | 待验证           | 避免列表浏览触发大量昂贵详情请求                      |
+| [002](./002-detail-request-waterfall.md)         | 消除详情可选请求瀑布         | P0     | 待验证           | 降低详情尾延迟并隔离第三方故障                        |
+| [003](./003-bangumi-timeout-and-cancellation.md) | Bangumi 超时与取消传播       | P0     | 已实施           | 避免核心请求无限等待和无效占用                        |
+| [004](./004-anime-real-ssr.md)                   | Anime 列表真实 SSR           | P1     | 已实施           | 缩短首屏数据路径并改善无 JS/SEO 能力                  |
+| [005](./005-cache-bounds-and-single-flight.md)   | 有界缓存与 Single-flight     | P1     | L1+L2 已实施     | 控制内存并减少缓存击穿和重复回源                      |
+| [006](./006-font-payload.md)                     | 字体负载精简                 | P2     | 方案 A 已实施    | 减少 CSS、部署资源和实际字体请求                      |
+| [007](./007-hero-image.md)                       | Hero 图片优化                | P1     | 方案 B 已实施    | 低成本减少首屏约 1.1 MiB 图片浪费                     |
+| [008](./008-cover-loading.md)                    | 封面优先级与响应式图片       | P1     | A+B 已实施       | 避免过多高优先级大图竞争网络                          |
+| [009](./009-home-news-critical-path.md)          | 新闻退出首页关键路径         | P1     | 待实施           | 避免下方第三方内容阻塞首页 SSR                        |
+| [010](./010-calendar-n-plus-one.md)              | 日历卡片 N+1 请求            | P1     | 方案 B 已实施    | 降低 API 数量、Function 调用和上游压力                |
+| [011](./011-site-nav-bundle.md)                  | SiteNav Bundle 优化          | P2     | 暂缓             | 分析后：大头是 Select+Floating UI，单换菜单收益不足   |
+| [012](./012-calendar-code-splitting.md)          | 日历代码按需拆分             | P2     | 暂缓             | 分析后：非日历约可省数 KiB～9 KiB gzip，暂不整体 lazy |
+| [013](./013-mobile-hydration-layout.md)          | 移动端 hydration 后布局切换  | P2     | 待实施           | 提升首屏视觉稳定性并简化响应式逻辑                    |
+| [014](./014-blog-retry-and-infinite-list.md)     | 博客重试与无限列表           | P1/P2  | 重试已修         | 重试随 020 落地；长列表窗口化仍可后置                 |
+| [015](./015-detail-deep-clone.md)                | 详情深克隆优化               | P3     | 待实施           | 减少不必要序列化并提高数据处理可读性                  |
+| [016](./016-blur-animation-motion.md)            | 模糊与动效降级               | P2     | 待实施           | 改善 reduced-motion 与低性能设备体验                  |
+| [017](./017-cloudflare-env.md)                   | Cloudflare 环境变量读取      | P1     | 待实施           | 提高生产配置可靠性和可测试性                          |
+| [018](./018-testing-and-lint.md)                 | 测试与 Lint 基础设施         | P1     | 待实施           | 为后续逐项优化建立回归保护                            |
+| [019](./019-package-manager-lockfile.md)         | 包管理器与锁文件统一         | P3     | 待实施           | 保证本地、CI 和部署依赖可复现                         |
+| [020](./020-multi-type-subject-expansion.md)     | 对齐官网多类型导航与板块日志 | P1/P2  | 第 0～2 期已完成 | 日志+分类/平台已通；标签暂缓；第 3 期可选             |
 
 ## 推荐推进顺序
 
@@ -144,6 +145,12 @@ npm ls --depth=0   通过
 3. [015 详情深克隆](./015-detail-deep-clone.md)。
 4. [019 包管理器与锁文件](./019-package-manager-lockfile.md)。
 
+### 产品扩展（可与性能项并行）
+
+1. [020 对齐官网多类型导航与板块日志](./020-multi-type-subject-expansion.md)：**优先第 1 期各类型日志**（与动画日志同构）；分类/标签随后；不做人物/小组整站搬迁。
+2. 建议与 [014](./014-blog-retry-and-infinite-list.md) 一并考虑（泛化日志时修重试）。
+3. 每完成一期，在 020 文末「分期实施记录」记账后再开下一期。
+
 该顺序不是强制流程。`007` 和 `014` 的第一阶段都较独立，可以在任何时间先实施。
 
 ## 主要依赖关系
@@ -160,6 +167,9 @@ flowchart TD
     A011[011 Bundle 分析] --> A012[012 日历代码拆分]
     R016[016 动效降级] --> R013[013 移动端布局动效验收]
     M019[019 包管理器决策] --> T018
+    E020a[020 第0期详情收敛] --> E020b[020 第1期多类型日志]
+    E020b --> E020c[020 第2期分类与标签]
+    T014[014 博客重试] -.-> E020b
 ```
 
 其中存在一个可灵活处理的关系：`019` 从长期看应先于 CI 固化，但不应阻止 `018` 先用当前 README 已采用的 npm 建立最小测试脚本。等维护者明确包管理器后，再统一 CI 与锁文件。

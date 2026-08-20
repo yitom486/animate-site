@@ -76,6 +76,10 @@ export type ListQuery = {
   q: string;
   year: string;
   month: string;
+  /** 仅书籍：系列主条目 */
+  series: boolean;
+  /** 仅游戏：平台筛选 */
+  platform: string;
 };
 
 export type SearchGroup = {

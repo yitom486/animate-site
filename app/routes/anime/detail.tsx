@@ -14,6 +14,11 @@ import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { BilibiliPlayer } from "~/components/bilibili-player";
+import {
+  isAnimeSubjectType,
+  subjectCountLabel,
+  subjectDateLabel,
+} from "~/lib/bangumi/subject-display";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<DetailPayload>({
@@ -70,15 +75,18 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
   const listBackUrl = buildListUrl(listParamsFromSearch(searchParams));
 
   const title = subject.name_cn || subject.name;
-  const eps = subject.total_episodes || subject.eps || "—";
+  const countValue = subject.total_episodes || subject.eps;
   const tags = (subject.tags ?? []).slice(0, 6);
+  const isAnime = isAnimeSubjectType(subject.type);
 
-  const links = {
+  const links: Record<string, string> = {
     bangumi: BGM_WEB_ROUTES.subject(subject.id),
-    online: THIRD_PARTY_SEARCH.online.build(title),
-    download: THIRD_PARTY_SEARCH.download.build(title),
-    subtitle: THIRD_PARTY_SEARCH.subtitle.build(title),
   };
+  if (isAnime) {
+    links.online = THIRD_PARTY_SEARCH.online.build(title);
+    links.download = THIRD_PARTY_SEARCH.download.build(title);
+    links.subtitle = THIRD_PARTY_SEARCH.subtitle.build(title);
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -114,16 +122,22 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
             subject={subject}
             staff={staff}
             tags={tags}
-            eps={eps}
+            countValue={countValue}
             expanded={expanded}
             onExpand={() => setExpanded(true)}
           />
 
-          <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
-          <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
+          {isAnime ? (
+            <>
+              <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
+              <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
+            </>
+          ) : null}
           <JumpLinks links={links} />
 
-          {expanded ? <FullExtras subject={subject} episodes={episodes} /> : null}
+          {expanded ? (
+            <FullExtras subject={subject} episodes={episodes} showEpisodes={isAnime} />
+          ) : null}
         </div>
       </div>
     </div>
@@ -135,18 +149,21 @@ function DetailOverview({
   subject,
   staff,
   tags,
-  eps,
+  countValue,
   expanded,
   onExpand,
 }: {
   subject: SubjectDetail;
   staff: Record<string, string>;
   tags: Array<{ name: string }>;
-  eps: string | number;
+  countValue?: number;
   expanded: boolean;
   onExpand: () => void;
 }) {
   const title = subject.name_cn || subject.name;
+  const isAnime = isAnimeSubjectType(subject.type);
+  const countLabel = subjectCountLabel(subject.type);
+  const dateLabel = subjectDateLabel(subject.type);
 
   return (
     <section
@@ -216,11 +233,15 @@ function DetailOverview({
           >
             <Row k="中文名" v={subject.name_cn} />
             <Row k="原名" v={subject.name} />
-            <Row k="话数" v={String(eps)} />
-            <Row k="放送开始" v={subject.date} />
+            {countValue ? <Row k={countLabel} v={String(countValue)} /> : null}
+            <Row k={dateLabel} v={subject.date} />
             <Row k="原作" v={staff.原作} />
-            <Row k="制作" v={staff.制作} />
-            <Row k="监督" v={staff.监督} />
+            {isAnime ? (
+              <>
+                <Row k="制作" v={staff.制作} />
+                <Row k="监督" v={staff.监督} />
+              </>
+            ) : null}
             <Row k="平台" v={subject.platform} />
           </dl>
           {tags.length ? (
@@ -242,8 +263,16 @@ function DetailOverview({
   );
 }
 
-function FullExtras({ subject, episodes }: { subject: SubjectDetail; episodes: Episode[] }) {
-  const mainEps = episodes.filter((e) => e.type === 0);
+function FullExtras({
+  subject,
+  episodes,
+  showEpisodes,
+}: {
+  subject: SubjectDetail;
+  episodes: Episode[];
+  showEpisodes: boolean;
+}) {
+  const mainEps = showEpisodes ? episodes.filter((e) => e.type === 0) : [];
 
   return (
     <>

@@ -14,6 +14,8 @@ export type Episode = {
 
 export type SubjectDetail = {
   id: number;
+  /** Bangumi SubjectType：1 书 / 2 动画 / 3 音乐 / 4 游戏 / 6 三次元 */
+  type?: number;
   name: string;
   name_cn: string;
   date?: string;
