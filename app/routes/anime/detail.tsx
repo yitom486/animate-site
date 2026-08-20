@@ -105,77 +105,111 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {expanded ? (
-          <FullView
-            subject={subject}
-            staff={staff}
-            episodes={episodes}
-            tags={tags}
-            eps={eps}
-            links={links}
-            onCollapse={() => setExpanded(false)}
-          />
-        ) : (
-          <CompactView
+        <div className={expanded ? "mx-auto max-w-5xl space-y-6" : "space-y-4"}>
+          <DetailOverview
             subject={subject}
             staff={staff}
             tags={tags}
             eps={eps}
-            links={links}
+            expanded={expanded}
             onExpand={() => setExpanded(true)}
           />
-        )}
+
+          <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
+          <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
+          <JumpLinks links={links} />
+
+          {expanded ? <FullExtras subject={subject} episodes={episodes} /> : null}
+        </div>
       </div>
     </div>
   );
 }
 
-/* ───────── 紧凑视图（挤出的窄面板）───────── */
-function CompactView({
+/* ───────── 详情概要：同一棵内容树，根据宽度调整布局 ───────── */
+function DetailOverview({
   subject,
   staff,
   tags,
   eps,
-  links,
+  expanded,
   onExpand,
 }: {
   subject: SubjectDetail;
   staff: Record<string, string>;
   tags: Array<{ name: string }>;
   eps: string | number;
-  links: Record<string, string>;
+  expanded: boolean;
   onExpand: () => void;
 }) {
   const title = subject.name_cn || subject.name;
-  return (
-    <div className="space-y-4">
-      {subject.rating?.score ? (
-        <div className="rounded-lg border border-rose-100 bg-white/64 p-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Stars score={subject.rating.score} />
-            <span className="font-mono text-2xl font-bold text-amber-500">
-              {subject.rating.score}
-            </span>
-            <span className="text-xs text-slate-500">
-              #{subject.rating.rank} · {subject.rating.total} 人
-            </span>
-          </div>
-        </div>
-      ) : null}
 
-      <div className="rounded-lg border border-white/75 bg-white/58 p-3 shadow-sm">
-        <div className="flex gap-3">
-          {subject.images?.large ? (
-            <button type="button" onClick={onExpand} className="shrink-0">
-              <img
-                src={subject.images.large}
-                alt={title}
-                referrerPolicy="no-referrer"
-                className="h-44 w-32 rounded-lg border border-rose-100 object-cover shadow-sm transition-transform hover:scale-[1.03]"
-              />
-            </button>
+  return (
+    <section
+      className={
+        "rounded-lg border border-white/75 bg-white/58 shadow-sm " + (expanded ? "p-4" : "p-3")
+      }
+    >
+      <div className={expanded ? "flex flex-col gap-6 md:flex-row" : "flex gap-3"}>
+        {subject.images?.large ? (
+          <button
+            type="button"
+            onClick={() => !expanded && onExpand()}
+            disabled={expanded}
+            className="shrink-0 self-start disabled:cursor-default"
+          >
+            <img
+              src={subject.images.large}
+              alt={title}
+              referrerPolicy="no-referrer"
+              className={
+                "rounded-lg border border-rose-100 object-cover shadow-sm transition-transform " +
+                (expanded ? "h-72 w-52 shadow-md" : "h-44 w-32 hover:scale-[1.03]")
+              }
+            />
+          </button>
+        ) : null}
+        <div className={expanded ? "min-w-0 flex-1 space-y-3" : "min-w-0 flex-1 space-y-2"}>
+          <h1
+            className={
+              "font-serif font-bold text-slate-800 " + (expanded ? "text-2xl" : "text-base")
+            }
+          >
+            {title}
+          </h1>
+          {subject.name_cn && subject.name !== subject.name_cn ? (
+            <p
+              className={
+                expanded ? "font-mono text-sm text-slate-500" : "font-mono text-xs text-slate-500"
+              }
+            >
+              {subject.name}
+            </p>
           ) : null}
-          <dl className="space-y-1.5 text-xs">
+          {subject.rating?.score ? (
+            <div className="flex items-center gap-2">
+              <Stars score={subject.rating.score} />
+              <span
+                className={
+                  expanded
+                    ? "font-mono text-3xl font-bold text-amber-500"
+                    : "font-mono text-2xl font-bold text-amber-500"
+                }
+              >
+                {subject.rating.score}
+              </span>
+              <span className="text-xs text-slate-500">
+                #{subject.rating.rank} · {subject.rating.total} 人评分
+              </span>
+            </div>
+          ) : null}
+          <dl
+            className={
+              expanded
+                ? "grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2"
+                : "space-y-1.5 text-xs"
+            }
+          >
             <Row k="中文名" v={subject.name_cn} />
             <Row k="原名" v={subject.name} />
             <Row k="话数" v={String(eps)} />
@@ -183,110 +217,32 @@ function CompactView({
             <Row k="原作" v={staff.原作} />
             <Row k="制作" v={staff.制作} />
             <Row k="监督" v={staff.监督} />
+            <Row k="平台" v={subject.platform} />
           </dl>
+          {tags.length ? (
+            <div className="flex flex-wrap gap-1">
+              {tags.map((t) => (
+                <Badge
+                  key={t.name}
+                  variant="secondary"
+                  className="border border-rose-100 bg-rose-50 text-rose-700"
+                >
+                  {t.name}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
-
-      {tags.length ? (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((t) => (
-            <Badge
-              key={t.name}
-              variant="secondary"
-              className="border border-rose-100 bg-rose-50 text-rose-700"
-            >
-              {t.name}
-            </Badge>
-          ))}
-        </div>
-      ) : null}
-
-      <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
-
-      <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
-
-      <JumpLinks links={links} />
-    </div>
+    </section>
   );
 }
 
-/* ───────── 全屏视图（占满整屏的宽视图）───────── */
-function FullView({
-  subject,
-  staff,
-  episodes,
-  tags,
-  eps,
-  links,
-}: {
-  subject: SubjectDetail;
-  staff: Record<string, string>;
-  episodes: Episode[];
-  tags: Array<{ name: string }>;
-  eps: string | number;
-  links: Record<string, string>;
-  onCollapse: () => void;
-}) {
-  const title = subject.name_cn || subject.name;
+function FullExtras({ subject, episodes }: { subject: SubjectDetail; episodes: Episode[] }) {
   const mainEps = episodes.filter((e) => e.type === 0);
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="rounded-lg border border-white/75 bg-white/58 p-4 shadow-sm">
-        <div className="flex flex-col gap-6 md:flex-row">
-          {subject.images?.large ? (
-            <img
-              src={subject.images.large}
-              alt={title}
-              referrerPolicy="no-referrer"
-              className="h-72 w-52 shrink-0 self-start rounded-lg border border-rose-100 object-cover shadow-md"
-            />
-          ) : null}
-          <div className="min-w-0 flex-1 space-y-3">
-            <h1 className="font-serif text-2xl font-bold text-slate-800">{title}</h1>
-            {subject.name_cn && subject.name !== subject.name_cn ? (
-              <p className="font-mono text-sm text-slate-500">{subject.name}</p>
-            ) : null}
-            {subject.rating?.score ? (
-              <div className="flex items-center gap-2">
-                <Stars score={subject.rating.score} />
-                <span className="font-mono text-3xl font-bold text-amber-500">
-                  {subject.rating.score}
-                </span>
-                <span className="text-xs text-slate-500">
-                  #{subject.rating.rank} · {subject.rating.total} 人评分
-                </span>
-              </div>
-            ) : null}
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
-              <Row k="话数" v={String(eps)} />
-              <Row k="放送开始" v={subject.date} />
-              <Row k="原作" v={staff.原作} />
-              <Row k="制作" v={staff.制作} />
-              <Row k="监督" v={staff.监督} />
-              <Row k="平台" v={subject.platform} />
-            </dl>
-            {tags.length ? (
-              <div className="flex flex-wrap gap-1">
-                {tags.map((t) => (
-                  <Badge
-                    key={t.name}
-                    variant="secondary"
-                    className="border border-rose-100 bg-rose-50 text-rose-700"
-                  >
-                    {t.name}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
-            <JumpLinks links={links} />
-          </div>
-        </div>
-      </div>
-
-      <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
-
-      <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
-
+    <>
       {subject.summary ? (
         <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
           <h2 className="mb-2 font-serif text-lg font-bold text-slate-800">简介</h2>
@@ -319,7 +275,7 @@ function FullView({
       ) : null}
 
       <SubjectComments id={String(subject.id)} />
-    </div>
+    </>
   );
 }
 

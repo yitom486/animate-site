@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Magnet, Package, Film } from "lucide-react";
+import { ChevronDown, ChevronUp, Magnet, Package, Film } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import type { DownloadItem, DownloadSource, GroupedDownloads } from "~/lib/downloads";
 
 type DownloadsPanelProps = {
@@ -17,12 +18,20 @@ const SOURCE_LABEL: Record<DownloadSource, string> = {
   dmhy: "動漫花園",
 };
 
-function DownloadRow({ item }: { item: DownloadItem }) {
+function DownloadRow({
+  item,
+  visibleSources,
+}: {
+  item: DownloadItem;
+  visibleSources?: DownloadSource[];
+}) {
+  const sources = visibleSources ?? item.sources;
+
   return (
     <li className="rounded-lg border border-rose-100/80 bg-white/70 px-3 py-2.5">
       <p className="text-xs font-medium leading-snug text-slate-800">{item.title}</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
-        {item.sources.map((s) => (
+        {sources.map((s) => (
           <span key={s} className="rounded bg-rose-50 px-1.5 py-0.5 font-mono text-rose-700">
             {SOURCE_LABEL[s]}
           </span>
@@ -59,12 +68,21 @@ function Group({
   icon: Icon,
   label,
   items,
+  initialCount,
+  visibleSources,
 }: {
   icon: typeof Package;
   label: string;
   items: DownloadItem[];
+  initialCount: number;
+  visibleSources?: DownloadSource[];
 }) {
+  const [open, setOpen] = useState(false);
   if (!items.length) return null;
+
+  const initiallyVisible = items.slice(0, initialCount);
+  const remaining = items.slice(initialCount);
+
   return (
     <div className="space-y-2">
       <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
@@ -73,10 +91,25 @@ function Group({
         <span className="font-mono text-[11px] font-normal text-slate-400">({items.length})</span>
       </h4>
       <ul className="space-y-2">
-        {items.map((item) => (
-          <DownloadRow key={item.hash} item={item} />
+        {initiallyVisible.map((item) => (
+          <DownloadRow key={item.hash} item={item} visibleSources={visibleSources} />
         ))}
       </ul>
+      {remaining.length ? (
+        <Collapsible open={open} onOpenChange={setOpen}>
+          <CollapsibleContent>
+            <ul className="space-y-2 pb-2">
+              {remaining.map((item) => (
+                <DownloadRow key={item.hash} item={item} visibleSources={visibleSources} />
+              ))}
+            </ul>
+          </CollapsibleContent>
+          <CollapsibleTrigger className="flex w-full items-center justify-center gap-1 rounded-md border border-rose-100 px-2 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-50">
+            {open ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+            {open ? "收起" : `显示剩余 ${remaining.length} 条`}
+          </CollapsibleTrigger>
+        </Collapsible>
+      ) : null}
     </div>
   );
 }
@@ -128,6 +161,7 @@ export function DownloadsPanel({ id, searchKeyword }: DownloadsPanelProps) {
     return {
       batch: pick(data.batch),
       single: pick(data.single),
+      visibleSources: source === "all" ? undefined : [source],
       counts: {
         all: all.length,
         comicat: all.filter((i) => has(i, "comicat")).length,
@@ -188,9 +222,21 @@ export function DownloadsPanel({ id, searchKeyword }: DownloadsPanelProps) {
         </p>
       ) : view && view.counts.all > 0 ? (
         view.batch.length || view.single.length ? (
-          <div className="space-y-4">
-            <Group icon={Package} label="合集 / 整季" items={view.batch} />
-            <Group icon={Film} label="单集" items={view.single} />
+          <div key={source} className="space-y-4">
+            <Group
+              icon={Package}
+              label="合集 / 整季"
+              items={view.batch}
+              initialCount={5}
+              visibleSources={view.visibleSources}
+            />
+            <Group
+              icon={Film}
+              label="单集"
+              items={view.single}
+              initialCount={3}
+              visibleSources={view.visibleSources}
+            />
           </div>
         ) : (
           <p className="px-3 py-4 text-center text-xs text-slate-400">

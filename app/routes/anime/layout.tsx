@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Link, Outlet, useNavigation, useParams } from "react-router";
 import { CalendarDays, MessageSquareText, Sparkles } from "lucide-react";
 import type { Route } from "./+types/layout";
@@ -91,13 +92,48 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const params = useParams();
   const navigation = useNavigation();
   const hasDetail = Boolean(params.id);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpandedState] = useState(false);
   const isMobile = useIsMobile();
   const listScrollRef = useRef<HTMLDivElement>(null);
+  const detailPanelRef = useRef<HTMLElement>(null);
+  const detailAnimationRef = useRef<Animation | null>(null);
   const isLoading = navigation.state === "loading";
 
+  const setExpanded = useCallback(
+    (next: boolean) => {
+      if (next === expanded) return;
+
+      const panel = detailPanelRef.current;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!panel || isMobile || reduceMotion) {
+        setExpandedState(next);
+        return;
+      }
+
+      detailAnimationRef.current?.cancel();
+      const first = panel.getBoundingClientRect();
+      flushSync(() => setExpandedState(next));
+      const last = panel.getBoundingClientRect();
+      if (!first.width || !last.width) return;
+
+      const animation = panel.animate(
+        [
+          { transform: `translateX(${first.left - last.left}px)`, opacity: 0.92 },
+          { transform: "translateX(0)", opacity: 1 },
+        ],
+        { duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+      );
+      detailAnimationRef.current = animation;
+      animation.onfinish = () => {
+        if (detailAnimationRef.current === animation) detailAnimationRef.current = null;
+      };
+    },
+    [expanded, isMobile],
+  );
+
   useEffect(() => {
-    setExpanded(false);
+    detailAnimationRef.current?.cancel();
+    setExpandedState(false);
   }, [params.id]);
 
   // 翻页或切换列表视图时滚回顶部（滚动容器是列表区，不是 window）
@@ -122,7 +158,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
       <SiteNav activeType={type === SUBJECT_TYPE_ALL ? undefined : type} />
 
       <div
-        className="grid min-h-0 flex-1 overflow-hidden p-3 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="grid min-h-0 flex-1 overflow-hidden p-3"
         style={{ gridTemplateColumns: cols }}
       >
         <section className="celadon-glass flex min-w-0 flex-col overflow-hidden rounded-lg">
@@ -219,6 +255,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
         </section>
 
         <section
+          ref={detailPanelRef}
           className={cn(
             "min-w-0 overflow-hidden rounded-lg border border-white/75 bg-white/48 backdrop-blur-xl",
             hasDetail && "ml-3",

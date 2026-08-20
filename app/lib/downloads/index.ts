@@ -6,8 +6,6 @@ export type { DownloadItem, GroupedDownloads, DownloadSource } from "./types";
 
 /** 单部番最多用几个关键词查（控制上游请求数） */
 const MAX_KEYWORDS = 4;
-/** 每组最多展示多少条（双源交错，按来源筛选后仍有足够条数） */
-const GROUP_LIMIT = 24;
 
 /** 交错合并两个数组，让两源在前列都有代表 */
 function interleave<T>(a: T[], b: T[]): T[] {
@@ -52,8 +50,8 @@ export async function fetchDownloads(keywords: string[]): Promise<GroupedDownloa
   const all = [...map.values()];
 
   return {
-    batch: all.filter((i) => i.isBatch).slice(0, GROUP_LIMIT),
-    single: all.filter((i) => !i.isBatch).slice(0, GROUP_LIMIT),
+    batch: all.filter((i) => i.isBatch),
+    single: all.filter((i) => !i.isBatch),
     total: all.length,
   };
 }
