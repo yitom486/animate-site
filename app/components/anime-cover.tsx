@@ -14,7 +14,7 @@ type AnimeCoverProps = {
 /**
  * 封面加载组件：
  * 支持服务端直接渲染 <img> 以激活浏览器 Preload Scanner。
- * priority 时 eager + high；其余 lazy + auto（避免一律 low 拖慢进视口后的显示）。
+ * priority 时 eager + high；其余 lazy + auto。
  * 有 srcSet/sizes 时由浏览器按布局宽度选档。
  */
 export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: AnimeCoverProps) {
@@ -22,7 +22,6 @@ export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: Ani
   const [error, setError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // 监听 url 变化或挂载事件，重置加载状态并检查缓存情况
   useEffect(() => {
     setLoaded(false);
     setError(false);

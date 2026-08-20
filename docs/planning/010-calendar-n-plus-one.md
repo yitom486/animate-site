@@ -4,10 +4,19 @@
 
 | 字段       | 值                                                                                                    |
 | ---------- | ----------------------------------------------------------------------------------------------------- |
-| 状态       | 待实施                                                                                                |
+| 状态       | 方案 B 已实施（共享 Observer + 批量 API + 限并发）                                                    |
 | 优先级     | P1                                                                                                    |
 | 类别       | API 聚合 / 客户端并发 / 缓存 / 可视区加载                                                             |
 | 证据置信度 | 高：每卡 Hook、独立 Observer 和按 ID 请求已静态确认；实际请求数量、上游限流和滚动体验影响需运行时验证 |
+
+## 实施记录（2026-08-20）
+
+已落地推荐方案 B 的核心路径（日视图 `useCardExtra`）：
+
+1. **共享 Observer**：`app/lib/shared-in-view.ts` 单实例 `IntersectionObserver`，`rootMargin: 200px`。
+2. **客户端批处理**：`app/lib/card-extra-client.ts` 40ms 窗口合并 id，请求 `/api/anime/cards?ids=`；失败回退单卡 API。
+3. **批量同源 API**：`routes/api/anime.cards.ts` + `fetchCardExtrasBatch`；去重、最多 20 id；上游并发上限 4；复用原有 `fetchCardExtra` 缓存；返回 `dataById` / `errorsById`。
+4. 保留 `/api/anime/card/:id`。原始 subject 与详情共享缓存未做（可后续加）。
 
 ## 问题摘要
 

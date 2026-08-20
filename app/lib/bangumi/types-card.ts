@@ -16,3 +16,9 @@ export type CardExtra = {
   collection: SubjectCollection;
   staff: { 原作: string; 导演: string; 制作: string };
 };
+
+/** 批量卡片增强响应：部分失败按 id 隔离 */
+export type CardExtraBatchResult = {
+  dataById: Record<string, CardExtra>;
+  errorsById: Record<string, string>;
+};

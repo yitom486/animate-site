@@ -89,12 +89,29 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <section className="relative min-h-[560px] overflow-hidden rounded-lg border border-white/75 bg-white/42 shadow-xl shadow-rose-900/5">
-          <img
-            src="/assets/portal-hero.webp"
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 size-full object-cover opacity-32 mix-blend-luminosity"
-          />
+          <picture>
+            <source
+              type="image/avif"
+              srcSet="/assets/portal-hero-480.avif 480w, /assets/portal-hero-768.avif 768w, /assets/portal-hero-1024.avif 1024w"
+              sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 3rem), calc(100vw - 2rem)"
+            />
+            <source
+              type="image/webp"
+              srcSet="/assets/portal-hero-480.webp 480w, /assets/portal-hero-768.webp 768w, /assets/portal-hero-1024.webp 1024w"
+              sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 3rem), calc(100vw - 2rem)"
+            />
+            <img
+              src="/assets/portal-hero-768.jpg"
+              srcSet="/assets/portal-hero-480.jpg 480w, /assets/portal-hero-768.jpg 768w, /assets/portal-hero-1024.jpg 1024w"
+              sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 3rem), calc(100vw - 2rem)"
+              width={1024}
+              height={1024}
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              className="absolute inset-0 size-full object-cover opacity-32 mix-blend-luminosity"
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-br from-[#fff5fd]/96 via-[#f8f1fb]/88 to-[#eef8ff]/82" />
           <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#fff9fd] to-transparent" />
 

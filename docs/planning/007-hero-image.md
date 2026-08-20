@@ -4,10 +4,19 @@
 
 | 字段       | 值                                                                                           |
 | ---------- | -------------------------------------------------------------------------------------------- |
-| 状态       | 待实施                                                                                       |
+| 状态       | 方案 B 已实施                                                                                |
 | 优先级     | P1                                                                                           |
 | 类别       | 图片资源 / 首屏性能 / 可访问性                                                               |
 | 证据置信度 | 高：文件格式、体积、尺寸和引用位置已静态确认；对 LCP、带宽与解码时间的实际影响仍需运行时验证 |
+
+## 实施记录（2026-08-20）
+
+已落地推荐方案 B：
+
+1. 生成 `public/assets/portal-hero-{480,768,1024}.{avif,webp,jpg}`（质量约 AVIF 40 / WebP 50 / JPEG 58）；源图保留为 `portal-hero-source.webp`。
+2. `home.tsx` 使用 `<picture>` + `srcSet`/`sizes`，`width`/`height`=1024，装饰语义 `alt=""` + `aria-hidden`；未加 preload / `fetchPriority`。
+3. 再生：`bun run assets:hero`（`scripts/generate-portal-hero.ts`，devDependency `sharp`）。
+4. 静态体积对照：旧单文件约 1.1 MiB 伪 PNG / 后改为约 190 KiB 单 WebP → 现移动端常见可选约 **25–44 KiB**（480 AVIF/WebP）；桌面最大档 AVIF 约 **83 KiB**。LCP 需浏览器复测，此处不宣称毫秒收益。
 
 ## 问题摘要
 

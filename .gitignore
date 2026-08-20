@@ -11,3 +11,7 @@
 
 # 本项目用 bun;避免误用 npm 生成 package-lock
 package-lock.json
+
+# 本地 bundle 分析产物（见 vite.analyze.config.ts）
+/docs/planning/_bundle-*.json
+/docs/planning/_bundle-*.html

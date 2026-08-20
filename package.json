@@ -8,7 +8,8 @@
     "start": "wrangler pages dev ./build/client",
     "typecheck": "react-router typegen && tsc",
     "fmt": "oxfmt .",
-    "lint": "oxlint ."
+    "lint": "oxlint .",
+    "assets:hero": "bun run scripts/generate-portal-hero.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -38,6 +39,7 @@
     "@types/sanitize-html": "^2.16.1",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "^8.0.3",

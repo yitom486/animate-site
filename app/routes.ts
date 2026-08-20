@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("api/anime/list", "routes/api/anime.list.ts"),
   route("api/anime/detail/:id", "routes/api/anime.detail.$id.ts"),
+  route("api/anime/cards", "routes/api/anime.cards.ts"),
   route("api/anime/card/:id", "routes/api/anime.card.$id.ts"),
   route("api/anime/comments/:id", "routes/api/anime.comments.$id.ts"),
   route("api/anime/downloads/:id", "routes/api/anime.downloads.$id.ts"),

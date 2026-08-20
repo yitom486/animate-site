@@ -6,69 +6,40 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { createCache, withCache } from "~/lib/cache";
-import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
+import { peekCardExtra, requestCardExtra } from "~/lib/card-extra-client";
+import { observeInViewOnce } from "~/lib/shared-in-view";
 import type { CardExtra } from "~/lib/bangumi/types-card";
 
-/** 浏览器内存缓存 + single-flight，切换星期/重渲染不会重复请求 */
-const clientCache = createCache<CardExtra>({
-  ttlMs: CACHE_TTL_DETAIL_MS,
-  maxEntries: CACHE_MAX_ENTRIES.card,
-});
-
-async function loadCardExtra(id: number): Promise<CardExtra> {
-  return withCache(clientCache, `card:${id}`, async () => {
-    const res = await fetch(`/api/anime/card/${id}`);
-    if (!res.ok) throw new Error(`card ${id} failed: ${res.status}`);
-    return res.json() as Promise<CardExtra>;
-  });
-}
-
-/** 元素进入视口（含临近 200px）触发一次，用于懒加载——可视的优先、其余滚动到临近时补全 */
-function useInViewOnce<T extends Element>(rootMargin = "200px") {
+/** 卡片懒加载增强数据：共享 Observer + 短窗口批量请求 */
+export function useCardExtra<T extends Element>(id: number) {
   const ref = useRef<T>(null);
-  const [inView, setInView] = useState(false);
+  const [data, setData] = useState<CardExtra | null>(() => peekCardExtra(id));
 
   useEffect(() => {
-    if (inView) return;
+    setData(peekCardExtra(id));
+  }, [id]);
+
+  useEffect(() => {
+    if (data) return;
     const el = ref.current;
     if (!el) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [inView, rootMargin]);
-
-  return { ref, inView };
-}
-
-/** 卡片懒加载增强数据：进入视口后异步拉取详情字段 */
-export function useCardExtra<T extends Element>(id: number) {
-  const { ref, inView } = useInViewOnce<T>();
-  const [data, setData] = useState<CardExtra | null>(() => clientCache.get(`card:${id}`) ?? null);
-
-  useEffect(() => {
-    if (!inView || data) return;
     let alive = true;
-    loadCardExtra(id)
-      .then((d) => {
-        if (alive) setData(d);
-      })
-      .catch(() => {
-        /* 单卡片失败静默降级，不影响其余卡片 */
-      });
+    const stop = observeInViewOnce(el, () => {
+      void requestCardExtra(id)
+        .then((next) => {
+          if (alive) setData(next);
+        })
+        .catch(() => {
+          /* 单卡片失败静默降级，不影响其余卡片 */
+        });
+    });
+
     return () => {
       alive = false;
+      stop();
     };
-  }, [id, inView, data]);
+  }, [id, data]);
 
   return { ref, data };
 }
