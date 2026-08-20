@@ -4,14 +4,15 @@
 
 ## 运行时与包管理
 
-- **包管理器是 Bun，不是 npm / Node 包管理器。**
+- **包管理器是 Bun，不是 npm / pnpm / yarn。** 本地开发和 Cloudflare Pages 构建都用 bun。
 - 安装：`bun install`
 - 开发：`bun run dev`
 - 类型检查：`bun run typecheck`
 - 格式化：`bun run fmt`
 - Lint：`bun run lint`
 - 添加 shadcn 组件：`bunx shadcn@latest add <component>`
-- 不要生成或提交以 npm 为主的新依赖流程；仓库里若仍有 `package-lock.json`，也不要用 `npm install` 覆盖 `bun.lock`。
+- **不要**运行 `npm install` / `pnpm install` / `yarn`。它们会生成 `package-lock.json` 等多余锁文件，与 `bun.lock` 冲突，并可能让 Cloudflare 用错包管理器。
+- 唯一受追踪的锁文件是 **`bun.lock`**；`package-lock.json` 已在 `.gitignore` 中忽略。加依赖后确认只改了 `package.json` + `bun.lock`。
 
 应用运行时仍是 React Router v7 + Vite，生产部署在 Cloudflare Pages Functions（Worker），和「用 Bun 管依赖」是两件事。
 
@@ -49,5 +50,7 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 ## 数据与 Cloudflare
 
 - 只读公开 API，不要引入需要登录的 Bangumi 接口。
+- Bangumi 抓取放在 `app/lib/bangumi/server/*.server.ts`，不要从客户端组件直接 import。
+- 下载资源在 `app/lib/downloads/`（漫猫 + 动漫花园）；资讯在 `app/lib/news/`。
 - 缓存目前是进程内 `Map`，接口按 KV 可替换来写，但还没接 Cloudflare KV。
 - Worker 里不要用 Node `fs` / jsdom；外网 `fetch` 必须带超时。

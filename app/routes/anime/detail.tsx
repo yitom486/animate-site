@@ -3,6 +3,8 @@ import { Maximize2, Minimize2, X } from "lucide-react";
 import type { Route } from "./+types/detail";
 import type { AnimeOutletContext } from "./layout";
 import { Badge } from "~/components/ui/badge";
+import { SubjectComments } from "~/components/subject-comments";
+import { DownloadsPanel } from "~/components/downloads-panel";
 import { createCache } from "~/lib/cache";
 import type { DetailPayload, Episode, SubjectDetail } from "~/lib/bangumi/types-detail";
 import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
@@ -10,21 +12,13 @@ import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { searchBilibiliBangumi, type BilibiliMatch } from "~/lib/bilibili";
-import { fetchComicatForAnime, type ComicatItem } from "~/lib/comicat";
 import { BilibiliPlayer } from "~/components/bilibili-player";
-import { BgmBlogPanel } from "~/components/bgm-blog-panel";
-import { ComicatDownloads } from "~/components/comicat-downloads";
-import { fetchBgmSubjectBlog } from "~/lib/bangumi/server/blog/rss.server";
-import type { BgmBlogItem } from "~/lib/bangumi/types-blog";
-import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/web-urls";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<AnimeDetailData>();
 
 type AnimeDetailData = DetailPayload & {
   bilibili: BilibiliMatch | null;
-  comicat: ComicatItem[];
-  bgmBlog: BgmBlogItem[];
 };
 
 async function loadBilibiliMatch(subject: DetailPayload["subject"]): Promise<BilibiliMatch | null> {
@@ -55,16 +49,10 @@ export async function loader({ params }: Route.LoaderArgs) {
     }
   }
 
-  const keywords = [clonedData.subject.name_cn, clonedData.subject.name].filter(
-    Boolean,
-  ) as string[];
+  // 下载资源改为详情页内懒加载（双源较慢，避免阻塞详情首屏）
+  const bilibili = await loadBilibiliMatch(clonedData.subject);
 
-  return {
-    ...clonedData,
-    bilibili: await loadBilibiliMatch(clonedData.subject),
-    comicat: await fetchComicatForAnime(keywords),
-    bgmBlog: await fetchBgmSubjectBlog(id, 6),
-  };
+  return { ...clonedData, bilibili };
 }
 
 export async function clientLoader({
@@ -84,7 +72,7 @@ export async function clientLoader({
 clientLoader.hydrate = true as const;
 
 export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
-  const { subject, staff, episodes, bilibili, comicat, bgmBlog } = loaderData;
+  const { subject, staff, episodes, bilibili } = loaderData;
   const { expanded, setExpanded } = useOutletContext<AnimeOutletContext>();
   const [searchParams] = useSearchParams();
   const listBackUrl = buildListUrl(listParamsFromSearch(searchParams));
@@ -138,8 +126,6 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
             eps={eps}
             links={links}
             bilibili={bilibili}
-            comicat={comicat}
-            bgmBlog={bgmBlog}
             onCollapse={() => setExpanded(false)}
           />
         ) : (
@@ -150,8 +136,6 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
             eps={eps}
             links={links}
             bilibili={bilibili}
-            comicat={comicat}
-            bgmBlog={bgmBlog}
             onExpand={() => setExpanded(true)}
           />
         )}
@@ -168,8 +152,6 @@ function CompactView({
   eps,
   links,
   bilibili,
-  comicat,
-  bgmBlog,
   onExpand,
 }: {
   subject: SubjectDetail;
@@ -178,8 +160,6 @@ function CompactView({
   eps: string | number;
   links: Record<string, string>;
   bilibili: BilibiliMatch | null;
-  comicat: ComicatItem[];
-  bgmBlog: BgmBlogItem[];
   onExpand: () => void;
 }) {
   const title = subject.name_cn || subject.name;
@@ -239,15 +219,7 @@ function CompactView({
 
       <BilibiliPlayer match={bilibili} fallbackKeyword={title} />
 
-      <ComicatDownloads items={comicat} searchKeyword={title} />
-
-      <BgmBlogPanel
-        items={bgmBlog}
-        title="Bangumi 社区日志"
-        moreUrl={BGM_WEB_ROUTES_BLOG.subjectBlog(subject.id)}
-        emptyHint="该条目暂无用户日志"
-        compact
-      />
+      <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
 
       <JumpLinks links={links} />
     </div>
@@ -263,8 +235,6 @@ function FullView({
   eps,
   links,
   bilibili,
-  comicat,
-  bgmBlog,
 }: {
   subject: SubjectDetail;
   staff: Record<string, string>;
@@ -273,8 +243,6 @@ function FullView({
   eps: string | number;
   links: Record<string, string>;
   bilibili: BilibiliMatch | null;
-  comicat: ComicatItem[];
-  bgmBlog: BgmBlogItem[];
   onCollapse: () => void;
 }) {
   const title = subject.name_cn || subject.name;
@@ -335,14 +303,7 @@ function FullView({
 
       <BilibiliPlayer match={bilibili} fallbackKeyword={title} />
 
-      <ComicatDownloads items={comicat} searchKeyword={title} />
-
-      <BgmBlogPanel
-        items={bgmBlog}
-        title="Bangumi 社区日志"
-        moreUrl={BGM_WEB_ROUTES_BLOG.subjectBlog(subject.id)}
-        emptyHint="该条目暂无用户日志"
-      />
+      <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
 
       {subject.summary ? (
         <section className="rounded-lg border border-white/75 bg-white/58 p-5 shadow-sm">
@@ -374,6 +335,8 @@ function FullView({
           </ul>
         </section>
       ) : null}
+
+      <SubjectComments id={String(subject.id)} />
     </div>
   );
 }
