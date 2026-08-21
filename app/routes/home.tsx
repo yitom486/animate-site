@@ -11,11 +11,9 @@ import {
 } from "lucide-react";
 import { SiteNav } from "~/components/site-nav";
 import { SearchForm } from "~/components/search-form";
-import { NewsPanel } from "~/components/news-panel";
-import { fetchNewsFeed } from "~/lib/news";
+import { HomeNewsPanel } from "~/components/home-news-panel";
 import { buildListHref } from "~/lib/bangumi/params";
 import { SUBJECT_TYPE } from "~/lib/bangumi/types";
-import type { Route } from "./+types/home";
 
 export function meta() {
   return [
@@ -27,13 +25,7 @@ export function meta() {
   ];
 }
 
-export async function loader(_args: Route.LoaderArgs) {
-  const news = await fetchNewsFeed(24);
-  return { news };
-}
-
-export default function Home({ loaderData }: Route.ComponentProps) {
-  const { news } = loaderData;
+export default function Home() {
   const chronicleLinks = [
     {
       label: "放送",
@@ -206,7 +198,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </div>
         </section>
 
-        <NewsPanel feed={news} />
+        <HomeNewsPanel />
       </main>
 
       <footer className="relative z-10 border-t border-white/70 bg-white/42 py-6 backdrop-blur-md">

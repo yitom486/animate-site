@@ -1,12 +1,68 @@
 import { ExternalLink, Newspaper } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { NewsFeed } from "~/lib/news";
+import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 
 type NewsPanelProps = {
   feed: NewsFeed;
   className?: string;
 };
+
+/** 固定结构骨架，避免异步资讯插入时把页脚顶得乱跳 */
+export function NewsPanelSkeleton({ className }: { className?: string }) {
+  return (
+    <section
+      className={cn("celadon-glass rounded-lg p-5", className)}
+      aria-busy="true"
+      aria-label="资讯加载中"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-24 bg-rose-100/80" />
+          <Skeleton className="h-6 w-40 bg-rose-100/70" />
+          <Skeleton className="h-3 w-64 max-w-full bg-slate-100" />
+        </div>
+        <Skeleton className="size-5 shrink-0 rounded bg-rose-100/80" />
+      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        {[0, 1].map((col) => (
+          <div key={col} className="space-y-2">
+            <Skeleton className="mb-2 h-4 w-20 bg-rose-100/70" />
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-[4.5rem] w-full rounded-lg bg-white/70" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function NewsPanelError({
+  className,
+  message = "暂时无法拉取资讯，请稍后刷新。",
+}: {
+  className?: string;
+  message?: string;
+}) {
+  return (
+    <section className={cn("celadon-glass rounded-lg p-5", className)}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
+            ACG Chronicle
+          </span>
+          <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日亚文化资讯</h2>
+        </div>
+        <Newspaper className="size-5 shrink-0 text-rose-600" />
+      </div>
+      <p className="mt-5 rounded-lg border border-rose-100 bg-white/60 px-4 py-6 text-center text-sm text-slate-500">
+        {message}
+      </p>
+    </section>
+  );
+}
 
 function formatWhen(iso?: string) {
   if (!iso) return "";
