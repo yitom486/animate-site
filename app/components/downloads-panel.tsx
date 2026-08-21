@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Magnet, Package, Film } from "lucide-react";
+import { ChevronDown, ChevronUp, Magnet, Package, Film, Download } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import { createCache } from "~/lib/cache";
 import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import type { DownloadItem, DownloadSource, GroupedDownloads } from "~/lib/downloads";
+import { useBangumiData, buildSiteHref } from "~/lib/bangumi-data";
 
 type DownloadsPanelProps = {
   id: string;
+  date?: string;
   searchKeyword: string;
 };
 
@@ -119,11 +121,15 @@ function Group({
   );
 }
 
-export function DownloadsPanel({ id, searchKeyword }: DownloadsPanelProps) {
+export function DownloadsPanel({ id, date, searchKeyword }: DownloadsPanelProps) {
   const [data, setData] = useState<GroupedDownloads | null>(() => clientCache.get(id) ?? null);
   const [state, setState] = useState<"idle" | "loading" | "error">(() =>
     clientCache.get(id) ? "idle" : "loading",
   );
+
+  const { data: bgmData } = useBangumiData(id, date);
+  const mikanSite = bgmData?.sites.find((s) => s.site === "mikan");
+  const mikanHref = mikanSite ? buildSiteHref("mikan", mikanSite.id) : null;
 
   useEffect(() => {
     const cached = clientCache.get(id);
@@ -185,7 +191,20 @@ export function DownloadsPanel({ id, searchKeyword }: DownloadsPanelProps) {
   return (
     <section className="space-y-3 rounded-lg border border-rose-100 bg-white/58 p-3 shadow-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-bold text-slate-800">下载资源</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold text-slate-800">下载资源</h3>
+          {mikanHref ? (
+            <a
+              href={mikanHref}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-mono text-[11px] font-bold text-amber-700 hover:bg-amber-100 hover:underline"
+            >
+              <Download className="size-3" />
+              蜜柑专属页 ↗
+            </a>
+          ) : null}
+        </div>
         <a
           href={comicatSearch}
           target="_blank"

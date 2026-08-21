@@ -13,7 +13,7 @@ import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 import { toHttps } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
-import { BilibiliPlayer } from "~/components/bilibili-player";
+import { StreamingPanel } from "~/components/streaming-panel";
 import { SubjectRelationsPanel } from "~/components/subject-relations";
 import {
   isAnimeSubjectType,
@@ -39,44 +39,51 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
     // 将图片链接全部自动升级为 HTTPS，避开 307 重定向
     if (clonedData.subject.images) {
-      const images = clonedData.subject.images;
-      for (const key of Object.keys(images) as Array<keyof typeof images>) {
-        if (images[key]) {
-          images[key] = toHttps(images[key])!;
-        }
+      if (clonedData.subject.images.large) {
+        clonedData.subject.images.large = toHttps(clonedData.subject.images.large) ?? clonedData.subject.images.large;
+      }
+      if (clonedData.subject.images.common) {
+        clonedData.subject.images.common = toHttps(clonedData.subject.images.common);
+      }
+      if (clonedData.subject.images.medium) {
+        clonedData.subject.images.medium = toHttps(clonedData.subject.images.medium);
+      }
+      if (clonedData.subject.images.grid) {
+        clonedData.subject.images.grid = toHttps(clonedData.subject.images.grid);
       }
     }
 
     return clonedData;
-  } catch (error) {
-    throwRouteUpstreamError(error);
+  } catch (err) {
+    throwRouteUpstreamError(err);
   }
 }
 
-export async function clientLoader({
-  params,
-  serverLoader,
-}: Route.ClientLoaderArgs): Promise<DetailPayload> {
+export async function clientLoader({ params, serverLoader }: Route.ClientLoaderArgs) {
   const id = params.id;
-  if (!id) throw new Error("缺少 id");
+  if (!id) return serverLoader();
 
   const cached = clientDetailCache.get(id);
   if (cached) return cached;
 
-  const data = (await serverLoader()) as DetailPayload;
+  const data = await serverLoader();
   clientDetailCache.set(id, data);
   return data;
 }
-clientLoader.hydrate = true as const;
 
-export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
+clientLoader.hydrate = true;
+
+export default function AnimeDetailRoute({ loaderData }: Route.ComponentProps) {
   const { subject, staff, episodes } = loaderData;
-  const { expanded, setExpanded, isMobile } = useOutletContext<AnimeOutletContext>();
+  const { isMobile, expanded, setExpanded } = useOutletContext<AnimeOutletContext>();
   const [searchParams] = useSearchParams();
-  const listBackUrl = buildListUrl(listParamsFromSearch(searchParams));
 
-  /** 手机端详情已全屏：直接完整信息，不再二次展开 */
-  const showFull = isMobile || expanded;
+  // 返回列表的 URL 保留当前的筛选参数
+  const currentListParams = listParamsFromSearch(searchParams);
+  const listBackUrl = buildListUrl(currentListParams);
+
+  // 在桌面端展开态 或 移动端下，均展示完整信息
+  const showFull = expanded || isMobile;
 
   const title = subject.name_cn || subject.name;
   const countValue = subject.total_episodes || subject.eps;
@@ -142,8 +149,16 @@ export default function AnimeDetail({ loaderData }: Route.ComponentProps) {
 
           {isAnime ? (
             <>
-              <BilibiliPlayer id={String(subject.id)} fallbackKeyword={title} />
-              <DownloadsPanel id={String(subject.id)} searchKeyword={title} />
+              <StreamingPanel
+                id={String(subject.id)}
+                date={subject.date}
+                title={title}
+              />
+              <DownloadsPanel
+                id={String(subject.id)}
+                date={subject.date}
+                searchKeyword={title}
+              />
             </>
           ) : null}
           <JumpLinks links={links} />
@@ -371,12 +386,18 @@ function Stars({ score }: { score: number }) {
   );
 }
 
-// 局部错误边界：详情加载失败只影响右栏
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  const msg = isRouteErrorResponse(error) ? `${error.status} ${error.statusText}` : "加载详情失败";
+  if (isRouteErrorResponse(error)) {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        <h2 className="font-serif text-lg font-bold text-rose-700">加载失败</h2>
+        <p className="mt-2 text-sm">{error.data || "条目不存在或已被删除"}</p>
+      </div>
+    );
+  }
   return (
-    <div className="flex h-full items-center justify-center text-sm text-slate-500">
-      <p>{msg}</p>
+    <div className="p-8 text-center text-rose-700">
+      <h2 className="font-serif text-lg font-bold">发生未知错误</h2>
     </div>
   );
 }

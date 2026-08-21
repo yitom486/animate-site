@@ -1,6 +1,6 @@
 # 亚域空间 — 架构说明
 
-> 描述当前代码的真实结构与数据流。最后更新：2026-08-20。  
+> 描述当前代码的真实结构与数据流。最后更新：2026-08-21。  
 > 早期产品设想见 [requirements.md](./requirements.md)（部分内容已过时，以本文为准）。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 | 应用框架 | React Router v7 Framework Mode（SSR + 客户端导航）           |
 | UI       | React 19 · Tailwind CSS v4 · Base UI / shadcn 风格组件       |
 | 包管理   | **Bun**（`bun.lock`）；生产运行在 Cloudflare Pages Functions |
-| 上游     | Bangumi API / 官网 HTML·RSS · 资讯 RSS · B 站 / 下载检索跳转 |
+| 上游     | Bangumi API / 官网 HTML·RSS · 资讯 RSS · bangumi-data（静态切片）· B 站 / 下载检索跳转 |
 
 ### 请求分层
 
@@ -24,9 +24,11 @@ flowchart TB
   Server["app/lib/*/server/*.server.ts"]
   Cache[进程内 LRU<br/>+ single-flight]
   Up[上游：Bangumi / RSS / HTML]
+  StaticCDN[静态 CDN：bangumi-data 年份切片]
 
   Browser --> Page
   Browser --> Api
+  Browser -.->|水合后异步读取| StaticCDN
   Page --> Server
   Api --> Server
   Server --> Cache
@@ -35,7 +37,7 @@ flowchart TB
   Cache --> Server
 ```
 
-页面 loader 与 `/api/*` **共用**同一套 server 模块：字段裁剪、超时、可失败降级。
+页面 loader 与 `/api/*` **共用**同一套 server 模块：字段裁剪、超时、可失败降级。流媒体与正版平台采用客户端水合后静态切片加载，服务端 0 消耗。
 
 ## 2. 路由地图
 
@@ -117,7 +119,7 @@ stateDiagram-v2
 
 `isMobile` / `expanded` 经 Outlet context 下发。首屏仍可能有 hydration 后布局纠正，见 [013](./planning/013-mobile-hydration-layout.md)。
 
-### 详情取数
+### 详情取数与三级外链漏斗
 
 ```mermaid
 sequenceDiagram
@@ -126,6 +128,7 @@ sequenceDiagram
   participant L as loader
   participant B as Bangumi
   participant A as /api/anime/related/:id
+  participant CDN as 静态 CDN (bangumi-data 切片)
 
   U->>D: 打开 /anime/:id
   D->>L: fetchCachedDetail
@@ -133,14 +136,27 @@ sequenceDiagram
   opt 动画类型
     L->>B: episodes
   end
-  L-->>D: 首屏 payload
-  Note over D: 桌面展开 / 移动端完整态
-  D->>A: 懒加载关联 + 角色
-  A->>B: subjects / characters
-  A-->>D: 可失败降级
+  L-->>D: 首屏核心 HTML 毫秒级直出
+  Note over D: 浏览器水合 (Hydration)
+  par 异步扩展
+    D->>A: 懒加载关联 + 角色
+    A->>B: subjects / characters
+    A-->>D: 可失败降级
+  and 静态流媒体切片
+    D->>CDN: 拉取 /data/bangumi-data/2026.json (边缘强缓存)
+    CDN-->>D: 命中本地/CDN缓存
+    Note over D: 本地拼接 B站 / 動畫瘋 / Netflix / 蜜柑 直链
+  end
 ```
 
 职员字段按 `subject.type` 选取（`staff-by-type.ts`）。
+
+### 流媒体与下载源分级策略（021 规划）
+
+针对海外 Serverless（Cloudflare Pages）调用第三方搜索接口常遭反爬与 412 风控拦截的问题，系统采用**客户端水合 + 三级漏斗**处理：
+1. **L1（静态切片与客户端水合，服务端 0 消耗）**：构建期将 `bangumi-data` 按年份分片存入 `public/data/bangumi-data/`。水合后浏览器异步拉取静态 JSON，纯本地拼接 B 站、巴哈姆特動畫瘋、Netflix、爱奇艺及蜜柑计划（Mikan）专属条目直链，0 服务端成本，不受风控影响。
+2. **L2（动态选集探测）**：在已知 B 站 `season_id` 基础上，可选尝试获取选集列表以渲染内嵌播放器。
+3. **L3（前端友好降级）**：若无静态收录且动态接口风控，平滑回退为规范关键词的外链搜索按钮。
 
 ## 5. 多类型条目与导航
 
