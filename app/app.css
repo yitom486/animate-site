@@ -287,12 +287,207 @@ body {
   }
 }
 
+@keyframes hero-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -4%) scale(1.06);
+  }
+}
+
+@keyframes hero-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-4%, 3%) scale(1.08);
+  }
+}
+
+@keyframes hero-drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(2%, 5%) scale(0.96);
+  }
+}
+
 @layer utilities {
+  .hero-panel {
+    border: 2px solid rgba(255, 182, 213, 0.72);
+    background: rgba(255, 255, 255, 0.38);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.85),
+      0 22px 55px -28px rgba(236, 72, 153, 0.38),
+      0 0 48px -12px rgba(125, 211, 252, 0.42);
+  }
+
+  .hero-panel__fade {
+    height: 7rem;
+    background: linear-gradient(to top, rgba(255, 248, 252, 0.96), transparent);
+  }
+
+  .hero-badge {
+    color: #9d174d;
+    border-radius: 9999px;
+    border: 1px solid rgba(244, 114, 182, 0.55);
+    background: linear-gradient(135deg, rgba(255, 240, 248, 0.95), rgba(237, 233, 254, 0.88));
+    box-shadow: 0 0 18px -6px rgba(217, 70, 239, 0.45);
+  }
+
+  .hero-title-accent {
+    filter: drop-shadow(0 0 18px rgba(244, 114, 182, 0.38));
+  }
+
+  .hero-particles-canvas {
+    opacity: 0;
+    transition: opacity 420ms ease-out;
+  }
+
+  .hero-particles-canvas.hero-particles--live {
+    opacity: 1;
+  }
+
+  .hero-cta-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #fb7185 0%, #e879f9 52%, #38bdf8 100%);
+    box-shadow:
+      0 10px 28px -12px rgba(236, 72, 153, 0.65),
+      inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .hero-backdrop {
+    overflow: hidden;
+    background: linear-gradient(155deg, #ffe8f4 0%, #f6e8ff 38%, #dceeff 72%, #fff5fb 100%);
+  }
+
+  .hero-backdrop__mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(255, 105, 180, 0.2), transparent 44%),
+      radial-gradient(circle at 88% 14%, rgba(96, 165, 250, 0.18), transparent 40%),
+      radial-gradient(circle at 72% 82%, rgba(192, 132, 252, 0.16), transparent 42%),
+      radial-gradient(circle at 40% 55%, rgba(255, 255, 255, 0.35), transparent 50%);
+  }
+
+  .hero-backdrop__veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.08) 58%,
+      rgba(186, 230, 253, 0.12) 100%
+    );
+  }
+
+  .hero-star {
+    position: absolute;
+    font-size: 1.05rem;
+    line-height: 1;
+    text-shadow: 0 0 12px currentColor;
+    opacity: 0.7;
+    transform: scale(1);
+    animation: hero-star-pulse 3.6s ease-in-out infinite;
+    animation-fill-mode: both;
+  }
+
+  .hero-star--a {
+    animation-duration: 3.2s;
+  }
+
+  .hero-star--b {
+    animation-duration: 4.1s;
+    animation-delay: -1.2s;
+  }
+
+  .hero-star--c {
+    font-size: 1.35rem;
+    animation-duration: 3.8s;
+    animation-delay: -0.6s;
+  }
+
+  .hero-star--d {
+    font-size: 0.9rem;
+    animation-duration: 4.4s;
+    animation-delay: -2s;
+  }
+
+  .hero-star--e {
+    font-size: 1.2rem;
+    animation-duration: 3.5s;
+    animation-delay: -1.8s;
+  }
+
+  .hero-backdrop__orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(72px);
+    opacity: 0.52;
+    will-change: transform;
+  }
+
+  .hero-backdrop__orb--rose {
+    top: -12%;
+    left: -8%;
+    width: min(52vw, 420px);
+    height: min(52vw, 420px);
+    background: rgba(255, 105, 180, 0.48);
+    animation: hero-drift-a 20s ease-in-out infinite;
+  }
+
+  .hero-backdrop__orb--violet {
+    top: 8%;
+    right: -10%;
+    width: min(48vw, 380px);
+    height: min(48vw, 380px);
+    background: rgba(192, 88, 255, 0.42);
+    animation: hero-drift-b 24s ease-in-out infinite;
+  }
+
+  .hero-backdrop__orb--sky {
+    bottom: -18%;
+    left: 28%;
+    width: min(56vw, 460px);
+    height: min(56vw, 460px);
+    background: rgba(56, 189, 248, 0.4);
+    animation: hero-drift-c 22s ease-in-out infinite;
+  }
+
   .animate-float-slow {
     animation: float-slow 7s ease-in-out infinite;
   }
 
   .animate-spin-very-slow {
     animation: spin-very-slow 36s linear infinite;
+  }
+}
+
+@keyframes hero-star-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-backdrop__orb,
+  .hero-star {
+    animation: none !important;
+  }
+
+  .hero-particles-canvas {
+    transition: none !important;
   }
 }

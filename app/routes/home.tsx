@@ -9,6 +9,8 @@ import {
   Sparkles,
   Tv,
 } from "lucide-react";
+import { HeroBackdrop } from "~/components/hero-backdrop";
+import { HeroParticles } from "~/components/hero-particles";
 import { SiteNav } from "~/components/site-nav";
 import { SearchForm } from "~/components/search-form";
 import { HomeNewsPanel } from "~/components/home-news-panel";
@@ -80,42 +82,20 @@ export default function Home() {
       <SiteNav />
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <section className="relative min-h-[560px] overflow-hidden rounded-lg border border-white/75 bg-white/42 shadow-xl shadow-rose-900/5">
-          <picture>
-            <source
-              type="image/avif"
-              srcSet="/assets/portal-hero-480.avif 480w, /assets/portal-hero-768.avif 768w, /assets/portal-hero-1024.avif 1024w"
-              sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 3rem), calc(100vw - 2rem)"
-            />
-            <source
-              type="image/webp"
-              srcSet="/assets/portal-hero-480.webp 480w, /assets/portal-hero-768.webp 768w, /assets/portal-hero-1024.webp 1024w"
-              sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 3rem), calc(100vw - 2rem)"
-            />
-            <img
-              src="/assets/portal-hero-768.jpg"
-              srcSet="/assets/portal-hero-480.jpg 480w, /assets/portal-hero-768.jpg 768w, /assets/portal-hero-1024.jpg 1024w"
-              sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 3rem), calc(100vw - 2rem)"
-              width={1024}
-              height={1024}
-              alt=""
-              aria-hidden="true"
-              decoding="async"
-              className="absolute inset-0 size-full object-cover opacity-32 mix-blend-luminosity"
-            />
-          </picture>
-          <div className="absolute inset-0 bg-gradient-to-br from-[#fff5fd]/96 via-[#f8f1fb]/88 to-[#eef8ff]/82" />
-          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#fff9fd] to-transparent" />
+        <section className="hero-panel relative min-h-[560px] overflow-hidden rounded-xl">
+          <HeroBackdrop className="z-0" />
+          <HeroParticles className="absolute inset-0 z-[1]" />
+          <div className="hero-panel__fade absolute inset-x-0 bottom-0 z-[1]" />
 
-          <div className="relative flex min-h-[560px] flex-col justify-center px-5 py-12 sm:px-10 lg:max-w-3xl lg:px-14">
-            <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-rose-300/60 bg-rose-50/80 px-3.5 py-1.5 font-serif text-xs font-bold tracking-wider text-rose-800 shadow-sm">
-              <Sparkles className="size-3.5 text-rose-600" />
+          <div className="relative z-[2] flex min-h-[560px] flex-col justify-center px-5 py-12 sm:px-10 lg:max-w-3xl lg:px-14">
+            <div className="hero-badge mb-5 inline-flex w-fit items-center gap-2 px-3.5 py-1.5 font-serif text-xs font-bold tracking-wider">
+              <Sparkles className="size-3.5 text-fuchsia-500" />
               平行次元的亚文化传送门
             </div>
 
             <h1 className="font-serif text-4xl font-black leading-tight tracking-tight text-slate-800 sm:text-5xl lg:text-6xl">
               青羽凝辉，
-              <span className="block bg-gradient-to-r from-rose-500 via-fuchsia-400 to-sky-400 bg-clip-text text-transparent">
+              <span className="hero-title-accent mt-1 block bg-gradient-to-r from-rose-500 via-fuchsia-500 to-sky-400 bg-clip-text text-transparent">
                 开启次元穿梭
               </span>
             </h1>
@@ -130,7 +110,7 @@ export default function Home() {
               <Link
                 to={buildListHref({ type: SUBJECT_TYPE.anime, view: "calendar" })}
                 prefetch="intent"
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-5 py-3 text-sm font-bold text-slate-700 shadow-lg shadow-rose-900/5 transition-colors hover:from-rose-200 hover:to-sky-200"
+                className="hero-cta-primary inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-bold transition-transform hover:scale-[1.02]"
               >
                 <CalendarDays className="size-4" />
                 查看日历新番
