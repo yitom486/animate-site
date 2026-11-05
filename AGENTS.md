@@ -73,6 +73,7 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 - Bangumi 抓取放在 `app/lib/bangumi/server/*.server.ts`，不要从客户端组件直接 import。
 - 下载资源在 `app/lib/downloads/`（漫猫 + 动漫花园）；资讯在 `app/lib/news/`。
 - 资讯只订阅两个自有频道，不再接入旧聚合源或叠加综合源。名称和周期在 `app/lib/news/config.ts`；真实 RSS 地址只能由同步 Worker 的 `NEWS_ANIME_RSS_URL` / `NEWS_EVENTS_RSS_URL` Secrets 提供，不得写进 Git、共享配置、前端产物、API 或日志。本地真实值仅放在被忽略的 `workers/news-sync/.dev.vars`，示例文件保持空值。正文优先 content:encoded，经 HTML 过滤后按 GUID 唯一入库，保留 AI/来源/漫展核实提示。
+- GitHub 发布还须检查历史：仅删除当前源码中的 RSS 地址不足以隐藏旧提交。当前原工作分支历史曾包含地址，不得直接推送或合并其历史；本地 `publish/private-rss` 已准备为无敏感历史的发布分支。后续更新应在该安全历史上提交或迁移净化后的变更，不强推或擅自改写共享历史。
 - 资讯存储为 D1，绑定名 `NEWS_DB`，生产和预览库分离；站点只读，`workers/news-sync/` 定时拉取并保存 ETag。失败保留旧数据；仅按发布时间清理超过 30 天的文章，不按 RSS 中是否消失删除。迁移在 `migrations/`，详情见 `docs/news-storage.md`。
 - 缓存目前为进程内 LRU（L1）+ Cloudflare Cache API（L2），尚未接 KV；缓存写入必须 `await` 或交给请求上下文的 `waitUntil`，不得使用悬空 Promise。
 - 静态资源由 `public/_routes.json` 排除 Functions，缓存头在 `public/_headers` 配置。内容哈希资源可用 `immutable`，按年份原地更新的 JSON 不可长期 immutable。
