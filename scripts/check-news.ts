@@ -203,7 +203,7 @@ try {
   let authenticatedRequests = 0;
   handler = (_url, init) => {
     assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer test-only-token");
-    assert.equal(init?.redirect, "error");
+    assert.equal(init?.redirect, "manual");
     authenticatedRequests++;
     return new Response(null, { status: 304 });
   };
@@ -214,6 +214,22 @@ try {
     fetcher,
   });
   assert.equal(authenticatedRequests, 2);
+  const beforeRedirect = requests;
+  handler = () =>
+    new Response(null, {
+      status: 302,
+      headers: { Location: "https://redirect.example.test/private" },
+    });
+  const redirected = await syncNewsFeeds(db, {
+    sources,
+    now: expiredNow + 120000,
+    force: true,
+    fetcher,
+  });
+  assert.equal(requests, beforeRedirect + 2, "3xx 不跟随到其他地址");
+  assert.ok(
+    redirected.every((result) => result.status === "error" && result.error === "RSS HTTP 302"),
+  );
   console.log(
     "资讯检查通过：真实本地 D1、GUID、完整正文/过滤、ETag/304、频道周期、分页、失败保留、并发租约、事务回滚和 30 天清理。",
   );

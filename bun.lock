@@ -38,6 +38,7 @@
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@types/sanitize-html": "^2.16.1",
+        "miniflare": "4.20260611.0",
         "oxfmt": "^0.64.0",
         "oxlint": "^1.79.0",
         "tailwindcss": "^4.2.2",

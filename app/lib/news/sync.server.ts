@@ -75,7 +75,8 @@ export async function syncNewsFeeds(
       const response = await fetcher(newsSourceUrl(feed.id, options.sources), {
         headers,
         signal: AbortSignal.timeout(15000),
-        redirect: "error",
+        // Workers 不支持 error 模式；manual 暴露 3xx，随后由状态检查拒绝。
+        redirect: "manual",
       });
       if (response.status === 304) {
         if (!state?.success_at) throw new NewsSyncError("首次同步收到无对应内容的 304");

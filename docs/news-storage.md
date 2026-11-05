@@ -50,6 +50,8 @@ bun run dev
 
 额外验证缺失/无效 Secrets、可选鉴权请求头、拒绝重定向，以及网络错误不泄露私有地址或令牌。
 
+`bun run check:news-runtime` 对打包后的 Worker 执行真实 workerd scheduled 事件，模拟两个 HTTPS 源并使用隔离 D1。Bun 管理依赖和构建，Node 提供测试所需的完整 Undici MockAgent。该检查覆盖 Worker 中的请求构造、XML/HTML 处理、Secrets 和 SQL 写入；Workers 不支持 `redirect: "error"`，必须用 `manual` 接收后拒绝 3xx。
+
 ## 订阅地址隐私
 
 - 真实地址只由同步 Worker 的运行时 Secrets 提供。部署 Worker 必须保留已有 `secret_text` 绑定；不得把值编译进模块或加入部署日志。
@@ -74,10 +76,18 @@ MCP OAuth 授权与 Wrangler 登录是两套凭据。部署时可以通过 MCP �
 
 - 实现提交：`1aefa1b`，仅包含资讯相关文件；工作区同期布局和图片改动未混入本次发布产物。
 - 首次导入：生产和预览各 32 条，动漫 / 漫展各 16 条；同步状态和 ETag 已持久化。
-- 预览：`https://ff627adb.animate-site.pages.dev`；生产：`https://lowbculture.com/news`。
-- 生产部署：`0200455d-a18a-4332-9fd6-7c53910b2228`，实际状态 `success`。
-- 原生产部署（回退依据）：`864736ac-94db-4c91-8e07-920a06a05df9`。
 - 线上 HTTP 验收通过：API、频道列表、正文详情、AI/漫展核实提示、亮暗 SSR 和 404。API 为公开缓存，主题 HTML 为 private。
 - 生产 CSS 抽样返回一年 immutable；重复 GET 观察到 `MISS → HIT`、`Age: 2`，不据此推算整站命中率。
 - Worker 绑定、兼容标志、日志及每 15 分钟触发器已读取核对；公开 workers.dev / 预览入口均关闭。首次真实定时触发仍待调度观察。
 - 本次采用已验证产物直接发布；代码提交尚未推送。后续 Git 自动构建需要将实现同步到生产分支 `master`，避免旧分支构建覆盖新功能。
+
+## 地址隐私修复记录
+
+- 真实 RSS 地址已移入同步 Worker 的 Cloudflare Secrets；前端和站点服务端均不需要这些值。
+- 原版本的部署地址和回退信息保存在被忽略的 `.wrangler/private-news-release-history.md`，不再通过公开文档提供旧脚本的发现入口。
+- 当前源码与新构建不含真实地址；旧浏览器缓存、旧部署和原工作分支的本地历史仍可能保留原内容。隐藏当前地址不等于使公开 RSS 获得访问控制。
+- 发布 GitHub 时使用不包含旧敏感提交历史的发布分支；不要推送全部本地分支，也不要把含旧地址的工作分支历史再合并回发布分支。
+- 已验证的隐私修复预览：`https://098acdc8.animate-site.pages.dev`；生产版本：`6660e0e1-f915-4f53-8339-f0cf71024a70`。
+- 预览线上扫描 51 个 JS 文件、列表/详情 HTML 与资讯 API，均未发现私有域名；生产 HTML、API 和详情复核通过，当前域名上的旧配置脚本已返回 404。
+- 修正 Workers 不支持的 `redirect: "error"` 后，真实本地 workerd scheduled 对实际源成功导入动漫 25 条、漫展 16 条，状态均无错误。线上下一次调度还需复核成功时间。
+- 为 GitHub 准备本地分支 `publish/private-rss`：从已存在的远程安全基线创建单个发布提交，保留当前源码树，不包含原工作分支中曾写入真实地址的提交；原工作分支不改写。发布时仅推送该分支，再合入 `master`。

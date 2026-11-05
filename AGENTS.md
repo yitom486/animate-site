@@ -14,6 +14,7 @@
 - 缓存回归检查：`bun run check:cache`
 - 客户端查询回归检查：`bun run check:queries`
 - RSS / D1 回归检查：`bun run check:news`
+- Worker 实际运行时检查：`bun run check:news-runtime`（Bun 构建，Node 启动隔离 workerd 与模拟 HTTPS 源）
 - 添加 shadcn 组件：`bunx shadcn@latest add <component>`
 - **不要**运行 `npm install` / `pnpm install` / `yarn`。它们会生成 `package-lock.json` 等多余锁文件，与 `bun.lock` 冲突，并可能让 Cloudflare 用错包管理器。
 - 唯一受追踪的锁文件是 **`bun.lock`**；`package-lock.json` 已在 `.gitignore` 中忽略。加依赖后确认只改了 `package.json` + `bun.lock`。
