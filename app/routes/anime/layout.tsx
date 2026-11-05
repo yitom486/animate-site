@@ -24,6 +24,7 @@ import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bang
 import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
 import { COVER_PRIORITY_COUNT } from "~/lib/anime-meta";
 import { isAbortLike, throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
+import { useDetailLayoutStore } from "~/lib/stores/use-detail-layout-store";
 
 const clientCache = createCache<AnimeListResult>({
   ttlMs: CACHE_TTL_LIST_MS,
@@ -89,11 +90,9 @@ function useViewportLayout() {
 }
 
 function gridCols(isMobile: boolean, hasDetail: boolean, expanded: boolean): string {
-  if (isMobile) {
-    return hasDetail ? "0fr 1fr" : "1fr 0fr";
+  if (isMobile || !hasDetail || expanded) {
+    return "1fr";
   }
-  if (!hasDetail) return "1fr 0fr";
-  if (expanded) return "0fr 1fr";
   return "1.6fr 1fr";
 }
 
@@ -101,7 +100,7 @@ export function HydrateFallback() {
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <SiteNav activeType={SUBJECT_TYPE.anime} />
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_0fr] overflow-hidden p-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden p-3">
         <AnimeListSkeleton />
       </div>
     </div>
@@ -128,8 +127,28 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const routeHasDetail = Boolean(params.id);
   const hasListQuery = Boolean(location.search && location.search !== "?");
-  // 当无列表筛选参数直接访问详情时，默认展开为完整居中大页
-  const [expanded, setExpandedState] = useState(() => routeHasDetail && !hasListQuery);
+
+  // 使用 Zustand 持久化保存用户的展开/半屏偏好
+  const isStoreExpanded = useDetailLayoutStore((s) => s.expanded);
+  const setStoreExpanded = useDetailLayoutStore((s) => s.setExpanded);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+    // 直链访问且此前从未手动操作过时，默认展开为完整大页
+    if (
+      params.id &&
+      !hasListQuery &&
+      typeof window !== "undefined" &&
+      !localStorage.getItem("yayu-detail-layout")
+    ) {
+      setStoreExpanded(true);
+    }
+  }, [params.id, hasListQuery, setStoreExpanded]);
+
+  // 水合后严格遵循 Zustand 持久化的偏好
+  const expanded = routeHasDetail && (hydrated ? isStoreExpanded : !hasListQuery);
+
   const { isMobile } = useViewportLayout();
   const listScrollRef = useRef<HTMLDivElement>(null);
   const listPanelRef = useRef<HTMLElement>(null);
@@ -146,30 +165,21 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
 
   const setExpanded = useCallback(
     (next: boolean) => {
-      if (next === expanded) return;
       if (typeof document !== "undefined" && "startViewTransition" in document && !reduceMotion) {
         document.startViewTransition(() => {
           flushSync(() => {
-            setExpandedState(next);
+            setStoreExpanded(next);
           });
         });
       } else {
-        setExpandedState(next);
+        setStoreExpanded(next);
       }
     },
-    [expanded, reduceMotion],
+    [reduceMotion, setStoreExpanded],
   );
 
   const outletContext = { expanded, setExpanded, isMobile } satisfies AnimeOutletContext;
   const outlet = useOutlet(outletContext);
-
-  useEffect(() => {
-    if (params.id && !hasListQuery) {
-      setExpandedState(true);
-    } else if (!params.id) {
-      setExpandedState(false);
-    }
-  }, [params.id, hasListQuery]);
 
   useEffect(() => {
     listScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
@@ -197,7 +207,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
       <div
         className={cn(
           "grid min-h-0 flex-1 overflow-hidden p-3 transition-all duration-300 ease-out",
-          routeHasDetail && "gap-x-3",
+          routeHasDetail && !expanded && "gap-x-3",
         )}
         style={{ gridTemplateColumns: cols }}
       >
@@ -205,7 +215,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
           ref={listPanelRef}
           className={cn(
             "flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-opacity duration-300",
-            expanded && "hidden",
+            (expanded || (isMobile && routeHasDetail)) && "hidden",
           )}
         >
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
