@@ -1,0 +1,5 @@
+# 复制为同目录 .dev.vars 并在本地填入真实地址；真实文件禁止提交。
+NEWS_ANIME_RSS_URL=""
+NEWS_EVENTS_RSS_URL=""
+# 仅当 RSS 服务端已配置 Bearer 鉴权时填写。
+NEWS_RSS_BEARER_TOKEN=""

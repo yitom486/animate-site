@@ -73,7 +73,7 @@ export async function readNewsFeed(
       ok: Boolean(state?.success_at) && !state?.error,
       count: (rows.results as unknown as ArticleRow[]).filter((row) => row.channel === feed.id)
         .length,
-      error: state?.error || (!state?.success_at ? "等待首次同步" : undefined),
+      error: state?.error ? "资讯同步暂时失败" : !state?.success_at ? "等待首次同步" : undefined,
       lastSuccessAt: state?.success_at ? new Date(state.success_at).toISOString() : undefined,
     };
   });

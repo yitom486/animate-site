@@ -2,13 +2,19 @@ import type { D1Database } from "@cloudflare/workers-types";
 import { NEWS_FEEDS, NEWS_RETENTION_MS } from "./config";
 import type { FeedRow } from "./db.server";
 import { newsArticleId, parseNewsRss } from "./parse.server";
+import {
+  newsSourceUrl,
+  newsSyncErrorMessage,
+  NewsSyncError,
+  type NewsSourceSecrets,
+} from "./settings.server";
 
 const MAX_FEED_BYTES = 2 * 1024 * 1024;
 
 async function readFeedBody(response: Response) {
   if (Number(response.headers.get("Content-Length")) > MAX_FEED_BYTES)
-    throw new Error("RSS 超过大小限制");
-  if (!response.body) throw new Error("RSS 响应正文为空");
+    throw new NewsSyncError("RSS 超过大小限制");
+  if (!response.body) throw new NewsSyncError("RSS 响应正文为空");
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let length = 0;
@@ -19,7 +25,7 @@ async function readFeedBody(response: Response) {
       length += value.length;
       if (length > MAX_FEED_BYTES) {
         await reader.cancel();
-        throw new Error("RSS 超过大小限制");
+        throw new NewsSyncError("RSS 超过大小限制");
       }
       chunks.push(value);
     }
@@ -37,7 +43,7 @@ async function readFeedBody(response: Response) {
 
 export async function syncNewsFeeds(
   db: D1Database,
-  options: { now?: number; force?: boolean; fetcher?: typeof fetch } = {},
+  options: { sources: NewsSourceSecrets; now?: number; force?: boolean; fetcher?: typeof fetch },
 ) {
   const { now = Date.now(), force = false, fetcher = fetch } = options;
   const results = [];
@@ -64,9 +70,15 @@ export async function syncNewsFeeds(
       });
       if (state?.etag) headers.set("If-None-Match", state.etag);
       if (state?.last_modified) headers.set("If-Modified-Since", state.last_modified);
-      const response = await fetcher(feed.url, { headers, signal: AbortSignal.timeout(15000) });
+      if (options.sources.NEWS_RSS_BEARER_TOKEN)
+        headers.set("Authorization", `Bearer ${options.sources.NEWS_RSS_BEARER_TOKEN}`);
+      const response = await fetcher(newsSourceUrl(feed.id, options.sources), {
+        headers,
+        signal: AbortSignal.timeout(15000),
+        redirect: "error",
+      });
       if (response.status === 304) {
-        if (!state?.success_at) throw new Error("首次同步收到无对应内容的 304");
+        if (!state?.success_at) throw new NewsSyncError("首次同步收到无对应内容的 304");
         await db
           .prepare(
             "UPDATE news_feeds SET checked_at = ?, success_at = ?, next_check_at = ?, lease_until = 0, error = NULL WHERE id = ?",
@@ -76,7 +88,7 @@ export async function syncNewsFeeds(
         results.push({ id: feed.id, status: "not-modified" });
         continue;
       }
-      if (!response.ok) throw new Error(`RSS HTTP ${response.status}`);
+      if (!response.ok) throw new NewsSyncError(`RSS HTTP ${response.status}`);
       const articles = parseNewsRss(await readFeedBody(response), feed.id).filter(
         (article) => article.publishedAt >= now - NEWS_RETENTION_MS,
       );
@@ -124,7 +136,7 @@ export async function syncNewsFeeds(
       await db.batch(statements);
       results.push({ id: feed.id, status: "updated", count: articles.length });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "RSS 同步失败";
+      const message = newsSyncErrorMessage(error);
       await db
         .prepare(
           "UPDATE news_feeds SET checked_at = ?, next_check_at = ?, lease_until = 0, error = ? WHERE id = ?",

@@ -1,9 +1,9 @@
-import type { NewsEnv } from "../../app/lib/news/db.server";
+import type { NewsSyncEnv } from "../../app/lib/news/settings.server";
 import { syncNewsFeeds } from "../../app/lib/news/sync.server";
 
 export default {
-  async scheduled(_event: unknown, env: NewsEnv) {
-    const results = await syncNewsFeeds(env.NEWS_DB);
+  async scheduled(_event: unknown, env: NewsSyncEnv) {
+    const results = await syncNewsFeeds(env.NEWS_DB, { sources: env });
     console.log(JSON.stringify({ job: "news-sync", results }));
     if (results.some((result) => result.status === "error"))
       throw new Error("部分 RSS 同步失败，已保留上次成功内容");

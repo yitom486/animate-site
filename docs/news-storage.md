@@ -13,7 +13,7 @@
 | 同步 Worker | `celadon-news-sync`，只绑定生产库，无公开写入接口               |
 | 定时器      | `*/15 * * * *`；根据每个源的 `next_check_at` 决定是否拉取       |
 
-频道地址、名称和间隔集中在 `app/lib/news/config.ts`。动漫每 15 分钟、漫展每小时；两者不再叠加订阅 `all.xml`。网站请求只读 D1，避免访客请求等待 RSS。预览数据库以首次导入的数据验证，不运行生产定时任务。
+频道名称和间隔集中在 `app/lib/news/config.ts`。真实订阅地址仅保存在同步 Worker 的 Cloudflare Secrets：`NEWS_ANIME_RSS_URL` 与 `NEWS_EVENTS_RSS_URL`；共享配置、Git 和浏览器产物不包含真实值。动漫每 15 分钟、漫展每小时；不叠加综合源。网站请求只读 D1，不需要这些 Secrets。预览数据库以首次导入的数据验证，不运行生产定时任务。
 
 ## 数据与失败处理
 
@@ -36,6 +36,8 @@
 
 ## 本地开发
 
+先复制 `workers/news-sync/.dev.vars.example` 为同目录 `.dev.vars`，在本地填写两个 HTTPS 地址。真实文件已被 Git 忽略；不要使用 `VITE_` 环境变量或写入 Wrangler 的公开 `vars`。本地同步脚本从该私有配置读取，站点只需 D1 绑定。若 RSS 服务端已启用 Bearer 鉴权，再配置可选 `NEWS_RSS_BEARER_TOKEN`。
+
 ```sh
 bun run news:migrate:local
 bun run news:sync:local
@@ -45,6 +47,15 @@ bun run dev
 本地命令只写本地 D1。`bun run check:news` 使用临时、隔离的真实 D1 运行时与固定 RSS，不访问线上数据库或真实源。`bun run news:worker:build` 仅打包，不部署。
 
 验证覆盖 GUID、完整内容优先级、HTML 过滤、304、两个刷新周期、分页、失败保留、并发租约、事务回滚、30 天清理、首页频道配额和未来发布时间。
+
+额外验证缺失/无效 Secrets、可选鉴权请求头、拒绝重定向，以及网络错误不泄露私有地址或令牌。
+
+## 订阅地址隐私
+
+- 真实地址只由同步 Worker 的运行时 Secrets 提供。部署 Worker 必须保留已有 `secret_text` 绑定；不得把值编译进模块或加入部署日志。
+- RSS 请求不跟随重定向；网络和存储异常对外仅提供概括消息，避免 URL 或令牌从 D1 状态、日志及公开 API 泄露。
+- 隐藏地址减少发现机会，不构成访问控制。公开 RSS 仍可被已知地址访问；需要限制抓取时，应在 RSS 服务端启用鉴权、缓存或限流。
+- 移除当前源码不会自动删除 Git 历史、旧部署和已缓存的脚本。本地旧提交含曾使用的地址，发布 GitHub 前需处理；不在未获明确指令时强推或改写共享历史。旧地址如已公开，应更换入口或在上游增加鉴权。
 
 ## 发布与运维
 

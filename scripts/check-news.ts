@@ -15,6 +15,10 @@ const proxy = await getPlatformProxy<NewsEnv>({
   persist: { path: directory },
 });
 const db = proxy.env.NEWS_DB;
+const sources = {
+  NEWS_ANIME_RSS_URL: "https://feeds.example.test/anime.xml",
+  NEWS_EVENTS_RSS_URL: "https://feeds.example.test/events.xml",
+};
 const now = Date.UTC(2026, 10, 6, 0);
 const date = new Date(now - 3600000).toUTCString();
 const item = (guid: string, content = "<p>正文 &amp; 来源</p>", pubDate = date) =>
@@ -59,7 +63,7 @@ try {
   assert.ok(safe.includes('rel="noopener noreferrer nofollow"'));
   assert.ok(!/script|onclick|style=|javascript:|iframe/.test(safe));
 
-  const first = await syncNewsFeeds(db, { now, fetcher });
+  const first = await syncNewsFeeds(db, { sources, now, fetcher });
   assert.deepEqual(
     first.map((row) => row.status),
     ["updated", "updated"],
@@ -75,13 +79,13 @@ try {
   assert.equal(secondPage.items.length, 1);
   assert.equal(secondPage.hasMore, false);
 
-  await syncNewsFeeds(db, { now: now + 1000, fetcher });
+  await syncNewsFeeds(db, { sources, now: now + 1000, fetcher });
   assert.equal(requests, 2, "未到各自刷新时间不重复抓取");
   handler = (_url, init) => {
     assert.equal(new Headers(init?.headers).get("If-None-Match"), '"v1"');
     return new Response(null, { status: 304 });
   };
-  const unchanged = await syncNewsFeeds(db, { now: now + 15 * 60000, fetcher });
+  const unchanged = await syncNewsFeeds(db, { sources, now: now + 15 * 60000, fetcher });
   assert.deepEqual(
     unchanged.map((row) => row.status),
     ["not-modified", "skipped"],
@@ -95,7 +99,7 @@ try {
       ),
       { headers: { ETag: '"v2"' } },
     );
-  await syncNewsFeeds(db, { now: now + 60 * 60000, force: true, fetcher });
+  await syncNewsFeeds(db, { sources, now: now + 60 * 60000, force: true, fetcher });
   assert.equal(
     (await readNewsFeed(db, { now })).total,
     3,
@@ -104,7 +108,7 @@ try {
   assert.ok((await readNewsArticle(db, id, now))?.contentHtml.includes("更新后的解读"));
 
   handler = () => new Response("invalid xml", { headers: { ETag: '"broken"' } });
-  await syncNewsFeeds(db, { now: now + 120 * 60000, force: true, fetcher });
+  await syncNewsFeeds(db, { sources, now: now + 120 * 60000, force: true, fetcher });
   assert.equal(
     (await db.prepare("SELECT etag FROM news_feeds WHERE id='anime'").first<{ etag: string }>())
       ?.etag,
@@ -116,10 +120,30 @@ try {
   );
 
   handler = () => {
-    throw new Error("network failure");
+    throw new Error("fetch failed: https://private.example.test/rss?token=private-test-token");
   };
-  await syncNewsFeeds(db, { now: now + 180 * 60000, force: true, fetcher });
+  await syncNewsFeeds(db, { sources, now: now + 180 * 60000, force: true, fetcher });
   assert.equal((await readNewsFeed(db, { now })).total, 3);
+  const errorRows = await db.prepare("SELECT error FROM news_feeds").all();
+  assert.ok(!JSON.stringify(errorRows.results).includes("private.example.test"));
+  assert.ok(!JSON.stringify(await readNewsFeed(db, { now })).includes("private-test-token"));
+
+  const beforeMissingConfig = requests;
+  const missingConfig = await syncNewsFeeds(db, {
+    sources: {},
+    now: now + 190 * 60000,
+    force: true,
+    fetcher,
+  });
+  assert.ok(missingConfig.every((result) => result.status === "error"));
+  assert.equal(requests, beforeMissingConfig, "缺少 Secrets 时不请求任何默认公开地址");
+  await syncNewsFeeds(db, {
+    sources: { ...sources, NEWS_ANIME_RSS_URL: "http://invalid.example.test/feed" },
+    now: now + 200 * 60000,
+    force: true,
+    fetcher,
+  });
+  assert.equal(requests, beforeMissingConfig + 1, "不安全地址不发请求，另一频道继续独立处理");
 
   // 模拟正在同步的任务：另一个任务不得覆盖其状态或重复请求。
   await db
@@ -127,7 +151,7 @@ try {
     .bind(now + 86400000)
     .run();
   const beforeLease = requests;
-  await syncNewsFeeds(db, { now: now + 240 * 60000, force: true, fetcher });
+  await syncNewsFeeds(db, { sources, now: now + 240 * 60000, force: true, fetcher });
   assert.equal(requests, beforeLease);
   await db.prepare("UPDATE news_feeds SET lease_until=0").run();
 
@@ -143,7 +167,7 @@ try {
   const expiredNow = now + NEWS_RETENTION_MS + 1;
   assert.equal((await readNewsFeed(db, { now: expiredNow })).total, 0);
   assert.equal(await readNewsArticle(db, id, expiredNow), null);
-  await syncNewsFeeds(db, { now: expiredNow, force: true, fetcher });
+  await syncNewsFeeds(db, { sources, now: expiredNow, force: true, fetcher });
   assert.equal(
     (await db.prepare("SELECT COUNT(*) AS total FROM news_articles").first<{ total: number }>())
       ?.total,
@@ -162,7 +186,7 @@ try {
       ),
       { headers: { ETag: '"future"' } },
     );
-  await syncNewsFeeds(db, { now: expiredNow, force: true, fetcher });
+  await syncNewsFeeds(db, { sources, now: expiredNow, force: true, fetcher });
   const home = await readHomeNews(db, expiredNow);
   assert.equal(home.items.filter((row) => row.channel === "anime").length, 12);
   assert.equal(
@@ -176,6 +200,20 @@ try {
     await readNewsArticle(db, futureId, expiredNow + 3600000),
     "未来发布时间的条目保存但延后展示，不因 ETag 不变永久漏掉",
   );
+  let authenticatedRequests = 0;
+  handler = (_url, init) => {
+    assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer test-only-token");
+    assert.equal(init?.redirect, "error");
+    authenticatedRequests++;
+    return new Response(null, { status: 304 });
+  };
+  await syncNewsFeeds(db, {
+    sources: { ...sources, NEWS_RSS_BEARER_TOKEN: "test-only-token" },
+    now: expiredNow + 60000,
+    force: true,
+    fetcher,
+  });
+  assert.equal(authenticatedRequests, 2);
   console.log(
     "资讯检查通过：真实本地 D1、GUID、完整正文/过滤、ETag/304、频道周期、分页、失败保留、并发租约、事务回滚和 30 天清理。",
   );

@@ -3,13 +3,11 @@ export const NEWS_FEEDS = [
   {
     id: "anime",
     label: "日本动漫资讯",
-    url: "https://tomy.wutsuu0577.sbs/feeds/anime.xml",
     intervalMs: 15 * 60 * 1000,
   },
   {
     id: "events",
     label: "国内漫展资讯",
-    url: "https://tomy.wutsuu0577.sbs/feeds/events.xml",
     intervalMs: 60 * 60 * 1000,
   },
 ] as const;
