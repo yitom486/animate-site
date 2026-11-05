@@ -22,7 +22,7 @@
 1. **静态资源 CDN / 浏览器缓存**：JS、CSS、字体和数据切片，应尽量不经过 Functions。
 2. **应用数据缓存**：Worker 进程内 LRU + Cache API，减少 Bangumi/RSS 等上游请求。L1 不跨 isolate；Cache API 不跨数据中心复制，也不支持 Tiered Cache。不能用整站 CDN 命中率推导它们的命中率。[Cache API 官方说明](https://developers.cloudflare.com/workers/runtime-apis/cache/)
 3. **完整 HTTP 响应缓存**：缓存整个公开 JSON 响应，甚至跳过 Worker 执行，是另一层能力。本轮没有把所有 SSR、路由 `.data` 或 API 响应一律放入共享 HTTP 缓存。
-4. **浏览器 TanStack Query 缓存**：评论分页和条目侧栏在当前浏览器中复用数据、合并并发请求；减少发到本站的请求，与 CDN HIT 是两个指标。
+4. **浏览器 TanStack Query 缓存**：评论分页、条目侧栏和首页详情抽屉在当前浏览器中复用数据、合并并发请求；减少发到本站的请求，与 CDN HIT 是两个指标。
 
 Pages 静态资产已有平台缓存和 Tiered Cache 默认能力，不能照搬普通源站的优化步骤。自定义域名上的缓存规则也可能覆盖 Pages 的预期行为。[Pages 缓存说明](https://developers.cloudflare.com/pages/configuration/serving-pages/)
 
@@ -67,7 +67,7 @@ Pages 静态资产已有平台缓存和 Tiered Cache 默认能力，不能照搬
 ## TanStack Query 的使用范围
 
 - 根组件为每棵应用树创建独立 QueryClient；浏览器路由切换保留实例，SSR 请求间不共享，服务端不创建缓存 GC 定时器。
-- 侧栏详情新鲜期 30 分钟；评论分页新鲜期 5 分钟。浏览器中无使用者的查询保留 30 分钟后回收，刷新整页后重新建立内存缓存，不写 localStorage。
+- 侧栏与首页抽屉共用条目详情查询，新鲜期 30 分钟；评论分页新鲜期 5 分钟。浏览器中无使用者的查询保留 30 分钟后回收，刷新整页后重新建立内存缓存，不写 localStorage。
 - 评论合并接口只提供两个列表的初始页，两个 infinite query 独立累计后续页；初始种子不自动刷新，由分页查询负责刷新，避免挂载时重复请求第一页。
 - 窗口重新获得焦点不自动请求；过期后重新挂载或网络恢复仍可更新。网络错误、429 和 5xx 最多自动重试一次，其他 4xx 不自动重试；手动重试不丢已加载列表。
 - 所有 queryFn 向同源 fetch 传递 AbortSignal；同一条目共享请求，关闭最后一个使用者时取消未完成请求。HTTP 失败不会当成功 JSON 缓存。
@@ -88,6 +88,7 @@ Pages 静态资产已有平台缓存和 Tiered Cache 默认能力，不能照搬
 ## 本轮验证记录
 
 - 类型检查、Lint、缓存回归检查及主题检查通过。
+- 客户端查询回归检查通过：并发去重、新鲜/过期缓存、请求隔离与取消、HTTP 错误重试策略、初始页复用、两类评论同时翻页、失败后重试、重新打开恢复分页；服务端渲染检查确认评论组件不会额外发起客户端请求。
 - 生产构建生成了 `_routes.json` 与 `_headers`。
 - Wrangler Pages 本地运行时识别了 3 条静态响应头规则。
 - 本地 CSS、年份 JSON、favicon 的 Cache-Control 均符合策略，带 ETag 的条件请求均返回 304。

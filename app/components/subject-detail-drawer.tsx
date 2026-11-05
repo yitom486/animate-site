@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { subjectDetailQuery } from "~/lib/subject-queries";
 import { Link } from "react-router";
 import {
   ExternalLink,
@@ -26,7 +28,6 @@ import {
   subjectCountLabel,
   subjectDateLabel,
 } from "~/lib/bangumi/subject-display";
-import type { DetailPayload } from "~/lib/bangumi/types-detail";
 import { cn } from "~/lib/utils";
 
 type SubjectDetailDrawerProps = {
@@ -37,43 +38,16 @@ type SubjectDetailDrawerProps = {
 type ActiveTab = "overview" | "episodes" | "characters" | "comments";
 
 export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
-  const [data, setData] = useState<DetailPayload | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery(subjectDetailQuery(id ? String(id) : ""));
+  const data = query.data;
+  const loading = query.isPending;
+  const error = query.isError && !data ? query.error.message : null;
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   useEffect(() => {
-    if (!id) {
-      setData(null);
-      setError(null);
-      return;
-    }
-
-    const ac = new AbortController();
-    setLoading(true);
-    setError(null);
     setActiveTab("overview");
     setSummaryExpanded(false);
-
-    fetch(`/api/anime/detail/${id}`, { signal: ac.signal })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return (await res.json()) as DetailPayload;
-      })
-      .then((payload) => {
-        if (!ac.signal.aborted) {
-          setData(payload);
-          setLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (ac.signal.aborted) return;
-        setError(err instanceof Error ? err.message : "加载失败");
-        setLoading(false);
-      });
-
-    return () => ac.abort();
   }, [id]);
 
   // 按 ESC 键关闭抽屉 & 锁定页面滚动
@@ -165,7 +139,14 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
             </div>
           ) : error ? (
             <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center text-xs text-destructive">
-              加载条目失败（{error}）
+              <p role="status">加载条目失败（{error}）</p>
+              <Button
+                variant="ghost"
+                onClick={() => void query.refetch()}
+                disabled={query.isFetching}
+              >
+                {query.isFetching ? "重试中…" : "重新加载"}
+              </Button>
             </div>
           ) : subject ? (
             <div className="space-y-6">

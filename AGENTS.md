@@ -40,7 +40,7 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 
 - 框架模式，路由写在 `app/routes.ts`。
 - 页面用 `loader` / `clientLoader` 取数，不要在组件里 `useEffect` 打 Bangumi。
-- 评论分页和详情侧栏使用 TanStack Query 请求同源 API，查询定义集中在 `app/lib/subject-queries.ts`；复用 `app/lib/query-client.ts`，传递取消信号，不再叠加组件级 Map。页面主数据仍由路由 loader 管理，不在服务端全局共享 QueryClient。浏览器查询缓存与 Cloudflare CDN、Worker L1/L2 分开配置和观察。
+- 评论分页、详情侧栏和首页详情抽屉使用 TanStack Query 请求同源 API，查询定义集中在 `app/lib/subject-queries.ts`；详情预览共用 query key，复用 `app/lib/query-client.ts`，传递取消信号，不再叠加组件级 Map。页面主数据仍由路由 loader 管理，不在服务端全局共享 QueryClient。浏览器查询缓存与 Cloudflare CDN、Worker L1/L2 分开配置和观察。
 - 站内跳转用 `<Link>` / `<Form>`，不要用整页刷新的 `<a>` 做内部导航。
 - 列表筛选、搜索条件一律放进 URL query，用 `buildListHref` / `buildListUrl` 生成，**不要在 JSX 里手写** `` `/anime?type=${x}` ``。
 
