@@ -17,6 +17,8 @@ type AnimeCardProps = {
   rank?: number;
   /** 默认 intent：仅 hover/focus 时预取详情。viewport 留给后续小范围实验。 */
   prefetch?: PrefetchBehavior;
+  /** 点击卡片时的快捷选择回调（例如打开原地抽屉），阻止整页跳转 */
+  onSelect?: (item: AnimeCardData) => void;
 };
 
 export function AnimeCard({
@@ -26,15 +28,24 @@ export function AnimeCard({
   priority,
   rank,
   prefetch = "intent",
+  onSelect,
 }: AnimeCardProps) {
   const { title, subtitle, score, ratingTotal } = buildCardMeta(item);
   const cover = getCoverSources(item.images);
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0 && onSelect) {
+      e.preventDefault();
+      onSelect(item);
+    }
+  };
 
   return (
     <Link
       to={to}
       prefetch={prefetch}
       viewTransition
+      onClick={onSelect ? handleClick : undefined}
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
         "group flex flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-300 ease-out",

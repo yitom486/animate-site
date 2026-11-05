@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   data,
   isRouteErrorResponse,
@@ -13,6 +15,7 @@ import {
 import type { Route } from "./+types/root";
 import { HamsterLoader } from "./components/hamster-loader";
 import { ThemeProvider, themeFromCookie, themeInitScript } from "./lib/theme";
+import { createQueryClient } from "./lib/query-client";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
@@ -54,14 +57,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App({ loaderData }: Route.ComponentProps) {
+  // 每棵应用树独立实例：SSR 请求间不共享用户数据，浏览器路由切换时保留缓存。
+  const [queryClient] = useState(createQueryClient);
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
 
   return (
-    <ThemeProvider initialTheme={loaderData.theme}>
-      <Outlet />
-      <HamsterLoader show={isLoading} />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider initialTheme={loaderData.theme}>
+        <Outlet />
+        <HamsterLoader show={isLoading} />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

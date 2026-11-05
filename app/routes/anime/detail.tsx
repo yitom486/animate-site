@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { isRouteErrorResponse, Link, useOutletContext, useSearchParams } from "react-router";
 import { Maximize2, Minimize2, X } from "lucide-react";
 import type { Route } from "./+types/detail";
@@ -20,6 +21,7 @@ import {
   subjectCountLabel,
   subjectDateLabel,
 } from "~/lib/bangumi/subject-display";
+import { cn } from "~/lib/utils";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<DetailPayload>({
@@ -168,7 +170,7 @@ export default function AnimeDetailRoute({ loaderData }: Route.ComponentProps) {
           <JumpLinks links={links} />
 
           {showFull ? (
-            <FullExtras subject={subject} episodes={episodes} showEpisodes={isAnime} />
+            <FullExtras subjectId={subject.id} episodes={episodes} showEpisodes={isAnime} />
           ) : null}
         </div>
       </div>
@@ -192,6 +194,7 @@ function DetailOverview({
   expanded: boolean;
   onExpand: () => void;
 }) {
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const title = subject.name_cn || subject.name;
   const countLabel = subjectCountLabel(subject.type);
   const dateLabel = subjectDateLabel(subject.type);
@@ -289,16 +292,40 @@ function DetailOverview({
           ) : null}
         </div>
       </div>
+
+      {/* 剧情简介（常驻展示，折叠态提供展开按钮） */}
+      {subject.summary ? (
+        <div className="mt-4 border-t border-border/70 pt-3">
+          <h2 className="mb-1.5 font-serif text-xs font-bold text-foreground">剧情简介</h2>
+          <p
+            className={cn(
+              "whitespace-pre-line font-serif text-xs leading-relaxed text-foreground/90",
+              !expanded && !summaryOpen && "line-clamp-4",
+            )}
+          >
+            {subject.summary}
+          </p>
+          {!expanded && subject.summary.length > 150 ? (
+            <button
+              type="button"
+              onClick={() => setSummaryOpen(!summaryOpen)}
+              className="mt-1.5 text-xs font-bold text-primary hover:underline"
+            >
+              {summaryOpen ? "收起简介" : "展开完整简介…"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }
 
 function FullExtras({
-  subject,
+  subjectId,
   episodes,
   showEpisodes,
 }: {
-  subject: SubjectDetail;
+  subjectId: number;
   episodes: Episode[];
   showEpisodes: boolean;
 }) {
@@ -306,15 +333,6 @@ function FullExtras({
 
   return (
     <>
-      {subject.summary ? (
-        <section className="rounded-xl border border-border/70 bg-card p-5 shadow-xs">
-          <h2 className="mb-2 font-serif text-lg font-bold text-foreground">简介</h2>
-          <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-foreground/90">
-            {subject.summary}
-          </p>
-        </section>
-      ) : null}
-
       {mainEps.length ? (
         <section className="rounded-xl border border-border/70 bg-card p-5 shadow-xs">
           <h2 className="mb-3 font-serif text-lg font-bold text-foreground">
@@ -341,8 +359,8 @@ function FullExtras({
         </section>
       ) : null}
 
-      <SubjectComments id={String(subject.id)} />
-      <SubjectRelationsPanel id={String(subject.id)} enabled />
+      <SubjectComments id={String(subjectId)} />
+      <SubjectRelationsPanel id={String(subjectId)} enabled />
     </>
   );
 }

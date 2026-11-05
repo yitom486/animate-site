@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Form, useLocation, useNavigation } from "react-router";
+import { Form, useLocation } from "react-router";
 import { ArrowRight, Search } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -29,17 +29,20 @@ export function SearchForm({
   const isHero = variant === "hero";
   const typeValue = defaultType || SUBJECT_TYPE_ALL;
   const location = useLocation();
-  const navigation = useNavigation();
   const [query, setQuery] = useState(defaultQuery);
 
-  // 顶栏：跳转完成后清空，避免结果页仍占着上次关键词
+  // 保持关键词与 URL 搜索状态同步，方便用户在结果页继续修改或追加搜索词
   useEffect(() => {
-    if (!isHero && navigation.state === "idle") {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q") || "";
+    if (params.get("view") === "search" && q) {
+      setQuery(q);
+    } else if (location.pathname === "/" && !isHero) {
       setQuery("");
     }
-  }, [isHero, navigation.state, location.pathname, location.search]);
+  }, [location.pathname, location.search, isHero]);
 
-  // Hero：跟随外部 defaultQuery（较少变化）
+  // Hero：跟随外部 defaultQuery
   useEffect(() => {
     if (isHero) setQuery(defaultQuery);
   }, [isHero, defaultQuery]);

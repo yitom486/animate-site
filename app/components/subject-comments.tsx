@@ -1,30 +1,10 @@
 import { Button } from "~/components/ui/button";
-import { useEffect, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { MessageSquare, Star } from "lucide-react";
-import { createCache } from "~/lib/cache";
 import { toProxiedImageUrl } from "~/lib/anime-meta";
-import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
-import type {
-  CommentPage,
-  ReviewPage,
-  SubjectComment,
-  SubjectComments as SubjectCommentsData,
-  SubjectReview,
-} from "~/lib/bangumi/types-comments";
-
-type Loaded = {
-  comments: SubjectComment[];
-  commentsTotal: number;
-  reviews: SubjectReview[];
-  reviewsTotal: number;
-};
-
-/** 浏览器内存缓存：保存累计加载的页，详情来回切换不丢已展开内容 */
-const clientCache = createCache<Loaded>({
-  ttlMs: CACHE_TTL_DETAIL_MS,
-  maxEntries: CACHE_MAX_ENTRIES.clientDetail,
-});
+import { discussionPagesQuery, subjectCommentsQuery } from "~/lib/subject-queries";
+import type { SubjectComments as SubjectCommentsData } from "~/lib/bangumi/types-comments";
 
 function formatDate(ts: number): string {
   if (!ts) return "";
@@ -54,15 +34,19 @@ function Avatar({ url, name }: { url?: string; name: string }) {
 function LoadMore({
   shown,
   total,
+  hasMore,
   loading,
+  failed,
   onClick,
 }: {
   shown: number;
   total: number;
+  hasMore: boolean;
   loading: boolean;
+  failed: boolean;
   onClick: () => void;
 }) {
-  if (shown >= total) return null;
+  if (!hasMore) return null;
   return (
     <Button
       variant="ghost"
@@ -71,106 +55,81 @@ function LoadMore({
       disabled={loading}
       className="mt-3 w-full rounded-lg border border-primary/25 bg-card py-2 font-mono text-xs font-semibold text-primary transition-colors hover:bg-muted/50 disabled:opacity-60"
     >
-      {loading ? "加载中…" : `加载更多（${shown}/${total}）`}
+      {loading ? "加载中…" : failed ? "加载失败，点击重试" : `加载更多（${shown}/${total}）`}
     </Button>
   );
 }
 
 export function SubjectComments({ id }: { id: string }) {
-  const [data, setData] = useState<Loaded | null>(() => clientCache.get(id) ?? null);
-  const [state, setState] = useState<"idle" | "loading" | "error">(() =>
-    clientCache.get(id) ? "idle" : "loading",
-  );
-  const [loadingComments, setLoadingComments] = useState(false);
-  const [loadingReviews, setLoadingReviews] = useState(false);
-
-  useEffect(() => {
-    const cached = clientCache.get(id);
-    if (cached) {
-      setData(cached);
-      setState("idle");
-      return;
-    }
-    let alive = true;
-    setState("loading");
-    fetch(`/api/anime/comments/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(String(r.status));
-        return r.json() as Promise<SubjectCommentsData>;
-      })
-      .then((d) => {
-        if (!alive) return;
-        const loaded: Loaded = {
-          comments: d.comments,
-          commentsTotal: d.commentsTotal,
-          reviews: d.reviews,
-          reviewsTotal: d.reviewsTotal,
-        };
-        clientCache.set(id, loaded);
-        setData(loaded);
-        setState("idle");
-      })
-      .catch(() => alive && setState("error"));
-    return () => {
-      alive = false;
-    };
-  }, [id]);
-
-  function save(next: Loaded) {
-    clientCache.set(id, next);
-    setData(next);
-  }
-
-  async function loadMoreComments() {
-    if (!data || loadingComments) return;
-    setLoadingComments(true);
-    try {
-      const res = await fetch(
-        `/api/anime/comments/${id}?kind=comments&offset=${data.comments.length}`,
-      );
-      const page = (await res.json()) as CommentPage;
-      save({
-        ...data,
-        comments: [...data.comments, ...page.items],
-        commentsTotal: page.total || data.commentsTotal,
-      });
-    } catch {
-      /* 静默：加载更多失败保持已有列表 */
-    } finally {
-      setLoadingComments(false);
-    }
-  }
-
-  async function loadMoreReviews() {
-    if (!data || loadingReviews) return;
-    setLoadingReviews(true);
-    try {
-      const res = await fetch(
-        `/api/anime/comments/${id}?kind=reviews&offset=${data.reviews.length}`,
-      );
-      const page = (await res.json()) as ReviewPage;
-      save({
-        ...data,
-        reviews: [...data.reviews, ...page.items],
-        reviewsTotal: page.total || data.reviewsTotal,
-      });
-    } catch {
-      /* 静默 */
-    } finally {
-      setLoadingReviews(false);
-    }
-  }
-
-  if (state === "loading") {
+  const query = useQuery(subjectCommentsQuery(id));
+  if (query.isPending) {
     return (
       <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-        <p className="text-sm text-muted-foreground">评论加载中…</p>
+        <p className="text-sm text-muted-foreground" role="status">
+          评论加载中…
+        </p>
       </section>
     );
   }
-  if (state === "error" || !data) return null;
+  if (!query.data) {
+    return (
+      <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
+        <p className="text-sm text-muted-foreground" role="status">
+          评论暂时无法加载。
+        </p>
+        <Button variant="ghost" onClick={() => void query.refetch()} disabled={query.isFetching}>
+          {query.isFetching ? "重试中…" : "重新加载"}
+        </Button>
+      </section>
+    );
+  }
+  return <CommentLists key={id} id={id} initial={query.data} updatedAt={query.dataUpdatedAt} />;
+}
 
-  const { comments, commentsTotal, reviews, reviewsTotal } = data;
+function CommentLists({
+  id,
+  initial,
+  updatedAt,
+}: {
+  id: string;
+  initial: SubjectCommentsData;
+  updatedAt: number;
+}) {
+  const commentQuery = useInfiniteQuery(
+    discussionPagesQuery(
+      id,
+      "comments",
+      {
+        items: initial.comments,
+        total: initial.commentsTotal,
+      },
+      updatedAt,
+    ),
+  );
+  const reviewQuery = useInfiniteQuery(
+    discussionPagesQuery(
+      id,
+      "reviews",
+      {
+        items: initial.reviews,
+        total: initial.reviewsTotal,
+      },
+      updatedAt,
+    ),
+  );
+  // 上游翻页期间若插入新条目，按 id 去重；两个列表各自更新，避免并发写覆盖。
+  const comments = [
+    ...new Map(
+      commentQuery.data.pages.flatMap((page) => page.items).map((item) => [item.id, item]),
+    ).values(),
+  ];
+  const reviews = [
+    ...new Map(
+      reviewQuery.data.pages.flatMap((page) => page.items).map((item) => [item.id, item]),
+    ).values(),
+  ];
+  const commentsTotal = commentQuery.data.pages.at(-1)?.total ?? initial.commentsTotal;
+  const reviewsTotal = reviewQuery.data.pages.at(-1)?.total ?? initial.reviewsTotal;
   if (!comments.length && !reviews.length) return null;
 
   return (
@@ -211,8 +170,10 @@ export function SubjectComments({ id }: { id: string }) {
           <LoadMore
             shown={reviews.length}
             total={reviewsTotal}
-            loading={loadingReviews}
-            onClick={loadMoreReviews}
+            hasMore={Boolean(reviewQuery.hasNextPage)}
+            loading={reviewQuery.isFetching}
+            failed={reviewQuery.isFetchNextPageError}
+            onClick={() => void reviewQuery.fetchNextPage({ cancelRefetch: false })}
           />
         </section>
       ) : null}
@@ -252,8 +213,10 @@ export function SubjectComments({ id }: { id: string }) {
           <LoadMore
             shown={comments.length}
             total={commentsTotal}
-            loading={loadingComments}
-            onClick={loadMoreComments}
+            hasMore={Boolean(commentQuery.hasNextPage)}
+            loading={commentQuery.isFetching}
+            failed={commentQuery.isFetchNextPageError}
+            onClick={() => void commentQuery.fetchNextPage({ cancelRefetch: false })}
           />
         </section>
       ) : null}

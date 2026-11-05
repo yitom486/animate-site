@@ -1,5 +1,7 @@
 import { Button } from "~/components/ui/button";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { subjectDetailQuery } from "~/lib/subject-queries";
 import { Link } from "react-router";
 import { ExternalLink, Loader2, X } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
@@ -15,35 +17,9 @@ import { toProxiedImageUrl } from "~/lib/anime-meta";
 import type { SubjectSidePanelControls } from "~/lib/subject-side-panel";
 import { cn } from "~/lib/utils";
 
-type State =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ok"; data: DetailPayload };
-
-/** 条目侧栏面板：拉取 /api/anime/detail，轻量预览 */
+/** 条目侧栏面板：复用浏览器 Query 缓存，预览关闭后取消未完成请求。 */
 export function SubjectSidePanel({ id, onClose }: { id: string; onClose: () => void }) {
-  const [state, setState] = useState<State>({ status: "loading" });
-
-  useEffect(() => {
-    const ac = new AbortController();
-    setState({ status: "loading" });
-
-    fetch(`/api/anime/detail/${id}`, { signal: ac.signal })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return (await res.json()) as DetailPayload;
-      })
-      .then((data) => {
-        if (!ac.signal.aborted) setState({ status: "ok", data });
-      })
-      .catch((err: unknown) => {
-        if (ac.signal.aborted) return;
-        const message = err instanceof Error ? err.message : "加载失败";
-        setState({ status: "error", message });
-      });
-
-    return () => ac.abort();
-  }, [id]);
+  const query = useQuery(subjectDetailQuery(id));
 
   return (
     <aside className="flex h-full min-h-0 min-w-0 flex-col border-l border-primary/25 bg-card">
@@ -63,20 +39,27 @@ export function SubjectSidePanel({ id, onClose }: { id: string; onClose: () => v
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {state.status === "loading" ? (
+        {query.isPending ? (
           <p className="flex items-center justify-center gap-2 py-16 text-xs text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
             加载条目中…
           </p>
         ) : null}
 
-        {state.status === "error" ? (
-          <p className="rounded-lg border border-dashed border-primary/25 bg-card px-4 py-10 text-center text-xs text-muted-foreground">
-            条目暂不可用（{state.message}）
-          </p>
+        {query.isError && !query.data ? (
+          <div className="rounded-lg border border-dashed border-primary/25 bg-card px-4 py-10 text-center text-xs text-muted-foreground">
+            <p role="status">条目暂不可用（{query.error?.message}）</p>
+            <Button
+              variant="ghost"
+              onClick={() => void query.refetch()}
+              disabled={query.isFetching}
+            >
+              {query.isFetching ? "重试中…" : "重新加载"}
+            </Button>
+          </div>
         ) : null}
 
-        {state.status === "ok" ? <PanelBody data={state.data} /> : null}
+        {query.data ? <PanelBody data={query.data} /> : null}
       </div>
     </aside>
   );

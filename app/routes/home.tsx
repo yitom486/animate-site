@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowRight,
@@ -15,6 +16,7 @@ import { SiteNav } from "~/components/site-nav";
 import { SearchForm } from "~/components/search-form";
 import { HomeNewsPanel } from "~/components/home-news-panel";
 import { AnimeCard } from "~/components/anime-card";
+import { SubjectDetailDrawer } from "~/components/subject-detail-drawer";
 import { Button } from "~/components/ui/button";
 import { buildDetailUrl, buildListHref } from "~/lib/bangumi/params";
 import { SUBJECT_TYPE } from "~/lib/bangumi/types";
@@ -86,6 +88,7 @@ const CATEGORIES = [
 
 export default function Home({ loaderData }: Route.ComponentProps) {
   const { todayItems, hotItems, todayCn, totalSchedule } = loaderData;
+  const [drawerId, setDrawerId] = useState<number | null>(null);
   const emptyListParams = new URLSearchParams();
 
   return (
@@ -220,6 +223,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   item={item}
                   to={buildDetailUrl(item.id, emptyListParams)}
                   priority={idx < 3}
+                  onSelect={(selected) => setDrawerId(selected.id)}
                 />
               ))}
             </div>
@@ -263,6 +267,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   item={item}
                   to={buildDetailUrl(item.id, emptyListParams)}
                   rank={idx + 1}
+                  onSelect={(selected) => setDrawerId(selected.id)}
                 />
               ))}
             </div>
@@ -314,6 +319,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <span>作品资料来自 Bangumi，播放与资源链接由第三方提供。</span>
         </div>
       </footer>
+
+      <SubjectDetailDrawer id={drawerId} onClose={() => setDrawerId(null)} />
     </div>
   );
 }

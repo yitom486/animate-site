@@ -12,6 +12,7 @@
 - Lint：`bun run lint`
 - 主题颜色规范检查：`bun run check:theme`
 - 缓存回归检查：`bun run check:cache`
+- 客户端查询回归检查：`bun run check:queries`
 - 添加 shadcn 组件：`bunx shadcn@latest add <component>`
 - **不要**运行 `npm install` / `pnpm install` / `yarn`。它们会生成 `package-lock.json` 等多余锁文件，与 `bun.lock` 冲突，并可能让 Cloudflare 用错包管理器。
 - 唯一受追踪的锁文件是 **`bun.lock`**；`package-lock.json` 已在 `.gitignore` 中忽略。加依赖后确认只改了 `package.json` + `bun.lock`。
@@ -39,6 +40,7 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 
 - 框架模式，路由写在 `app/routes.ts`。
 - 页面用 `loader` / `clientLoader` 取数，不要在组件里 `useEffect` 打 Bangumi。
+- 评论分页和详情侧栏使用 TanStack Query 请求同源 API，查询定义集中在 `app/lib/subject-queries.ts`；复用 `app/lib/query-client.ts`，传递取消信号，不再叠加组件级 Map。页面主数据仍由路由 loader 管理，不在服务端全局共享 QueryClient。浏览器查询缓存与 Cloudflare CDN、Worker L1/L2 分开配置和观察。
 - 站内跳转用 `<Link>` / `<Form>`，不要用整页刷新的 `<a>` 做内部导航。
 - 列表筛选、搜索条件一律放进 URL query，用 `buildListHref` / `buildListUrl` 生成，**不要在 JSX 里手写** `` `/anime?type=${x}` ``。
 

@@ -17,11 +17,12 @@
 
 观察：静态文件存在且返回正确内容类型，但重复请求没有观察到外层 CDN HIT。JSON 缺少浏览器新鲜期；公开 API 已声明共享缓存头，说明仅增加响应头并不能证明当前部署已经缓存了完整 HTTP 响应。是否存在 Edge TTL 为 0、规则覆盖、Worker 路由或其他配置，需要实际控制台配置或 Trace 才能确定。
 
-## 先分清三个缓存
+## 缓存分层
 
 1. **静态资源 CDN / 浏览器缓存**：JS、CSS、字体和数据切片，应尽量不经过 Functions。
 2. **应用数据缓存**：Worker 进程内 LRU + Cache API，减少 Bangumi/RSS 等上游请求。L1 不跨 isolate；Cache API 不跨数据中心复制，也不支持 Tiered Cache。不能用整站 CDN 命中率推导它们的命中率。[Cache API 官方说明](https://developers.cloudflare.com/workers/runtime-apis/cache/)
 3. **完整 HTTP 响应缓存**：缓存整个公开 JSON 响应，甚至跳过 Worker 执行，是另一层能力。本轮没有把所有 SSR、路由 `.data` 或 API 响应一律放入共享 HTTP 缓存。
+4. **浏览器 TanStack Query 缓存**：评论分页和条目侧栏在当前浏览器中复用数据、合并并发请求；减少发到本站的请求，与 CDN HIT 是两个指标。
 
 Pages 静态资产已有平台缓存和 Tiered Cache 默认能力，不能照搬普通源站的优化步骤。自定义域名上的缓存规则也可能覆盖 Pages 的预期行为。[Pages 缓存说明](https://developers.cloudflare.com/pages/configuration/serving-pages/)
 
@@ -62,6 +63,17 @@ Pages 静态资产已有平台缓存和 Tiered Cache 默认能力，不能照搬
 保留默认 query 行为。只有确认某一静态前缀的查询参数完全不参与内容选择时，再考虑该前缀独立忽略 query。
 
 公开 API 的 HTTP 缓存层可在确认流量占比和 Pages 运行方式后进一步设计。当前已有应用 L2 缓存，不能只为了提高一个整站百分比就把所有路径 Cache Everything。后续若使用响应级 Cache API，需要白名单、200 状态检查、错误/部分失败结果策略、规范化 key 和明确的过期时间；Cache API 的 stale-while-revalidate 需要应用主动实现，不能只写一个响应头假设生效。
+
+## TanStack Query 的使用范围
+
+- 根组件为每棵应用树创建独立 QueryClient；浏览器路由切换保留实例，SSR 请求间不共享，服务端不创建缓存 GC 定时器。
+- 侧栏详情新鲜期 30 分钟；评论分页新鲜期 5 分钟。浏览器中无使用者的查询保留 30 分钟后回收，刷新整页后重新建立内存缓存，不写 localStorage。
+- 评论合并接口只提供两个列表的初始页，两个 infinite query 独立累计后续页；初始种子不自动刷新，由分页查询负责刷新，避免挂载时重复请求第一页。
+- 窗口重新获得焦点不自动请求；过期后重新挂载或网络恢复仍可更新。网络错误、429 和 5xx 最多自动重试一次，其他 4xx 不自动重试；手动重试不丢已加载列表。
+- 所有 queryFn 向同源 fetch 传递 AbortSignal；同一条目共享请求，关闭最后一个使用者时取消未完成请求。HTTP 失败不会当成功 JSON 缓存。
+- 保留现有路由 loader 和 Worker L1/L2，不为主页面另做一套取数。验证命令为 `bun run check:queries`。
+
+引入 Query 后仍要部署静态资源配置并核查 CDN。它不会替本站创建 Cloudflare Cache Rules，也不会让 Cache API 的命中自动计入外层 CDN HIT。部署后先按下面步骤核验，再决定是否需要补充控制台规则；现有 Pages 缓存正常时不必重复添加。
 
 ## 上线后怎样验收
 

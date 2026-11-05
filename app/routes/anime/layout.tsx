@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Link, useLocation, useNavigation, useOutlet, useParams } from "react-router";
 import { CalendarDays, MessageSquareText } from "lucide-react";
@@ -24,7 +24,6 @@ import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bang
 import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
 import { COVER_PRIORITY_COUNT } from "~/lib/anime-meta";
 import { isAbortLike, throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
-import { closeSplitWithFrozenPanel, flipElements, unfreezeDetailPanel } from "./split-motion";
 
 const clientCache = createCache<AnimeListResult>({
   ttlMs: CACHE_TTL_LIST_MS,
@@ -128,17 +127,14 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const location = useLocation();
   const navigation = useNavigation();
   const routeHasDetail = Boolean(params.id);
-  const [expanded, setExpandedState] = useState(false);
-  const { isMobile, layoutReady } = useViewportLayout();
+  const hasListQuery = Boolean(location.search && location.search !== "?");
+  // 当无列表筛选参数直接访问详情时，默认展开为完整居中大页
+  const [expanded, setExpandedState] = useState(() => routeHasDetail && !hasListQuery);
+  const { isMobile } = useViewportLayout();
   const listScrollRef = useRef<HTMLDivElement>(null);
   const listPanelRef = useRef<HTMLElement>(null);
   const detailPanelRef = useRef<HTMLElement>(null);
-  const flipAnimsRef = useRef<Animation[]>([]);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [splitOpen, setSplitOpen] = useState(routeHasDetail);
-  const [holdExitContent, setHoldExitContent] = useState(false);
-  const cachedOutletRef = useRef<ReactNode>(null);
-  const closingRef = useRef(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -147,20 +143,6 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
-
-  const animateSplit = layoutReady && !isMobile && !reduceMotion;
-
-  const runFlip = useCallback(
-    (apply: () => void) => {
-      flipAnimsRef.current.forEach((a) => a.cancel());
-      flipAnimsRef.current = flipElements(
-        [listPanelRef.current, detailPanelRef.current],
-        apply,
-        animateSplit,
-      );
-    },
-    [animateSplit],
-  );
 
   const setExpanded = useCallback(
     (next: boolean) => {
@@ -172,93 +154,28 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
           });
         });
       } else {
-        runFlip(() => setExpandedState(next));
+        setExpandedState(next);
       }
     },
-    [expanded, reduceMotion, runFlip],
+    [expanded, reduceMotion],
   );
 
   const outletContext = { expanded, setExpanded, isMobile } satisfies AnimeOutletContext;
   const outlet = useOutlet(outletContext);
-  if (outlet) cachedOutletRef.current = outlet;
 
   useEffect(() => {
-    if (params.id) setExpandedState(false);
-  }, [params.id]);
+    if (params.id && !hasListQuery) {
+      setExpandedState(true);
+    } else if (!params.id) {
+      setExpandedState(false);
+    }
+  }, [params.id, hasListQuery]);
 
   useEffect(() => {
     listScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [page, viewLabel, typeLabel]);
 
-  // 打开详情：支持 View Transitions API
-  useEffect(() => {
-    if (!routeHasDetail) return;
-    closingRef.current = false;
-    const panel = detailPanelRef.current;
-    if (panel) unfreezeDetailPanel(panel);
-    setHoldExitContent(false);
-    if (splitOpen) return;
-    if (typeof document !== "undefined" && "startViewTransition" in document && !reduceMotion) {
-      document.startViewTransition(() => {
-        flushSync(() => {
-          setSplitOpen(true);
-        });
-      });
-    } else {
-      runFlip(() => setSplitOpen(true));
-    }
-  }, [routeHasDetail, splitOpen, runFlip, reduceMotion]);
-
-  // 关闭详情：方案 C — 冻右栏 → 列表立刻占满 → 同时滑出 + 左栏 FLIP
-  useEffect(() => {
-    if (routeHasDetail) return;
-    if (!splitOpen || closingRef.current) return;
-
-    closingRef.current = true;
-    setHoldExitContent(true);
-
-    const panel = detailPanelRef.current;
-    if (!panel) {
-      setSplitOpen(false);
-      setHoldExitContent(false);
-      cachedOutletRef.current = null;
-      setExpandedState(false);
-      closingRef.current = false;
-      return;
-    }
-
-    let cancelled = false;
-    flipAnimsRef.current.forEach((a) => a.cancel());
-
-    const { animations, cleanup } = closeSplitWithFrozenPanel({
-      list: listPanelRef.current,
-      panel,
-      animate: animateSplit,
-      applyClosedLayout: () => {
-        setSplitOpen(false);
-        setExpandedState(false);
-      },
-    });
-    flipAnimsRef.current = animations;
-
-    void Promise.all(animations.map((a) => a.finished.catch(() => undefined))).then(() => {
-      if (cancelled) return;
-      cleanup();
-      setHoldExitContent(false);
-      cachedOutletRef.current = null;
-      closingRef.current = false;
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup();
-    };
-  }, [routeHasDetail, splitOpen, animateSplit]);
-
-  const cols = gridCols(isMobile, splitOpen, expanded);
-  /** 关闭动画中 splitOpen 已 false，但仍需挂住详情 DOM；gap 只在真正分栏时加 */
-  const panelShown = splitOpen || holdExitContent;
-  const detailNode = outlet ?? (holdExitContent ? cachedOutletRef.current : null);
+  const cols = gridCols(isMobile, routeHasDetail, expanded);
 
   const isListLoading =
     navigation.state === "loading" &&
@@ -278,12 +195,18 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
       <SiteNav activeType={type === SUBJECT_TYPE_ALL ? undefined : type} />
 
       <div
-        className={cn("grid min-h-0 flex-1 overflow-hidden p-3", splitOpen && "gap-x-3")}
+        className={cn(
+          "grid min-h-0 flex-1 overflow-hidden p-3 transition-all duration-300 ease-out",
+          routeHasDetail && "gap-x-3",
+        )}
         style={{ gridTemplateColumns: cols }}
       >
         <section
           ref={listPanelRef}
-          className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card/60 backdrop-blur-xs will-change-transform"
+          className={cn(
+            "flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card/60 backdrop-blur-xs transition-opacity duration-300",
+            expanded && "hidden",
+          )}
         >
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
             <div>
@@ -373,16 +296,14 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
           </div>
         </section>
 
-        <section
-          ref={detailPanelRef}
-          className={cn(
-            "min-w-0 overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs will-change-transform",
-            !panelShown && "pointer-events-none",
-          )}
-          aria-hidden={!panelShown}
-        >
-          {detailNode}
-        </section>
+        {routeHasDetail ? (
+          <section
+            ref={detailPanelRef}
+            className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs transition-opacity duration-200"
+          >
+            {outlet}
+          </section>
+        ) : null}
       </div>
     </div>
   );
