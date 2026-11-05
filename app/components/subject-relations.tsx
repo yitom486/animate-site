@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import type { SubjectRelationsPayload } from "~/lib/bangumi/server/detail.server";
 import { SUBJECT_TYPE_LABEL, type SubjectTypeValue } from "~/lib/bangumi/types";
 import { buildDetailUrl } from "~/lib/bangumi/params";
-import { toProxiedImageUrl } from "~/lib/anime-meta";
+import { AnimeCover } from "~/components/anime-cover";
 
 type State =
   | { status: "idle" }
@@ -72,13 +72,9 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
                 className="flex items-center gap-2 rounded-lg border border-primary/25 bg-card px-2 py-1.5"
               >
                 {c.image ? (
-                  <img
-                    src={toProxiedImageUrl(c.image)}
-                    alt=""
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    className="size-10 shrink-0 rounded object-cover"
-                  />
+                  <div className="size-10 shrink-0 overflow-hidden rounded">
+                    <AnimeCover url={c.image} alt={c.name} className="size-full object-cover" />
+                  </div>
                 ) : (
                   <span className="size-10 shrink-0 rounded bg-accent" />
                 )}
@@ -114,13 +110,9 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
                     className="flex items-center gap-2 rounded-lg border border-primary/25 bg-card px-2 py-1.5 transition-colors hover:border-primary/25 hover:bg-muted/50"
                   >
                     {r.image ? (
-                      <img
-                        src={toProxiedImageUrl(r.image)}
-                        alt=""
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="h-12 w-9 shrink-0 rounded object-cover"
-                      />
+                      <div className="h-12 w-9 shrink-0 overflow-hidden rounded">
+                        <AnimeCover url={r.image} alt={title} className="size-full object-cover" />
+                      </div>
                     ) : (
                       <span className="h-12 w-9 shrink-0 rounded bg-accent" />
                     )}

@@ -18,7 +18,7 @@ import {
   type BlogSection,
 } from "~/lib/bangumi/blog-section";
 import { useSubjectSidePanel, type SubjectSidePanelControls } from "~/lib/subject-side-panel";
-import { toProxiedImageUrl } from "~/lib/anime-meta";
+import { AnimeCover } from "~/components/anime-cover";
 import { cn } from "~/lib/utils";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
@@ -230,25 +230,19 @@ function BlogCard({
               className="shrink-0"
               title={item.subjectName}
             >
-              <img
-                src={toProxiedImageUrl(cover)}
-                alt=""
-                loading="lazy"
-                referrerPolicy="no-referrer"
+              <div
                 className={cn(
-                  "h-16 w-12 rounded border object-cover shadow-sm transition-transform group-hover:scale-[1.02]",
+                  "h-16 w-12 overflow-hidden rounded border shadow-2xs transition-transform group-hover:scale-[1.02]",
                   active ? "border-primary/25 ring-2 ring-ring" : "border-primary/25",
                 )}
-              />
+              >
+                <AnimeCover url={cover} alt="" className="size-full object-cover" />
+              </div>
             </button>
           ) : (
-            <img
-              src={toProxiedImageUrl(cover)}
-              alt=""
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className="h-16 w-12 shrink-0 rounded border border-primary/25 object-cover"
-            />
+            <div className="h-16 w-12 shrink-0 overflow-hidden rounded border border-primary/25 shadow-2xs">
+              <AnimeCover url={cover} alt="" className="size-full object-cover" />
+            </div>
           )
         ) : null}
         <div className="min-w-0 flex-1">

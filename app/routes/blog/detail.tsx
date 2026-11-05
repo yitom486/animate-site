@@ -1,5 +1,6 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Link } from "react-router";
+import { useState } from "react";
 import type { Route } from "./+types/detail";
 import { SiteNav } from "~/components/site-nav";
 import { SubjectSideLayout } from "~/components/subject-side-panel";
@@ -12,7 +13,32 @@ import {
 } from "~/lib/bangumi/blog-section";
 import { useSubjectSidePanel } from "~/lib/subject-side-panel";
 import { toProxiedImageUrl } from "~/lib/anime-meta";
+import { AnimeCover } from "~/components/anime-cover";
 import { cn } from "~/lib/utils";
+
+function BlogAuthorAvatar({ url, name }: { url?: string; name?: string }) {
+  const [error, setError] = useState(false);
+  const proxied = toProxiedImageUrl(url);
+
+  if (!proxied || error) {
+    return (
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-muted font-mono text-[10px] font-bold text-primary">
+        {(name || "U").slice(0, 1).toUpperCase()}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={proxied}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setError(true)}
+      className="size-6 shrink-0 rounded-full border border-primary/25 object-cover"
+    />
+  );
+}
 
 export async function loader({ params }: Route.LoaderArgs) {
   const section = parseBlogSection(params.section);
@@ -71,15 +97,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-2 border-b border-primary/25 pb-4 text-xs text-muted-foreground">
-            {post.avatar ? (
-              <img
-                src={toProxiedImageUrl(post.avatar)}
-                alt=""
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="size-6 shrink-0 rounded-full border border-primary/25 object-cover"
-              />
-            ) : null}
+            {post.avatar ? <BlogAuthorAvatar url={post.avatar} name={post.author} /> : null}
             <span className="min-w-0 break-words">
               内容来自 Bangumi 用户{" "}
               {post.authorUrl ? (
@@ -128,13 +146,13 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
                         )}
                       >
                         {s.image ? (
-                          <img
-                            src={toProxiedImageUrl(s.image)}
-                            alt=""
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
-                            className="h-14 w-10 shrink-0 rounded object-cover"
-                          />
+                          <div className="h-14 w-10 shrink-0 overflow-hidden rounded border border-primary/25 shadow-2xs">
+                            <AnimeCover
+                              url={s.image}
+                              alt={title}
+                              className="size-full object-cover"
+                            />
+                          </div>
                         ) : (
                           <span className="h-14 w-10 shrink-0 rounded bg-accent" />
                         )}

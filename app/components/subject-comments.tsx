@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
@@ -13,7 +14,10 @@ function formatDate(ts: number): string {
 }
 
 function Avatar({ url, name }: { url?: string; name: string }) {
-  if (!url) {
+  const [error, setError] = useState(false);
+  const proxied = toProxiedImageUrl(url);
+
+  if (!proxied || error) {
     return (
       <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-xs text-primary">
         {name.slice(0, 1)}
@@ -22,10 +26,11 @@ function Avatar({ url, name }: { url?: string; name: string }) {
   }
   return (
     <img
-      src={toProxiedImageUrl(url)}
+      src={proxied}
       alt={name}
       referrerPolicy="no-referrer"
       loading="lazy"
+      onError={() => setError(true)}
       className="size-8 shrink-0 rounded-full border border-primary/25 object-cover"
     />
   );
