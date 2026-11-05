@@ -45,6 +45,8 @@ bun run dev
 
 ## 部署（Cloudflare Pages）
 
+缓存分层、线上诊断和部署后的验收方法见 [缓存诊断与优化](./docs/cache-diagnosis.md)。`public/_routes.json` 让静态资源绕过 Functions，`public/_headers` 分别控制哈希资源与可更新 JSON 的缓存时间；应用数据缓存与 CDN 整站命中率分别观察。缓存逻辑可运行 `bun run check:cache` 验证。
+
 - 构建输出：[`wrangler.toml`](wrangler.toml) 中 `pages_build_output_dir = "./build/client"`
 - 因仓库只有 `bun.lock`，Pages 安装步骤会用 `bun install`
 - **Build command**：`bun run build`

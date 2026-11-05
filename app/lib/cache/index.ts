@@ -19,6 +19,12 @@
  * ```
  */
 
-export type { CacheStore, CreateCacheOptions, HttpCachePolicy, WithCacheOptions } from "./types";
+export type {
+  CacheStatus,
+  CacheStore,
+  CreateCacheOptions,
+  HttpCachePolicy,
+  WithCacheOptions,
+} from "./types";
 export { createCache, withCache } from "./memory";
 export { buildCacheControl, publicCacheHeaders, HTTP_CACHE } from "./http";

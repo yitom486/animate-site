@@ -1,0 +1,10 @@
+# Vite 构建资源的文件名含内容哈希，可长期缓存。
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 年份切片会原地更新，不使用 immutable 或忽略查询参数。
+/data/bangumi-data/*
+  Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=60
+
+/favicon.ico
+  Cache-Control: public, max-age=86400

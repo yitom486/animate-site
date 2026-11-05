@@ -77,7 +77,7 @@ export async function fetchCachedDetail(
         episodes,
       };
     },
-    { signal: options?.signal, useEdge: true },
+    { signal: options?.signal, useEdge: true, onStatus: options?.onCacheStatus },
   );
 }
 
@@ -160,6 +160,6 @@ export async function fetchSubjectRelations(
 
       return { related, characters };
     },
-    { signal: options?.signal, useEdge: true },
+    { signal: options?.signal, useEdge: true, onStatus: options?.onCacheStatus },
   );
 }

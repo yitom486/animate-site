@@ -1,4 +1,4 @@
-import type { HttpCachePolicy } from "./types";
+import type { CacheStatus, HttpCachePolicy } from "./types";
 
 /**
  * HTTP / CDN 层：声明「这份 Response 可被浏览器与边缘缓存多久」。
@@ -41,8 +41,9 @@ export function buildCacheControl(policy: HttpCachePolicy): string {
 }
 
 /** 供 loader / Response 使用的公开缓存头 */
-export function publicCacheHeaders(policy: HttpCachePolicy): HeadersInit {
+export function publicCacheHeaders(policy: HttpCachePolicy, status?: CacheStatus): HeadersInit {
   return {
     "Cache-Control": buildCacheControl(policy),
+    ...(status ? { "X-App-Cache": status } : {}),
   };
 }

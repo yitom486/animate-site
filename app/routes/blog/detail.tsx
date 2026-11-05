@@ -11,6 +11,7 @@ import {
   parseBlogSection,
 } from "~/lib/bangumi/blog-section";
 import { useSubjectSidePanel } from "~/lib/subject-side-panel";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 import { cn } from "~/lib/utils";
 
 export async function loader({ params }: Route.LoaderArgs) {
@@ -72,7 +73,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
           <div className="mt-3 flex flex-wrap items-center gap-2 border-b border-primary/25 pb-4 text-xs text-muted-foreground">
             {post.avatar ? (
               <img
-                src={post.avatar}
+                src={toProxiedImageUrl(post.avatar)}
                 alt=""
                 loading="lazy"
                 referrerPolicy="no-referrer"
@@ -128,7 +129,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
                       >
                         {s.image ? (
                           <img
-                            src={s.image}
+                            src={toProxiedImageUrl(s.image)}
                             alt=""
                             loading="lazy"
                             referrerPolicy="no-referrer"

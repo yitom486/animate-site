@@ -63,7 +63,7 @@ export function createCache<T>(ttlOrOptions?: number | CreateCacheOptions): Cach
     get(key: string): T | null {
       const hit = store.get(key);
       if (!hit) return null;
-      if (Date.now() > hit.expires) {
+      if (Date.now() >= hit.expires) {
         store.delete(key);
         return null;
       }
@@ -138,7 +138,10 @@ export async function withCache<T>(
   options?: WithCacheOptions,
 ): Promise<T> {
   const hit = cache.get(key);
-  if (hit) return hit;
+  if (hit !== null) {
+    options?.onStatus?.("L1_HIT");
+    return hit;
+  }
 
   if (options?.signal?.aborted) {
     throw abortError(options.signal);
@@ -151,27 +154,33 @@ export async function withCache<T>(
     const useEdge = options?.useEdge === true;
     const ttlSeconds = Math.max(1, Math.floor(internals.ttlMs / 1000));
 
-    pending = (async () => {
+    // 延迟一个微任务启动，确保同步抛错前也已经登记 in-flight。
+    pending = Promise.resolve().then(async () => {
       try {
         if (useEdge) {
           const edgeHit = await edgeGet<T>(key);
           if (edgeHit != null) {
             cache.set(key, edgeHit);
+            options?.onStatus?.("L2_HIT");
             return edgeHit;
           }
         }
 
+        options?.onStatus?.("MISS");
         const data = await fetcher();
         cache.set(key, data);
         if (useEdge) {
-          void edgeSet(key, data, ttlSeconds);
+          // 必须等待写入完成；悬空 Promise 在 Worker 响应结束后不保证继续执行。
+          await edgeSet(key, data, ttlSeconds);
         }
         return data;
       } finally {
         internals.inFlight.delete(key);
       }
-    })();
+    });
     internals.inFlight.set(key, pending);
+  } else {
+    options?.onStatus?.("COALESCED");
   }
 
   return waitShared(pending, options?.signal);

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 
 type AnimeCoverProps = {
   url?: string;
@@ -22,15 +23,17 @@ export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: Ani
   const [error, setError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
+  const proxiedUrl = toProxiedImageUrl(url);
+
   useEffect(() => {
     setLoaded(false);
     setError(false);
     if (imgRef.current?.complete) {
       setLoaded(true);
     }
-  }, [url, srcSet]);
+  }, [proxiedUrl, srcSet]);
 
-  if (!url) {
+  if (!proxiedUrl) {
     return (
       <div
         className={cn(
@@ -49,7 +52,7 @@ export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: Ani
 
       <img
         ref={imgRef}
-        src={url}
+        src={proxiedUrl}
         srcSet={srcSet}
         sizes={srcSet ? sizes : undefined}
         alt={alt}

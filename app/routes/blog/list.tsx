@@ -18,6 +18,7 @@ import {
   type BlogSection,
 } from "~/lib/bangumi/blog-section";
 import { useSubjectSidePanel, type SubjectSidePanelControls } from "~/lib/subject-side-panel";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 import { cn } from "~/lib/utils";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
@@ -230,7 +231,7 @@ function BlogCard({
               title={item.subjectName}
             >
               <img
-                src={cover}
+                src={toProxiedImageUrl(cover)}
                 alt=""
                 loading="lazy"
                 referrerPolicy="no-referrer"
@@ -242,7 +243,7 @@ function BlogCard({
             </button>
           ) : (
             <img
-              src={cover}
+              src={toProxiedImageUrl(cover)}
               alt=""
               loading="lazy"
               referrerPolicy="no-referrer"

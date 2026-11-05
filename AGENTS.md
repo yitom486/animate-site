@@ -11,6 +11,7 @@
 - 格式化：`bun run fmt`
 - Lint：`bun run lint`
 - 主题颜色规范检查：`bun run check:theme`
+- 缓存回归检查：`bun run check:cache`
 - 添加 shadcn 组件：`bunx shadcn@latest add <component>`
 - **不要**运行 `npm install` / `pnpm install` / `yarn`。它们会生成 `package-lock.json` 等多余锁文件，与 `bun.lock` 冲突，并可能让 Cloudflare 用错包管理器。
 - 唯一受追踪的锁文件是 **`bun.lock`**；`package-lock.json` 已在 `.gitignore` 中忽略。加依赖后确认只改了 `package.json` + `bun.lock`。
@@ -67,5 +68,8 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 - 只读公开 API，不要引入需要登录的 Bangumi 接口。
 - Bangumi 抓取放在 `app/lib/bangumi/server/*.server.ts`，不要从客户端组件直接 import。
 - 下载资源在 `app/lib/downloads/`（漫猫 + 动漫花园）；资讯在 `app/lib/news/`。
-- 缓存目前是进程内 `Map`，接口按 KV 可替换来写，但还没接 Cloudflare KV。
+- 缓存目前为进程内 LRU（L1）+ Cloudflare Cache API（L2），尚未接 KV；缓存写入必须 `await` 或交给请求上下文的 `waitUntil`，不得使用悬空 Promise。
+- 静态资源由 `public/_routes.json` 排除 Functions，缓存头在 `public/_headers` 配置。内容哈希资源可用 `immutable`，按年份原地更新的 JSON 不可长期 immutable。
+- 公开 API 按端点设置缓存策略，保留搜索词、页码、类型、条目 ID 等业务参数；不得全站忽略 query，也不得因 `/api/` 前缀一律绕过缓存。
+- HTML 和 root loader 含主题 Cookie，使用 private 缓存策略。Cloudflare CDN 命中率与应用 L1/L2 命中率分开观察；部分公开 API 的 `X-App-Cache` 提供 `L1_HIT` / `L2_HIT` / `MISS` / `COALESCED` 诊断，不能据此宣称 CDN 已命中。
 - Worker 里不要用 Node `fs` / jsdom；外网 `fetch` 必须带超时。

@@ -11,6 +11,7 @@ import {
   subjectCountLabel,
   subjectDateLabel,
 } from "~/lib/bangumi/subject-display";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 import type { SubjectSidePanelControls } from "~/lib/subject-side-panel";
 import { cn } from "~/lib/utils";
 
@@ -143,7 +144,7 @@ function PanelBody({ data }: { data: DetailPayload }) {
       <div className="flex gap-3">
         {subject.images?.large ? (
           <img
-            src={subject.images.large}
+            src={toProxiedImageUrl(subject.images.large)}
             alt=""
             referrerPolicy="no-referrer"
             className="h-36 w-24 shrink-0 rounded-lg border border-primary/25 object-cover shadow-sm"

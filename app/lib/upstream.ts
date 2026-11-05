@@ -1,7 +1,10 @@
+import type { CacheStatus } from "~/lib/cache/types";
+
 /** 上游 HTTP 请求选项：调用方取消 + 本地超时 */
 export type UpstreamRequestOptions = {
   signal?: AbortSignal;
   timeoutMs?: number;
+  onCacheStatus?: (status: CacheStatus) => void;
 };
 
 export type UpstreamErrorKind = "aborted" | "timeout" | "http" | "network" | "parse";

@@ -1,4 +1,5 @@
 import {
+  data,
   isRouteErrorResponse,
   Links,
   Meta,
@@ -17,7 +18,13 @@ import "./app.css";
 export const links: Route.LinksFunction = () => [];
 
 export function loader({ request }: Route.LoaderArgs) {
-  return { theme: themeFromCookie(request.headers.get("Cookie")) };
+  // root loader 包含请求者的主题偏好，不能与公开 API 共用 CDN 缓存策略。
+  return data(
+    { theme: themeFromCookie(request.headers.get("Cookie")) },
+    {
+      headers: { "Cache-Control": "private, no-cache" },
+    },
+  );
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

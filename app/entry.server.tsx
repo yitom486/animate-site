@@ -26,6 +26,8 @@ export default async function handleRequest(
   }
 
   responseHeaders.set("Content-Type", "text/html");
+  // HTML 内含 Cookie 决定的亮暗主题；公开数据由独立数据缓存复用。
+  responseHeaders.set("Cache-Control", "private, no-cache");
 
   return new Response(body, {
     headers: responseHeaders,

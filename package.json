@@ -10,6 +10,7 @@
     "fmt": "oxfmt .",
     "lint": "oxlint .",
     "check:theme": "bun run scripts/check-ui-theme.ts",
+    "check:cache": "bun run scripts/check-cache.ts",
     "data:bangumi": "bun run scripts/update-bangumi-data.ts"
   },
   "dependencies": {

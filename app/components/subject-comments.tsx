@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { MessageSquare, Star } from "lucide-react";
 import { createCache } from "~/lib/cache";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import type {
   CommentPage,
@@ -41,7 +42,7 @@ function Avatar({ url, name }: { url?: string; name: string }) {
   }
   return (
     <img
-      src={url}
+      src={toProxiedImageUrl(url)}
       alt={name}
       referrerPolicy="no-referrer"
       loading="lazy"

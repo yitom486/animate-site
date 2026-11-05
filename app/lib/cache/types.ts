@@ -15,6 +15,9 @@ export type CacheStore<T> = {
   clear(): void;
 };
 
+/** 应用数据缓存的命中层级，与 Cloudflare 整站 CDN 命中率分开观察。 */
+export type CacheStatus = "L1_HIT" | "L2_HIT" | "MISS" | "COALESCED";
+
 /** HTTP / CDN 层策略（秒） */
 export type HttpCachePolicy = {
   /** 浏览器 max-age */
@@ -36,4 +39,5 @@ export type WithCacheOptions = {
   signal?: AbortSignal;
   /** 启用边缘 Cache API 作为 L2；默认 false，保持纯内存行为 */
   useEdge?: boolean;
+  onStatus?: (status: CacheStatus) => void;
 };

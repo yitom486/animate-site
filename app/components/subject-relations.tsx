@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import type { SubjectRelationsPayload } from "~/lib/bangumi/server/detail.server";
 import { SUBJECT_TYPE_LABEL, type SubjectTypeValue } from "~/lib/bangumi/types";
 import { buildDetailUrl } from "~/lib/bangumi/params";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 
 type State =
   | { status: "idle" }
@@ -72,7 +73,7 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
               >
                 {c.image ? (
                   <img
-                    src={c.image}
+                    src={toProxiedImageUrl(c.image)}
                     alt=""
                     loading="lazy"
                     referrerPolicy="no-referrer"
@@ -114,7 +115,7 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
                   >
                     {r.image ? (
                       <img
-                        src={r.image}
+                        src={toProxiedImageUrl(r.image)}
                         alt=""
                         loading="lazy"
                         referrerPolicy="no-referrer"

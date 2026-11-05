@@ -1,4 +1,4 @@
-import { createCache, withCache } from "~/lib/cache";
+import { createCache, withCache, type CacheStatus } from "~/lib/cache";
 import { CACHE_TTL_NEWS_MS } from "./constants";
 import { fetchAniNews } from "./fetch-aninews";
 import { fetchBahamutNews } from "./fetch-bahamut";
@@ -48,7 +48,10 @@ function sortByDate(items: NewsItem[]): NewsItem[] {
 }
 
 /** 聚合中文（Google News + RSSHub 可选）+ 英文 AniNews */
-export async function fetchNewsFeed(limit = 24): Promise<NewsFeed> {
+export async function fetchNewsFeed(
+  limit = 24,
+  onCacheStatus?: (status: CacheStatus) => void,
+): Promise<NewsFeed> {
   return withCache(
     newsCache,
     `news:v6:${limit}`,
@@ -112,6 +115,6 @@ export async function fetchNewsFeed(limit = 24): Promise<NewsFeed> {
         sources,
       };
     },
-    { useEdge: true },
+    { useEdge: true, onStatus: onCacheStatus },
   );
 }

@@ -10,7 +10,7 @@ import type { DetailPayload, Episode, SubjectDetail } from "~/lib/bangumi/types-
 import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
 import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
-import { toHttps } from "~/lib/anime-meta";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { StreamingPanel } from "~/components/streaming-panel";
@@ -37,20 +37,20 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     // 深度克隆以避免直接修改内存中的共享缓存
     const clonedData = JSON.parse(JSON.stringify(data)) as DetailPayload;
 
-    // 将图片链接全部自动升级为 HTTPS，避开 307 重定向
+    // 将图片链接全部转为通过边缘代理加速，解决国内直连被阻断问题
     if (clonedData.subject.images) {
       if (clonedData.subject.images.large) {
         clonedData.subject.images.large =
-          toHttps(clonedData.subject.images.large) ?? clonedData.subject.images.large;
+          toProxiedImageUrl(clonedData.subject.images.large) ?? clonedData.subject.images.large;
       }
       if (clonedData.subject.images.common) {
-        clonedData.subject.images.common = toHttps(clonedData.subject.images.common);
+        clonedData.subject.images.common = toProxiedImageUrl(clonedData.subject.images.common);
       }
       if (clonedData.subject.images.medium) {
-        clonedData.subject.images.medium = toHttps(clonedData.subject.images.medium);
+        clonedData.subject.images.medium = toProxiedImageUrl(clonedData.subject.images.medium);
       }
       if (clonedData.subject.images.grid) {
-        clonedData.subject.images.grid = toHttps(clonedData.subject.images.grid);
+        clonedData.subject.images.grid = toProxiedImageUrl(clonedData.subject.images.grid);
       }
     }
 
@@ -212,7 +212,7 @@ function DetailOverview({
             className="shrink-0 self-start disabled:cursor-default"
           >
             <img
-              src={subject.images.large}
+              src={toProxiedImageUrl(subject.images.large)}
               alt={title}
               referrerPolicy="no-referrer"
               className={
