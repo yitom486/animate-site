@@ -1,24 +1,40 @@
-import { ArrowRight, Newspaper } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, Clock, MapPin, Sparkles, Tv } from "lucide-react";
 import { Link } from "react-router";
 import type { NewsFeed, NewsItem } from "~/lib/news/types";
 import { NEWS_FEEDS, formatNewsDate, newsListHref } from "~/lib/news/config";
+import { parseNewsItemMeta } from "~/lib/news/display";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 
 export function NewsPanelSkeleton({ className }: { className?: string }) {
   return (
     <section
-      className={cn("rounded-xl border border-border/70 bg-card p-5 shadow-xs", className)}
+      className={cn("rounded-2xl border border-border/70 bg-card p-6 shadow-xs", className)}
       aria-busy="true"
       aria-label="资讯加载中"
     >
-      <Skeleton className="h-6 w-40" />
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        {[0, 1].map((col) => (
-          <div key={col} className="space-y-3">
-            {[0, 1, 2].map((row) => (
-              <Skeleton key={row} className="h-24 w-full rounded-lg" />
-            ))}
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-7 w-48 rounded-lg" />
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {[0, 1, 2, 3].map((idx) => (
+          <div
+            key={idx}
+            className="flex flex-col justify-between rounded-xl border border-border/60 bg-muted/20 p-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-20 rounded-md" />
+                <Skeleton className="h-4 w-28 rounded-md" />
+              </div>
+              <Skeleton className="h-6 w-4/5 rounded-md" />
+              <Skeleton className="h-12 w-full rounded-md" />
+            </div>
+            <div className="mt-4 flex items-center justify-between pt-3">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-4 w-16 rounded-md" />
+            </div>
           </div>
         ))}
       </div>
@@ -34,7 +50,7 @@ export function NewsPanelError({
   message?: string;
 }) {
   return (
-    <section className={cn("rounded-xl border border-border/70 bg-card p-5 shadow-xs", className)}>
+    <section className={cn("rounded-2xl border border-border/70 bg-card p-6 shadow-xs", className)}>
       <h2 className="font-serif text-xl font-bold text-foreground">动漫与漫展资讯</h2>
       <p role="status" className="mt-4 text-sm text-muted-foreground">
         {message}
@@ -43,34 +59,129 @@ export function NewsPanelError({
   );
 }
 
-export function NewsArticleList({ items }: { items: NewsItem[] }) {
+/**
+ * 现代二次元资讯与漫展单卡：
+ * 采用胶囊化元数据（地点/场馆/排期）、高响应微动效与柔粉阴影悬停，
+ * 剔除冗长样板文字，实现高品质的 ACGN 媒体卡片。
+ */
+export function NewsCard({ item }: { item: NewsItem }) {
+  const meta = parseNewsItemMeta(item);
+  const isEvent = item.channel === "events";
+
   return (
-    <ul className="divide-y divide-border">
-      {items.map((item) => (
-        <li key={item.id}>
-          <Link
-            to={`/news/${item.id}`}
-            prefetch="intent"
-            className="group block rounded-lg px-2 py-4 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
-          >
-            <h3 className="text-sm font-medium leading-relaxed text-foreground group-hover:text-primary">
-              {item.title}
-            </h3>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>{item.source}</span>
-              {item.publishedAt ? (
-                <time dateTime={item.publishedAt}>{formatNewsDate(item.publishedAt)}</time>
-              ) : null}
-            </div>
-            {item.excerpt ? (
-              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                {item.excerpt}
-              </p>
+    <Link
+      to={`/news/${item.id}`}
+      prefetch="intent"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-2 focus-visible:outline-ring sm:p-5"
+    >
+      <div className="space-y-3">
+        {/* 顶部标签行 */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold",
+                isEvent
+                  ? "border border-primary/25 bg-primary/10 text-primary"
+                  : "border border-primary/30 bg-primary/15 text-primary",
+              )}
+            >
+              {isEvent ? (
+                <MapPin className="size-3 text-primary" />
+              ) : (
+                <Tv className="size-3 text-primary" />
+              )}
+              {isEvent ? "漫展情报" : "动画速报"}
+            </span>
+
+            {meta.location ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
+                <MapPin className="size-3 text-muted-foreground" />
+                {meta.location}
+              </span>
             ) : null}
-          </Link>
-        </li>
+
+            {meta.eventDates ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
+                <CalendarDays className="size-3 text-muted-foreground" />
+                {meta.eventDates}
+              </span>
+            ) : null}
+
+            {meta.status ? (
+              <span className="rounded-md border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                {meta.status}
+              </span>
+            ) : null}
+          </div>
+
+          {item.publishedAt ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="size-3 text-muted-foreground/80" />
+              <time dateTime={item.publishedAt}>{formatNewsDate(item.publishedAt)}</time>
+            </span>
+          ) : null}
+        </div>
+
+        {/* 标题 */}
+        <h3 className="font-serif text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary sm:text-lg">
+          {item.title}
+        </h3>
+
+        {/* 场馆标签 */}
+        {meta.venue ? (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Building2 className="size-3.5 shrink-0 text-primary/70" />
+            <span className="truncate">{meta.venue}</span>
+          </div>
+        ) : null}
+
+        {/* 摘要正文 */}
+        {meta.cleanExcerpt ? (
+          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            {meta.cleanExcerpt}
+          </p>
+        ) : null}
+      </div>
+
+      {/* 底部信息条 */}
+      <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+        <span className="text-muted-foreground">{item.source}</span>
+        <span className="inline-flex items-center gap-1 font-medium text-primary transition-transform group-hover:translate-x-0.5">
+          阅读解读
+          <ArrowRight
+            className="size-3.5 transition-transform group-hover:translate-x-1"
+            aria-hidden
+          />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+export function NewsArticleList({
+  items,
+  variant = "grid",
+}: {
+  items: NewsItem[];
+  variant?: "grid" | "list";
+}) {
+  if (variant === "grid") {
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {items.map((item) => (
+          <NewsCard key={item.id} item={item} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((item) => (
+        <NewsCard key={item.id} item={item} />
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -80,7 +191,7 @@ export function NewsSyncStatus({ feed }: { feed: NewsFeed }) {
   return (
     <p
       role="status"
-      className="mt-4 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground"
+      className="mt-4 border-t border-border/60 pt-3 text-xs leading-relaxed text-muted-foreground"
     >
       {failed
         .map(
@@ -94,38 +205,70 @@ export function NewsSyncStatus({ feed }: { feed: NewsFeed }) {
 
 export function NewsPanel({ feed, className }: { feed: NewsFeed; className?: string }) {
   return (
-    <section className={cn("rounded-xl border border-border/70 bg-card p-5 shadow-xs", className)}>
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-serif text-xl font-bold text-foreground">动漫与漫展资讯</h2>
-        <Newspaper className="size-5 text-primary" aria-hidden />
+    <section className={cn("rounded-2xl border border-border/70 bg-card p-6 shadow-xs", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-serif text-xl font-bold text-foreground">动漫与漫展资讯</h2>
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+              <Sparkles className="size-3 text-primary" />
+              实时情报
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            站内阅读中文精炼摘要与 AI 解读，保留原文官方链接。
+          </p>
+        </div>
+        <Link
+          to="/news"
+          className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background/50 px-3 py-1.5 text-xs font-semibold text-primary shadow-2xs transition-all hover:border-primary/40 hover:bg-card hover:text-primary"
+        >
+          进入资讯中心
+          <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
       </div>
-      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-        站内阅读中文摘要与 AI 解读，保留原文来源。
-      </p>
-      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {NEWS_FEEDS.map((channel) => {
-          const items = feed.items.filter((item) => item.channel === channel.id).slice(0, 6);
+          const items = feed.items.filter((item) => item.channel === channel.id).slice(0, 4);
+          const isEvent = channel.id === "events";
+
           return (
-            <div key={channel.id}>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-foreground">{channel.label}</h3>
+            <div key={channel.id} className="space-y-3">
+              <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-2">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  {isEvent ? (
+                    <CalendarDays className="size-4 text-primary" />
+                  ) : (
+                    <Tv className="size-4 text-primary" />
+                  )}
+                  {channel.label}
+                </h3>
                 <Link
                   to={newsListHref(channel.id)}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
                 >
                   查看全部
                   <ArrowRight className="size-3" aria-hidden />
                 </Link>
               </div>
+
               {items.length ? (
-                <NewsArticleList items={items} />
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <NewsCard key={item.id} item={item} />
+                  ))}
+                </div>
               ) : (
-                <p className="py-5 text-sm text-muted-foreground">最近 30 天暂无资讯。</p>
+                <p className="py-8 text-center text-xs text-muted-foreground">
+                  最近 30 天暂无资讯。
+                </p>
               )}
             </div>
           );
         })}
       </div>
+
       <NewsSyncStatus feed={feed} />
     </section>
   );

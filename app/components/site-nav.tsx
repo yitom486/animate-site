@@ -67,6 +67,7 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
           <div className="hidden items-center gap-1 md:flex">
             {[
               { to: "/", label: "首页", active: location.pathname === "/" },
+              { to: "/news", label: "资讯", active: location.pathname.startsWith("/news") },
               {
                 to: "/anime/blog",
                 label: "社区日志",
@@ -155,6 +156,14 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
             nativeButton={false}
           >
             首页
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-10 w-full justify-start"
+            render={<Link to="/news" onClick={() => setMobileOpen(false)} />}
+            nativeButton={false}
+          >
+            资讯
           </Button>
           <Button
             variant="ghost"
