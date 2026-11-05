@@ -46,6 +46,8 @@ bun run dev
 
 ## 部署（Cloudflare Pages）
 
+资讯接入自有“日本动漫资讯 / 国内漫展资讯”RSS，使用 D1 保存最近 30 天内容并提供站内详情。独立 Worker 定时同步，生产与预览数据库分离。开发、迁移、同步和运维说明见 [资讯 RSS 与 D1](./docs/news-storage.md)。本地先运行 `bun run news:migrate:local`、`bun run news:sync:local`；回归检查为 `bun run check:news`。
+
 缓存分层、线上诊断和部署后的验收方法见 [缓存诊断与优化](./docs/cache-diagnosis.md)。`public/_routes.json` 让静态资源绕过 Functions，`public/_headers` 分别控制哈希资源与可更新 JSON 的缓存时间；应用数据缓存与 CDN 整站命中率分别观察。缓存逻辑可运行 `bun run check:cache` 验证。
 
 - 构建输出：[`wrangler.toml`](wrangler.toml) 中 `pages_build_output_dir = "./build/client"`

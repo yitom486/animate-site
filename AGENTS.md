@@ -13,6 +13,7 @@
 - 主题颜色规范检查：`bun run check:theme`
 - 缓存回归检查：`bun run check:cache`
 - 客户端查询回归检查：`bun run check:queries`
+- RSS / D1 回归检查：`bun run check:news`
 - 添加 shadcn 组件：`bunx shadcn@latest add <component>`
 - **不要**运行 `npm install` / `pnpm install` / `yarn`。它们会生成 `package-lock.json` 等多余锁文件，与 `bun.lock` 冲突，并可能让 Cloudflare 用错包管理器。
 - 唯一受追踪的锁文件是 **`bun.lock`**；`package-lock.json` 已在 `.gitignore` 中忽略。加依赖后确认只改了 `package.json` + `bun.lock`。
@@ -70,6 +71,8 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 - 只读公开 API，不要引入需要登录的 Bangumi 接口。
 - Bangumi 抓取放在 `app/lib/bangumi/server/*.server.ts`，不要从客户端组件直接 import。
 - 下载资源在 `app/lib/downloads/`（漫猫 + 动漫花园）；资讯在 `app/lib/news/`。
+- 资讯只订阅自有 `anime.xml`、`events.xml`，地址和周期统一在 `app/lib/news/config.ts`；不再接入旧聚合源或叠加 `all.xml`。正文优先 content:encoded，经 HTML 过滤后按 GUID 唯一入库，保留 AI/来源/漫展核实提示。
+- 资讯存储为 D1，绑定名 `NEWS_DB`，生产和预览库分离；站点只读，`workers/news-sync/` 定时拉取并保存 ETag。失败保留旧数据；仅按发布时间清理超过 30 天的文章，不按 RSS 中是否消失删除。迁移在 `migrations/`，详情见 `docs/news-storage.md`。
 - 缓存目前为进程内 LRU（L1）+ Cloudflare Cache API（L2），尚未接 KV；缓存写入必须 `await` 或交给请求上下文的 `waitUntil`，不得使用悬空 Promise。
 - 静态资源由 `public/_routes.json` 排除 Functions，缓存头在 `public/_headers` 配置。内容哈希资源可用 `immutable`，按年份原地更新的 JSON 不可长期 immutable。
 - 公开 API 按端点设置缓存策略，保留搜索词、页码、类型、条目 ID 等业务参数；不得全站忽略 query，也不得因 `/api/` 前缀一律绕过缓存。

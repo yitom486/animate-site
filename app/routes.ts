@@ -11,6 +11,8 @@ export default [
   route("api/anime/bilibili/:id", "routes/api/anime.bilibili.$id.ts"),
   route("api/anime/related/:id", "routes/api/anime.related.$id.ts"),
   route("api/news", "routes/api/news.ts"),
+  route("news", "routes/news/list.tsx"),
+  route("news/:id", "routes/news/detail.tsx"),
   route("api/bgm-blog", "routes/api/bgm-blog.ts"),
   route("api/img", "routes/api/img.ts"),
   // 板块日志：须在 anime 布局动态段之前；section ∈ anime|book|music|game|real

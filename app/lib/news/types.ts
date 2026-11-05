@@ -1,7 +1,10 @@
+import type { NewsChannel } from "./config";
+
 export type NewsLocale = "zh" | "en";
 
 export type NewsItem = {
   id: string;
+  channel: NewsChannel;
   title: string;
   link: string;
   excerpt?: string;
@@ -17,10 +20,17 @@ export type NewsSourceStatus = {
   ok: boolean;
   count: number;
   error?: string;
+  lastSuccessAt?: string;
 };
 
 export type NewsFeed = {
   items: NewsItem[];
   fetchedAt: string;
   sources: NewsSourceStatus[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
 };
+
+export type NewsArticle = NewsItem & { guid: string; contentHtml: string };

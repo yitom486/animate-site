@@ -3,3 +3,15 @@ compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 pages_build_output_dir = "./build/client"
+
+[[d1_databases]]
+binding = "NEWS_DB"
+database_name = "celadon-news"
+database_id = "a818c551-019f-4d33-8080-3ba0160d9072"
+migrations_dir = "migrations"
+
+[[env.preview.d1_databases]]
+binding = "NEWS_DB"
+database_name = "celadon-news-preview"
+database_id = "a8b2903a-fbc3-4bc8-981c-7dc2666cff0f"
+migrations_dir = "migrations"
