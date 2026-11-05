@@ -204,7 +204,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
         <section
           ref={listPanelRef}
           className={cn(
-            "flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card/60 backdrop-blur-xs transition-opacity duration-300",
+            "flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-opacity duration-300",
             expanded && "hidden",
           )}
         >

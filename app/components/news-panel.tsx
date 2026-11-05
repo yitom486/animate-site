@@ -14,10 +14,7 @@ type NewsPanelProps = {
 export function NewsPanelSkeleton({ className }: { className?: string }) {
   return (
     <section
-      className={cn(
-        "rounded-xl border border-border/70 bg-card/60 p-5 shadow-xs backdrop-blur-xs",
-        className,
-      )}
+      className={cn("rounded-xl border border-border/70 bg-card p-5 shadow-xs", className)}
       aria-busy="true"
       aria-label="资讯加载中"
     >
@@ -51,12 +48,7 @@ export function NewsPanelError({
   message?: string;
 }) {
   return (
-    <section
-      className={cn(
-        "rounded-xl border border-border/70 bg-card/60 p-5 shadow-xs backdrop-blur-xs",
-        className,
-      )}
-    >
+    <section className={cn("rounded-xl border border-border/70 bg-card p-5 shadow-xs", className)}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="mt-1 font-serif text-xl font-bold text-foreground">资讯与社区动态</h2>
@@ -110,12 +102,7 @@ export function NewsPanel({ feed, className }: NewsPanelProps) {
   const failedSources = feed.sources.filter((s) => !s.ok);
 
   return (
-    <section
-      className={cn(
-        "rounded-xl border border-border/70 bg-card/60 p-5 shadow-xs backdrop-blur-xs",
-        className,
-      )}
-    >
+    <section className={cn("rounded-xl border border-border/70 bg-card p-5 shadow-xs", className)}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="mt-1 font-serif text-xl font-bold text-foreground">资讯与社区动态</h2>

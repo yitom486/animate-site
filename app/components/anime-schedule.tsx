@@ -91,7 +91,7 @@ function CurrentTimeBar({
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-card/80 p-4 shadow-xs backdrop-blur-xs">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-xs">
       <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary shadow-xs">
         <CalendarDays className="size-5" />
       </div>
@@ -215,7 +215,7 @@ function ScheduleCard({
       ref={ref}
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
-        "group relative flex flex-col gap-4 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-xs transition-all duration-300 ease-out sm:flex-row",
+        "group relative flex flex-col gap-4 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-xs transition-all duration-300 ease-out sm:flex-row [content-visibility:auto] [contain-intrinsic-size:auto_200px]",
         "hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
         active && "border-primary/50 bg-card shadow-md shadow-primary/10 ring-2 ring-primary/40",
       )}
@@ -228,11 +228,11 @@ function ScheduleCard({
           alt={title}
           className="transition-transform duration-500 ease-out group-hover:scale-105"
         />
-        <span className="absolute top-2 left-2 rounded-md border border-primary/30 bg-background/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary shadow-xs backdrop-blur-xs">
+        <span className="absolute top-2 left-2 rounded-md border border-primary/30 bg-background/95 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary shadow-xs">
           #{rank}
         </span>
         {score != null ? (
-          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md border border-warning/30 bg-background/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rating shadow-xs backdrop-blur-xs">
+          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md border border-warning/30 bg-background/95 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rating shadow-xs">
             <Star className="size-2.5 fill-rating text-rating" />
             {score}
           </span>
@@ -423,7 +423,7 @@ export function AnimeSchedule({ schedule, activeId, listParams }: AnimeScheduleP
       />
 
       {mode === "day" ? (
-        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-border/70 bg-card/60 p-2 shadow-xs backdrop-blur-xs">
+        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-border/70 bg-card p-2 shadow-xs">
           {orderedDays.map((day) => {
             const isActive = selectedDay?.weekday.id === day.weekday.id;
             const isToday = todayId === day.weekday.id;

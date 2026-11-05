@@ -48,7 +48,7 @@ export function AnimeCard({
       onClick={onSelect ? handleClick : undefined}
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-300 ease-out",
+        "group flex flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs transition-all duration-300 ease-out [content-visibility:auto] [contain-intrinsic-size:auto_280px]",
         "hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10",
         active && "border-primary/50 bg-card shadow-md shadow-primary/10 ring-2 ring-primary/40",
       )}
@@ -70,13 +70,13 @@ export function AnimeCard({
         />
 
         {rank != null ? (
-          <div className="absolute top-2 left-2 rounded-md border border-primary/30 bg-background/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary shadow-xs backdrop-blur-xs">
+          <div className="absolute top-2 left-2 rounded-md border border-primary/30 bg-background/95 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary shadow-xs">
             #{rank}
           </div>
         ) : null}
 
         {score != null ? (
-          <div className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-warning/30 bg-background/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rating shadow-xs backdrop-blur-xs">
+          <div className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-warning/30 bg-background/95 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rating shadow-xs">
             <Star className="size-2.5 fill-rating text-rating" />
             {score}
           </div>

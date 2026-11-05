@@ -95,9 +95,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     <div className="min-h-screen bg-background text-foreground">
       <SiteNav />
       <main className="relative mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8">
-        {/* 顶部柔和粉调弥散光晕，增强二次元视觉氛围感 */}
+        {/* 顶部柔和粉调弥散光晕，隔离在独立 GPU 合成层，避免滚动时反复重绘 */}
         <div
-          className="pointer-events-none absolute -top-20 left-1/2 -z-10 h-80 w-[640px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+          className="pointer-events-none absolute -top-20 left-1/2 -z-10 h-80 w-[640px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl transform-gpu will-change-transform"
           aria-hidden
         />
 
@@ -135,7 +135,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             </div>
           </div>
 
-          <aside className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card/85 p-6 shadow-xs backdrop-blur-xs transition-all hover:border-primary/40 hover:shadow-md hover:shadow-primary/10 sm:p-7">
+          <aside className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 shadow-xs transition-all hover:border-primary/40 hover:shadow-md hover:shadow-primary/10 sm:p-7">
             <div className="pointer-events-none absolute -right-6 -bottom-6 text-primary/5">
               <CalendarDays className="size-36" aria-hidden />
             </div>

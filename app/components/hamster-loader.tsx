@@ -42,7 +42,7 @@ export function HamsterLoader({ show }: HamsterLoaderProps) {
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed right-5 bottom-5 z-50 flex items-center gap-2.5 rounded-full border border-primary/30 bg-card/95 px-3.5 py-2 text-xs font-bold text-foreground shadow-lg shadow-primary/15 backdrop-blur-md transition-all duration-300"
+        className="pointer-events-none fixed right-5 bottom-5 z-50 flex items-center gap-2.5 rounded-full border border-primary/30 bg-card px-3.5 py-2 text-xs font-bold text-foreground shadow-lg shadow-primary/15 transform-gpu transition-all duration-300"
       >
         {/* Q 弹二次元萌团子 SVG */}
         <div className="relative flex size-6 shrink-0 items-center justify-center">
