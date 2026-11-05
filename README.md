@@ -1,6 +1,6 @@
 # 亚域空间 · Celadon Portal
 
-基于 [Bangumi](https://bgm.tv) 公开数据的条目门户：多类型浏览（动画 / 书籍 / 音乐 / 游戏 / 三次元）、列表·详情分栏、**各板块社区日志**、每日放送日历与多源资讯聚合。
+基于 [Bangumi](https://bgm.tv) 公开数据的条目门户：多类型浏览（动画 / 书籍 / 音乐 / 游戏 / 三次元）、列表·详情分栏、**各板块社区日志**、每日放送日历与自有 RSS 资讯。
 
 技术栈：**React Router v7（Framework Mode / SSR）· React 19 · TypeScript · Tailwind CSS v4**，UI 基于 [Base UI](https://base-ui.com) + shadcn 风格组件，部署在 **Cloudflare Pages**。
 
@@ -82,7 +82,7 @@ docs/
 - **Bangumi**：旧版 `/calendar` + v0 `/subjects`、搜索、人员、章节、关联；吐槽走 next.bgm.tv 公开接口；板块日志为官网 HTML / RSS 抓取。
 - **bangumi-data**：开源番剧平台数据集，作为流媒体正版播放（B站/巴哈姆特動畫瘋/Netflix等）与蜜柑计划（Mikan）条目的静态一级索引，彻底规避云端动态爬取时的风控拦截（规划见 [021](./docs/planning/021-bangumi-data-fallback-and-streaming.md)）。
 - 同源 `app/routes/api/*` 作 BFF：聚合上游、裁剪字段、进程内缓存（设计上可换 Cloudflare KV，尚未接）。
-- 日志正文经 `sanitize-html` 消毒，并用 `.blog-prose` 约束手机端溢出；资讯用 `opencc-js` 繁→简。
+- 日志与资讯正文经 `sanitize-html` 消毒，并用 `.blog-prose` 约束手机端溢出；资讯由自有中文 RSS 定时导入 D1，不再依赖繁简转换或旧聚合源。
 - 本站不存储或分发影视、字幕、下载文件；观看/下载/字幕仅为第三方公开检索跳转或展示。
 - Bangumi、Bilibili、巴哈姆特動畫瘋、蜜柑计划、漫猫、动漫花园、acgrip 等名称及其内容归各自权利人所有。
 
