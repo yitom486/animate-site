@@ -5,6 +5,7 @@ import { subjectDetailQuery } from "~/lib/subject-queries";
 import { Link } from "react-router";
 import { ExternalLink, Loader2, X } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
+import { AnimeCover } from "~/components/anime-cover";
 import type { DetailPayload } from "~/lib/bangumi/types-detail";
 import { buildDetailUrl } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES } from "~/lib/external-links";
@@ -13,7 +14,6 @@ import {
   subjectCountLabel,
   subjectDateLabel,
 } from "~/lib/bangumi/subject-display";
-import { toProxiedImageUrl } from "~/lib/anime-meta";
 import type { SubjectSidePanelControls } from "~/lib/subject-side-panel";
 import { cn } from "~/lib/utils";
 
@@ -125,13 +125,16 @@ function PanelBody({ data }: { data: DetailPayload }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-3">
-        {subject.images?.large ? (
-          <img
-            src={toProxiedImageUrl(subject.images.large)}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-36 w-24 shrink-0 rounded-lg border border-primary/25 object-cover shadow-sm"
-          />
+        {subject.images?.large || subject.images?.common ? (
+          <div className="h-36 w-24 shrink-0 overflow-hidden rounded-lg border border-primary/25 shadow-xs">
+            <AnimeCover
+              url={subject.images.large || subject.images.common}
+              fallbackUrl={subject.images.common}
+              alt={title}
+              priority
+              className="size-full object-cover"
+            />
+          </div>
         ) : null}
         <div className="min-w-0 flex-1 space-y-2">
           <h2 className="font-serif text-lg font-bold leading-snug text-foreground">{title}</h2>

@@ -11,7 +11,8 @@ import type { DetailPayload, Episode, SubjectDetail } from "~/lib/bangumi/types-
 import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
 import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
 import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
-import { toProxiedImageUrl } from "~/lib/anime-meta";
+import { proxySubjectImages } from "~/lib/anime-meta";
+import { AnimeCover } from "~/components/anime-cover";
 import { buildListUrl, listParamsFromSearch } from "~/lib/bangumi/params";
 import { BGM_WEB_ROUTES, THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { StreamingPanel } from "~/components/streaming-panel";
@@ -41,19 +42,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
     // 将图片链接全部转为通过边缘代理加速，解决国内直连被阻断问题
     if (clonedData.subject.images) {
-      if (clonedData.subject.images.large) {
-        clonedData.subject.images.large =
-          toProxiedImageUrl(clonedData.subject.images.large) ?? clonedData.subject.images.large;
-      }
-      if (clonedData.subject.images.common) {
-        clonedData.subject.images.common = toProxiedImageUrl(clonedData.subject.images.common);
-      }
-      if (clonedData.subject.images.medium) {
-        clonedData.subject.images.medium = toProxiedImageUrl(clonedData.subject.images.medium);
-      }
-      if (clonedData.subject.images.grid) {
-        clonedData.subject.images.grid = toProxiedImageUrl(clonedData.subject.images.grid);
-      }
+      clonedData.subject.images =
+        proxySubjectImages(clonedData.subject.images) ?? clonedData.subject.images;
     }
 
     return clonedData;
@@ -207,21 +197,26 @@ function DetailOverview({
       }
     >
       <div className={expanded ? "flex flex-col gap-6 md:flex-row" : "flex gap-3.5"}>
-        {subject.images?.large ? (
+        {subject.images?.large || subject.images?.common ? (
           <button
             type="button"
             onClick={() => !expanded && onExpand()}
             disabled={expanded}
-            className="shrink-0 self-start disabled:cursor-default"
+            title={expanded ? undefined : "点击展开大图与完整详情"}
+            aria-label={expanded ? undefined : "展开完整详情"}
+            className={cn(
+              "group relative shrink-0 self-start overflow-hidden rounded-xl border border-border/60 shadow-xs transition-all duration-300 disabled:cursor-default",
+              expanded
+                ? "h-72 w-52 shadow-md"
+                : "h-44 w-32 hover:scale-[1.03] hover:border-primary/40",
+            )}
           >
-            <img
-              src={toProxiedImageUrl(subject.images.large)}
+            <AnimeCover
+              url={subject.images.large || subject.images.common}
+              fallbackUrl={subject.images.common}
               alt={title}
-              referrerPolicy="no-referrer"
-              className={
-                "rounded-xl border border-border/60 object-cover shadow-xs transition-transform duration-300 " +
-                (expanded ? "h-72 w-52 shadow-md" : "h-44 w-32 hover:scale-[1.03]")
-              }
+              priority
+              className="size-full object-cover"
             />
           </button>
         ) : null}

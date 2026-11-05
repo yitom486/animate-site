@@ -92,6 +92,22 @@ export function toProxiedImageUrl(url?: string): string | undefined {
 }
 
 /**
+ * 递归或批量为条目图片对象中的所有链接（large, common, medium, grid, small 等）补充边缘代理前缀
+ */
+export function proxySubjectImages<T extends Record<string, string | undefined>>(
+  images?: T,
+): T | undefined {
+  if (!images) return undefined;
+  const proxied: Record<string, string | undefined> = { ...images };
+  for (const [key, val] of Object.entries(images)) {
+    if (typeof val === "string") {
+      proxied[key] = toProxiedImageUrl(val);
+    }
+  }
+  return proxied as T;
+}
+
+/**
  * 从 lain.bgm.tv 封面 URL 提取 `pic/cover/l/...` 路径。
  * 仅 large（/l/）可套 /r/N/；/c/ /m/ 等变体不可靠，不推导。
  */

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Link, useLocation, useNavigation, useOutlet, useParams } from "react-router";
+import { Link, useNavigation, useOutlet, useParams, useSearchParams } from "react-router";
 import { CalendarDays, MessageSquareText } from "lucide-react";
 import type { Route } from "./+types/layout";
 import { AnimeCard } from "~/components/anime-card";
@@ -24,7 +24,6 @@ import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bang
 import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
 import { COVER_PRIORITY_COUNT } from "~/lib/anime-meta";
 import { isAbortLike, throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
-import { useDetailLayoutStore } from "~/lib/stores/use-detail-layout-store";
 
 const clientCache = createCache<AnimeListResult>({
   ttlMs: CACHE_TTL_LIST_MS,
@@ -89,6 +88,22 @@ function useViewportLayout() {
   return { isMobile, layoutReady };
 }
 
+function hasListFilterParams(searchParams: URLSearchParams): boolean {
+  return (
+    searchParams.has("type") ||
+    searchParams.has("sort") ||
+    searchParams.has("view") ||
+    searchParams.has("page") ||
+    searchParams.has("cat") ||
+    searchParams.has("tag") ||
+    searchParams.has("q") ||
+    searchParams.has("year") ||
+    searchParams.has("month") ||
+    searchParams.has("series") ||
+    searchParams.has("platform")
+  );
+}
+
 function gridCols(isMobile: boolean, hasDetail: boolean, expanded: boolean): string {
   if (isMobile || !hasDetail || expanded) {
     return "1fr";
@@ -123,31 +138,18 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     view,
   } = loaderData;
   const params = useParams();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigation = useNavigation();
   const routeHasDetail = Boolean(params.id);
-  const hasListQuery = Boolean(location.search && location.search !== "?");
 
-  // 使用 Zustand 持久化保存用户的展开/半屏偏好
-  const isStoreExpanded = useDetailLayoutStore((s) => s.expanded);
-  const setStoreExpanded = useDetailLayoutStore((s) => s.setExpanded);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-    // 直链访问且此前从未手动操作过时，默认展开为完整大页
-    if (
-      params.id &&
-      !hasListQuery &&
-      typeof window !== "undefined" &&
-      !localStorage.getItem("yayu-detail-layout")
-    ) {
-      setStoreExpanded(true);
-    }
-  }, [params.id, hasListQuery, setStoreExpanded]);
-
-  // 水合后严格遵循 Zustand 持久化的偏好
-  const expanded = routeHasDetail && (hydrated ? isStoreExpanded : !hasListQuery);
+  // 1. 直链无筛选访问（如直接进入 /anime/25961）：默认完整大页；若用户收起则记录 split=1
+  // 2. 列表浏览（带有列表筛选参数如 ?type=2&sort=rank）：默认半屏并排；若用户展开则记录 full=1
+  // 这种状态由 URL 驱动，SSR 与客户端首帧完全一致（彻底解决水合闪屏）；
+  // 且用户浏览时点击新番剧卡片自动以半屏打开，不会被全局状态永久绑死。
+  const isDirectDetail = routeHasDetail && !hasListFilterParams(searchParams);
+  const isFullParam = searchParams.get("full") === "1";
+  const isSplitParam = searchParams.get("split") === "1";
+  const expanded = routeHasDetail && (isDirectDetail ? !isSplitParam : isFullParam);
 
   const { isMobile } = useViewportLayout();
   const listScrollRef = useRef<HTMLDivElement>(null);
@@ -163,19 +165,49 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // 清除之前保存在 localStorage 的遗留偏好键
+  useEffect(() => {
+    try {
+      localStorage.removeItem("yayu-detail-layout");
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const setExpanded = useCallback(
     (next: boolean) => {
+      const update = () => {
+        setSearchParams(
+          (prev) => {
+            const nextParams = new URLSearchParams(prev);
+            if (isDirectDetail) {
+              if (!next) {
+                nextParams.set("split", "1");
+              } else {
+                nextParams.delete("split");
+              }
+            } else {
+              if (next) {
+                nextParams.set("full", "1");
+              } else {
+                nextParams.delete("full");
+              }
+            }
+            return nextParams;
+          },
+          { replace: true },
+        );
+      };
+
       if (typeof document !== "undefined" && "startViewTransition" in document && !reduceMotion) {
         document.startViewTransition(() => {
-          flushSync(() => {
-            setStoreExpanded(next);
-          });
+          flushSync(update);
         });
       } else {
-        setStoreExpanded(next);
+        update();
       }
     },
-    [reduceMotion, setStoreExpanded],
+    [isDirectDetail, reduceMotion, setSearchParams],
   );
 
   const outletContext = { expanded, setExpanded, isMobile } satisfies AnimeOutletContext;
