@@ -1,11 +1,30 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router";
-import { ChevronDown, Home, Leaf, Menu, MessageSquareText, X } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronDown,
+  Clapperboard,
+  Gamepad2,
+  Leaf,
+  Menu,
+  MessageSquareText,
+  Music,
+  Newspaper,
+  Tv,
+} from "lucide-react";
 import { SearchForm } from "~/components/search-form";
-import { cn } from "~/lib/utils";
-import { BGM_MENUS } from "~/lib/bangumi/menus";
-import { SUBJECT_TYPE, SUBJECT_TYPE_ALL } from "~/lib/bangumi/types";
+import { ThemeSelect } from "~/components/theme-select";
+import { Button } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -14,15 +33,78 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "~/components/ui/navigation-menu";
+import { cn } from "~/lib/utils";
+import { BGM_MENUS, type MenuGroup } from "~/lib/bangumi/menus";
+import { SUBJECT_TYPE_ALL } from "~/lib/bangumi/types";
 
-type SiteNavProps = {
-  activeType?: string;
-  searchType?: string;
+const NEWS_MENU: MenuGroup = {
+  type: "news",
+  label: "资讯",
+  links: [
+    {
+      to: "/news",
+      title: "全部资讯",
+      desc: "30天即时情报速报",
+      icon: Newspaper,
+    },
+    {
+      to: "/news?channel=anime",
+      title: "日本动漫资讯",
+      desc: "新番制作与播出动态",
+      icon: Tv,
+    },
+    {
+      to: "/news?channel=events",
+      title: "国内漫展资讯",
+      desc: "全国展会与同人日历",
+      icon: CalendarDays,
+    },
+  ],
 };
+
+const BLOG_MENU: MenuGroup = {
+  type: "blog",
+  label: "社区日志",
+  links: [
+    {
+      to: "/anime/blog",
+      title: "动画日志",
+      desc: "番剧长文与漫评解析",
+      icon: MessageSquareText,
+    },
+    {
+      to: "/book/blog",
+      title: "书籍日志",
+      desc: "轻小说与漫画书评",
+      icon: BookOpen,
+    },
+    {
+      to: "/music/blog",
+      title: "音乐日志",
+      desc: "原声带与同人乐评",
+      icon: Music,
+    },
+    {
+      to: "/game/blog",
+      title: "游戏日志",
+      desc: "Galgame 与主机日志",
+      icon: Gamepad2,
+    },
+    {
+      to: "/real/blog",
+      title: "三次元日志",
+      desc: "特摄与影视漫改探讨",
+      icon: Clapperboard,
+    },
+  ],
+};
+
+const ALL_NAV_MENUS: MenuGroup[] = [...BGM_MENUS, NEWS_MENU, BLOG_MENU];
+
+type SiteNavProps = { activeType?: string; searchType?: string };
 
 export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavProps) {
   const location = useLocation();
-  // 受控菜单值：路由变化后自动收起下拉（base-ui 在 SPA 跳转后不会自动关闭）
   const [menuValue, setMenuValue] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -31,248 +113,149 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
     setMobileOpen(false);
   }, [location.pathname, location.search]);
 
+  // 根据当前路由确定高亮选中的导航分组
+  const currentActive = location.pathname.startsWith("/news")
+    ? "news"
+    : /^\/(anime|book|music|game|real)\/blog/.test(location.pathname)
+      ? "blog"
+      : activeType;
+
   return (
-    <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/70 bg-white/60 backdrop-blur-xl">
-        <div className="relative flex h-16 w-full items-center gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              aria-label="打开导航菜单"
-              className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-rose-100 bg-white/70 text-rose-700 shadow-sm transition-colors hover:bg-white lg:hidden"
-            >
-              <Menu className="size-5" />
-            </button>
+    <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md transform-gpu">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
+          {/* 移动端汉堡菜单 */}
+          <DialogTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-lg"
+                className="lg:hidden"
+                aria-label="打开导航菜单"
+              />
+            }
+          >
+            <Menu className="size-5" />
+          </DialogTrigger>
 
-            <Link to="/" prefetch="intent" className="flex shrink-0 items-center gap-3">
-              <span className="flex size-10 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-inner">
-                <Leaf className="size-5" />
-              </span>
-              <span className="hidden sm:block">
-                <span className="block bg-gradient-to-r from-rose-800 to-sky-600 bg-clip-text font-serif text-lg font-black tracking-wider text-transparent">
-                  亚域空间
-                </span>
-                <span className="-mt-1 block font-mono text-[10px] font-semibold uppercase tracking-widest text-rose-600">
-                  Celadon Portal
-                </span>
-              </span>
-            </Link>
+          {/* 品牌 Logo（点击直达首页，免去多余的首页文字按钮） */}
+          <Link
+            to="/"
+            prefetch="intent"
+            aria-label="亚域空间首页"
+            className="flex shrink-0 items-center gap-2.5 transition-transform hover:scale-[1.02]"
+          >
+            <Leaf className="size-6 text-primary" aria-hidden />
+            <span className="hidden font-serif text-lg font-semibold tracking-wide sm:block">
+              亚域空间
+            </span>
+          </Link>
 
-            <Link
-              to="/"
-              prefetch="intent"
-              className={cn(
-                "hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-colors sm:inline-flex",
-                location.pathname === "/"
-                  ? "bg-white/80 text-rose-800 shadow-sm"
-                  : "text-slate-600 hover:bg-white/70 hover:text-rose-700",
-              )}
-            >
-              <Home className="size-4" />
-              主页
-            </Link>
-
-            <Link
-              to="/anime/blog"
-              prefetch="intent"
-              className={cn(
-                "hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-colors sm:inline-flex",
-                /^\/(anime|book|music|game|real)\/blog/.test(location.pathname)
-                  ? "bg-white/80 text-rose-800 shadow-sm"
-                  : "text-slate-600 hover:bg-white/70 hover:text-rose-700",
-              )}
-            >
-              <MessageSquareText className="size-4" />
-              日志
-            </Link>
-          </div>
-
-          <nav className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-1 lg:flex">
+          {/* 统一的一级主导航栏（动画 / 书籍 / 音乐 / 游戏 / 三次元 / 资讯 / 社区日志） */}
+          <nav aria-label="全站导航" className="hidden flex-1 justify-center lg:flex">
             <NavigationMenu align="center" value={menuValue} onValueChange={setMenuValue}>
-              <NavigationMenuList className="gap-1">
-                {BGM_MENUS.map((m) => (
-                  <NavigationMenuItem key={m.type} value={m.type}>
-                    <NavigationMenuTrigger
-                      className={cn(
-                        "h-10 rounded-lg px-3 font-serif text-sm text-slate-600 hover:bg-white/70 hover:text-rose-700 data-open:bg-white/70",
-                        activeType === m.type && "bg-white/85 text-rose-800 shadow-sm",
-                      )}
-                    >
-                      {m.label}
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul
+              <NavigationMenuList className="gap-0.5">
+                {ALL_NAV_MENUS.map((menu) => {
+                  const isActive = currentActive === menu.type;
+                  return (
+                    <NavigationMenuItem key={menu.type} value={menu.type}>
+                      <NavigationMenuTrigger
                         className={cn(
-                          "grid max-h-[min(70vh,480px)] gap-1 overflow-y-auto p-2",
-                          m.type === SUBJECT_TYPE.anime || m.type === SUBJECT_TYPE.game
-                            ? "w-[320px]"
-                            : m.type === SUBJECT_TYPE.book || m.type === SUBJECT_TYPE.real
-                              ? "w-[280px]"
-                              : "w-[240px]",
+                          "h-9 px-3 text-muted-foreground transition-colors hover:text-foreground",
+                          isActive &&
+                            "border border-primary/25 bg-primary/15 font-bold text-primary shadow-2xs",
                         )}
                       >
-                        {m.links.map(({ to, title, desc, icon: Icon }) => (
-                          <li key={to}>
-                            <NavigationMenuLink
-                              render={
-                                <Link
-                                  to={to}
-                                  prefetch="intent"
-                                  onClick={() => setMenuValue(null)}
-                                />
-                              }
-                              className="flex-col items-start gap-0.5"
-                            >
-                              <span className="flex items-center gap-2 text-sm font-medium">
-                                <Icon className="size-4 shrink-0 text-rose-600" />
-                                {title}
-                              </span>
-                              {desc ? (
-                                <span className="pl-6 text-xs text-muted-foreground">{desc}</span>
-                              ) : null}
-                            </NavigationMenuLink>
-                          </li>
-                        ))}
-                      </ul>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                ))}
+                        {menu.label}
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid max-h-[min(70vh,480px)] w-72 gap-1 overflow-y-auto p-2">
+                          {menu.links.map(({ to, title, desc, icon: Icon }) => (
+                            <li key={to}>
+                              <NavigationMenuLink
+                                render={
+                                  <Link
+                                    to={to}
+                                    prefetch="intent"
+                                    onClick={() => setMenuValue(null)}
+                                  />
+                                }
+                                className="flex-col items-start gap-0.5"
+                              >
+                                <span className="flex items-center gap-2 text-sm font-medium">
+                                  <Icon className="size-4 text-primary" />
+                                  {title}
+                                </span>
+                                {desc ? (
+                                  <span className="pl-6 text-xs text-muted-foreground">{desc}</span>
+                                ) : null}
+                              </NavigationMenuLink>
+                            </li>
+                          ))}
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  );
+                })}
               </NavigationMenuList>
             </NavigationMenu>
           </nav>
 
+          {/* 搜索与主题切换 */}
           <SearchForm variant="nav" defaultType={searchType} className="ml-auto max-w-sm flex-1" />
+          <ThemeSelect />
         </div>
-
-        <MobileNav open={mobileOpen} activeType={activeType} onClose={() => setMobileOpen(false)} />
       </header>
+
       <div className="h-16 shrink-0" aria-hidden="true" />
-    </>
-  );
-}
 
-/* ───────── 移动端导航抽屉 ───────── */
-function MobileNav({
-  open,
-  activeType,
-  onClose,
-}: {
-  open: boolean;
-  activeType?: string;
-  onClose: () => void;
-}) {
-  // 手风琴：默认仅展开当前所在分类，其余收起
-  const [openGroups, setOpenGroups] = useState<Set<string>>(
-    () => new Set(activeType ? [activeType] : []),
-  );
-  const toggleGroup = (type: string) =>
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      next.has(type) ? next.delete(type) : next.add(type);
-      return next;
-    });
+      {/* 移动端侧边抽屉导航 */}
+      <DialogContent className="inset-y-0 left-0 top-0 flex h-dvh w-[min(90vw,24rem)] max-w-sm translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
+        <DialogHeader className="border-b border-border px-5 py-5 pr-12">
+          <DialogTitle className="flex items-center gap-2 font-serif text-lg">
+            <Leaf className="size-5 text-primary" />
+            亚域空间
+          </DialogTitle>
+          <DialogDescription>作品分类、情报资讯与社区日志</DialogDescription>
+        </DialogHeader>
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 lg:hidden">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute inset-y-0 left-0 flex w-[82%] max-w-sm flex-col bg-white/95 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-rose-100 px-4 py-4">
-          <span className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700">
-              <Leaf className="size-4" />
-            </span>
-            <span className="bg-gradient-to-r from-rose-800 to-sky-600 bg-clip-text font-serif text-base font-black tracking-wider text-transparent">
-              亚域空间
-            </span>
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="关闭"
-            className="rounded-lg border border-rose-100 bg-white/70 p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-rose-700"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto px-3 py-3">
-          <Link
-            to="/"
-            prefetch="intent"
-            onClick={onClose}
-            className="mb-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-rose-50 hover:text-rose-700"
-          >
-            <Home className="size-4 text-rose-600" />
-            主页
-          </Link>
-
-          {BGM_MENUS.map((m) => {
-            const isOpen = openGroups.has(m.type);
-            return (
-              <div key={m.type} className="mb-0.5">
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(m.type)}
-                  aria-expanded={isOpen}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-3 py-2.5 font-serif text-sm font-bold transition-colors hover:bg-rose-50",
-                    activeType === m.type ? "text-rose-700" : "text-slate-600",
-                  )}
-                >
-                  {m.label}
-                  <ChevronDown
-                    className={cn(
-                      "size-4 text-slate-400 transition-transform duration-200",
-                      isOpen && "rotate-180",
-                    )}
-                  />
-                </button>
-                {isOpen ? (
-                  <ul className="mt-0.5 mb-1 border-l border-rose-100 pl-2">
-                    {m.links.map(({ to, title, desc, icon: Icon }) => (
-                      <li key={to}>
-                        <Link
-                          to={to}
-                          prefetch="intent"
-                          onClick={onClose}
-                          className="flex items-start gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-rose-50"
-                        >
-                          <Icon className="mt-0.5 size-4 shrink-0 text-rose-600" />
-                          <span className="min-w-0">
-                            <span className="block text-sm font-medium text-slate-700">
-                              {title}
-                            </span>
-                            {desc ? (
-                              <span className="block text-xs text-slate-400">{desc}</span>
-                            ) : null}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            );
-          })}
+        <nav aria-label="移动导航" className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
+          {ALL_NAV_MENUS.map((menu) => (
+            <Collapsible key={menu.type} defaultOpen={currentActive === menu.type}>
+              <CollapsibleTrigger
+                render={<Button variant="ghost" className="group h-11 w-full justify-between" />}
+              >
+                <span className={cn(currentActive === menu.type && "font-bold text-primary")}>
+                  {menu.label}
+                </span>
+                <ChevronDown className="size-4 transition-transform group-aria-expanded:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ul className="ml-3 space-y-1 border-l border-border py-1 pl-3">
+                  {menu.links.map(({ to, title, desc, icon: Icon }) => (
+                    <li key={to}>
+                      <Link
+                        to={to}
+                        prefetch="intent"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex flex-col rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted"
+                      >
+                        <span className="flex items-center gap-2 font-medium text-foreground">
+                          <Icon className="size-4 text-primary" />
+                          {title}
+                        </span>
+                        {desc ? (
+                          <span className="pl-6 text-xs text-muted-foreground">{desc}</span>
+                        ) : null}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
         </nav>
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   );
 }

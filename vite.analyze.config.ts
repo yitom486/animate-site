@@ -13,9 +13,6 @@ function chunkModuleDump(): Plugin {
   return {
     name: "chunk-module-dump",
     generateBundle(_options, bundle) {
-      const outDir = (this as { meta?: { watchMode?: boolean } }).meta;
-      const dirHint =
-        Object.values(bundle).find((c) => c.type === "chunk" && "fileName" in c)?.fileName ?? "";
       // Vite/RR 输出路径会进 fileName；用是否含 assets/ 与模块是否含 node_modules 粗分
       const chunks: Array<{
         fileName: string;

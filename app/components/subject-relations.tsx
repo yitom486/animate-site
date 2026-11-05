@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import type { SubjectRelationsPayload } from "~/lib/bangumi/server/detail.server";
 import { SUBJECT_TYPE_LABEL, type SubjectTypeValue } from "~/lib/bangumi/types";
 import { buildDetailUrl } from "~/lib/bangumi/params";
+import { AnimeCover } from "~/components/anime-cover";
 
 type State =
   | { status: "idle" }
@@ -40,7 +41,7 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
 
   if (state.status === "loading" || state.status === "idle") {
     return (
-      <section className="rounded-lg border border-dashed border-rose-100 bg-white/40 px-4 py-6 text-center text-xs text-slate-400">
+      <section className="rounded-lg border border-dashed border-primary/25 bg-card px-4 py-6 text-center text-xs text-muted-foreground">
         正在加载关联信息…
       </section>
     );
@@ -48,7 +49,7 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
 
   if (state.status === "error") {
     return (
-      <section className="rounded-lg border border-dashed border-rose-100 bg-white/40 px-4 py-6 text-center text-xs text-slate-500">
+      <section className="rounded-lg border border-dashed border-primary/25 bg-card px-4 py-6 text-center text-xs text-muted-foreground">
         关联信息暂不可用（{state.message}）
       </section>
     );
@@ -62,31 +63,29 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
   return (
     <div className="space-y-4">
       {characters.length > 0 ? (
-        <section className="rounded-lg border border-white/75 bg-white/58 p-4 shadow-sm">
-          <h2 className="mb-3 font-serif text-lg font-bold text-slate-800">角色</h2>
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 font-serif text-lg font-bold text-foreground">角色</h2>
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {characters.map((c) => (
               <li
                 key={c.id}
-                className="flex items-center gap-2 rounded-lg border border-rose-50 bg-white/70 px-2 py-1.5"
+                className="flex items-center gap-2 rounded-lg border border-primary/25 bg-card px-2 py-1.5"
               >
                 {c.image ? (
-                  <img
-                    src={c.image}
-                    alt=""
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    className="size-10 shrink-0 rounded object-cover"
-                  />
+                  <div className="size-10 shrink-0 overflow-hidden rounded">
+                    <AnimeCover url={c.image} alt={c.name} className="size-full object-cover" />
+                  </div>
                 ) : (
-                  <span className="size-10 shrink-0 rounded bg-rose-50" />
+                  <span className="size-10 shrink-0 rounded bg-accent" />
                 )}
                 <span className="min-w-0">
-                  <span className="block truncate text-xs font-medium text-slate-800">
+                  <span className="block truncate text-xs font-medium text-foreground">
                     {c.name}
                   </span>
                   {c.relation ? (
-                    <span className="block truncate text-[10px] text-slate-400">{c.relation}</span>
+                    <span className="block truncate text-[10px] text-muted-foreground">
+                      {c.relation}
+                    </span>
                   ) : null}
                 </span>
               </li>
@@ -96,8 +95,8 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
       ) : null}
 
       {related.length > 0 ? (
-        <section className="rounded-lg border border-white/75 bg-white/58 p-4 shadow-sm">
-          <h2 className="mb-3 font-serif text-lg font-bold text-slate-800">关联条目</h2>
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 font-serif text-lg font-bold text-foreground">关联条目</h2>
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {related.map((r) => {
               const title = r.nameCn || r.name;
@@ -108,24 +107,20 @@ export function SubjectRelationsPanel({ id, enabled }: { id: string; enabled: bo
                   <Link
                     to={buildDetailUrl(r.id, listQs)}
                     prefetch="intent"
-                    className="flex items-center gap-2 rounded-lg border border-rose-50 bg-white/70 px-2 py-1.5 transition-colors hover:border-rose-200 hover:bg-white"
+                    className="flex items-center gap-2 rounded-lg border border-primary/25 bg-card px-2 py-1.5 transition-colors hover:border-primary/25 hover:bg-muted/50"
                   >
                     {r.image ? (
-                      <img
-                        src={r.image}
-                        alt=""
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="h-12 w-9 shrink-0 rounded object-cover"
-                      />
+                      <div className="h-12 w-9 shrink-0 overflow-hidden rounded">
+                        <AnimeCover url={r.image} alt={title} className="size-full object-cover" />
+                      </div>
                     ) : (
-                      <span className="h-12 w-9 shrink-0 rounded bg-rose-50" />
+                      <span className="h-12 w-9 shrink-0 rounded bg-accent" />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-slate-800">
+                      <span className="block truncate text-sm font-medium text-foreground">
                         {title}
                       </span>
-                      <span className="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-400">
+                      <span className="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-muted-foreground">
                         {r.relation ? <span>{r.relation}</span> : null}
                         <span>{typeLabel}</span>
                       </span>

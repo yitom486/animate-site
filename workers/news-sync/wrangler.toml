@@ -1,0 +1,19 @@
+name = "celadon-news-sync"
+main = "index.ts"
+account_id = "352d75a6997451a14d7885be80d7281a"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "NEWS_DB"
+database_name = "celadon-news"
+database_id = "a818c551-019f-4d33-8080-3ba0160d9072"
+migrations_dir = "../../migrations"

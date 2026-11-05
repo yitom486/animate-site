@@ -1,4 +1,7 @@
+import { useState } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
+  data,
   isRouteErrorResponse,
   Links,
   Meta,
@@ -6,20 +9,41 @@ import {
   Scripts,
   ScrollRestoration,
   useNavigation,
+  useRouteLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import { HamsterLoader } from "./components/hamster-loader";
+import { ThemeProvider, themeFromCookie, themeInitScript } from "./lib/theme";
+import { createQueryClient } from "./lib/query-client";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
 
+export function loader({ request }: Route.LoaderArgs) {
+  // root loader 包含请求者的主题偏好，不能与公开 API 共用 CDN 缓存策略。
+  return data(
+    { theme: themeFromCookie(request.headers.get("Cookie")) },
+    {
+      headers: { "Cache-Control": "private, no-cache" },
+    },
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  const theme = useRouteLoaderData<typeof loader>("root")?.theme ?? "system";
   return (
-    <html lang="zh-CN">
+    <html
+      lang="zh-CN"
+      className={theme === "dark" ? "dark" : undefined}
+      data-theme={theme}
+      suppressHydrationWarning
+    >
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript(theme) }} />
         <Meta />
         <Links />
       </head>
@@ -32,15 +56,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
+  // 每棵应用树独立实例：SSR 请求间不共享用户数据，浏览器路由切换时保留缓存。
+  const [queryClient] = useState(createQueryClient);
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
 
   return (
-    <>
-      <Outlet />
-      <HamsterLoader show={isLoading} />
-    </>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider initialTheme={loaderData.theme}>
+        <Outlet />
+        <HamsterLoader show={isLoading} />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -12,9 +12,5 @@ function getReducedMotionSnapshot() {
 
 /** 系统「减少动态效果」偏好（客户端首帧同步读取，避免 hydration 后再闪一下） */
 export function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
-    subscribeReducedMotion,
-    getReducedMotionSnapshot,
-    () => false,
-  );
+  return useSyncExternalStore(subscribeReducedMotion, getReducedMotionSnapshot, () => false);
 }

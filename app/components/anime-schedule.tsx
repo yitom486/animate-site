@@ -1,3 +1,4 @@
+import { Button } from "~/components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { CalendarDays, Eye, Heart, Star, Tv } from "lucide-react";
@@ -90,50 +91,58 @@ function CurrentTimeBar({
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-rose-100 bg-white/62 p-4 shadow-sm">
-      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-inner">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary shadow-xs">
         <CalendarDays className="size-5" />
       </div>
       <div className="min-w-[220px] flex-1">
-        <span className="block font-serif text-sm font-bold text-slate-800">日历新番星历</span>
-        <time className="mt-0.5 block truncate font-mono text-[11px] font-semibold text-rose-700">
+        <div className="flex items-center gap-2">
+          <span className="block font-serif text-sm font-bold text-foreground">每日放送</span>
+          <span className="flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary">
+            <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+            LIVE
+          </span>
+        </div>
+        <time className="mt-0.5 block truncate font-mono text-[11px] font-semibold text-primary">
           {now}
         </time>
-        <span className="mt-1 block font-mono text-[11px] text-slate-500">
+        <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
           当前选择：{formatDisplayDate(selectedDate)}
         </span>
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <button
+        <Button
+          variant="ghost"
           type="button"
           onClick={onOpenPicker}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-100 bg-white/80 px-3 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 text-xs font-bold text-foreground shadow-xs transition-colors hover:border-primary/40 hover:text-primary"
         >
-          <CalendarDays className="size-3.5" />
+          <CalendarDays className="size-3.5 text-primary" />
           选择日期
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           type="button"
           onClick={mode === "overview" ? onShowDay : onShowOverview}
           className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold shadow-sm transition-colors",
+            "inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold shadow-xs transition-all",
             mode === "overview"
-              ? "border border-rose-100 bg-white/80 text-rose-800 hover:bg-white"
-              : "bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 hover:from-rose-200 hover:to-sky-200",
+              ? "border border-border/70 bg-card text-foreground hover:border-primary/40 hover:text-primary"
+              : "border border-primary/25 bg-primary/10 text-primary hover:bg-primary/20",
           )}
         >
           {mode === "overview" ? "单日视图" : "周总览"}
-        </button>
+        </Button>
 
         <div className="grid grid-cols-2 gap-2 text-center">
-          <div className="rounded-lg border border-rose-100 bg-white/72 px-3 py-2">
-            <span className="block font-mono text-sm font-bold text-rose-800">{selectedCount}</span>
-            <span className="text-[10px] text-slate-500">选日放送</span>
+          <div className="rounded-xl border border-primary/25 bg-card/80 px-3 py-2 shadow-xs">
+            <span className="block font-mono text-sm font-bold text-primary">{selectedCount}</span>
+            <span className="text-[10px] text-muted-foreground">选日放送</span>
           </div>
-          <div className="rounded-lg border border-sky-100 bg-white/72 px-3 py-2">
-            <span className="block font-mono text-sm font-bold text-sky-800">{totalCount}</span>
-            <span className="text-[10px] text-slate-500">本周收录</span>
+          <div className="rounded-xl border border-info/25 bg-card/80 px-3 py-2 shadow-xs">
+            <span className="block font-mono text-sm font-bold text-info">{totalCount}</span>
+            <span className="text-[10px] text-muted-foreground">本周收录</span>
           </div>
         </div>
       </div>
@@ -153,10 +162,10 @@ function CollectionStat({
   if (!value) return null;
   return (
     <span
-      className="flex items-center gap-1 font-mono text-[10px] font-semibold text-slate-500"
+      className="flex items-center gap-1 font-mono text-[10px] font-semibold text-muted-foreground"
       title={`${label} ${value.toLocaleString()}`}
     >
-      <Icon className="size-3 text-rose-400" />
+      <Icon className="size-3 text-primary" />
       {value.toLocaleString()}
     </span>
   );
@@ -206,26 +215,25 @@ function ScheduleCard({
       ref={ref}
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
-        "group relative flex flex-col gap-4 overflow-hidden rounded-lg border border-white/85 bg-white/56 p-4 shadow-sm transition-all duration-300 sm:flex-row",
-        "hover:border-rose-300 hover:bg-white/86 hover:shadow-md",
-        active && "border-rose-400 bg-white shadow-md ring-2 ring-rose-500/25",
+        "group relative flex flex-col gap-4 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-xs transition-all duration-300 ease-out sm:flex-row [content-visibility:auto] [contain-intrinsic-size:auto_200px]",
+        "hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+        active && "border-primary/50 bg-card shadow-md shadow-primary/10 ring-2 ring-primary/40",
       )}
     >
-      <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg border border-rose-100 bg-rose-50 sm:w-28 md:w-32">
+      <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted sm:w-28 md:w-32">
         <AnimeCover
           url={cover?.src}
           srcSet={cover?.srcSet}
           sizes={COVER_SIZES_SCHEDULE}
           alt={title}
-          className="transition-transform duration-700 group-hover:scale-105"
+          className="transition-transform duration-500 ease-out group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-rose-600/5 mix-blend-overlay" />
-        <span className="absolute top-2 left-2 rounded-md border border-rose-200 bg-white/90 px-2 py-0.5 font-mono text-[10px] font-bold text-rose-800 backdrop-blur-sm">
+        <span className="absolute top-2 left-2 rounded-md border border-primary/30 bg-background/95 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary shadow-xs">
           #{rank}
         </span>
         {score != null ? (
-          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md border border-amber-200 bg-white/92 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-600 backdrop-blur-sm">
-            <Star className="size-3 fill-amber-500 text-amber-500" />
+          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md border border-warning/30 bg-background/95 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rating shadow-xs">
+            <Star className="size-2.5 fill-rating text-rating" />
             {score}
           </span>
         ) : null}
@@ -235,48 +243,53 @@ function ScheduleCard({
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="line-clamp-2 font-serif text-base font-bold leading-snug text-slate-800 transition-colors group-hover:text-rose-700">
+              <h3 className="line-clamp-2 font-serif text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
                 {title}
               </h3>
               {nameJa ? (
-                <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400">{nameJa}</p>
+                <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+                  {nameJa}
+                </p>
               ) : null}
             </div>
             {airDate ? (
-              <span className="hidden shrink-0 rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 font-mono text-[10px] font-semibold text-rose-700 md:inline-flex">
+              <span className="hidden shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-primary md:inline-flex">
                 {airDate}
               </span>
             ) : null}
           </div>
 
           {subtitle ? (
-            <p className="truncate font-mono text-xs font-semibold text-slate-500">{subtitle}</p>
+            <p className="truncate font-mono text-xs font-semibold text-muted-foreground">
+              {subtitle}
+            </p>
           ) : null}
 
           {/* 简介：两行省略 + 展开弹窗（仅文字溢出时显示展开） */}
           {summary ? (
-            <div className="text-xs leading-relaxed text-slate-600">
+            <div className="text-xs leading-relaxed text-foreground">
               <p ref={summaryRef} className="line-clamp-2">
                 {summary}
               </p>
               {summaryTruncated ? (
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => setSummaryOpen(true)}
-                  className="mt-0.5 font-semibold text-rose-600 hover:underline"
+                  className="mt-0.5 font-semibold text-primary hover:underline"
                 >
                   展开
-                </button>
+                </Button>
               ) : null}
             </div>
           ) : null}
 
           {staff && Object.keys(staff).length > 0 ? (
-            <dl className="space-y-0.5 text-[11px] text-slate-500">
+            <dl className="space-y-0.5 text-[11px] text-muted-foreground">
               {Object.entries(staff).map(([k, v]) => (
                 <div key={k} className="flex gap-1.5">
-                  <dt className="shrink-0 text-slate-400">{k}</dt>
-                  <dd className="min-w-0 truncate text-slate-600">{v}</dd>
+                  <dt className="shrink-0 text-muted-foreground">{k}</dt>
+                  <dd className="min-w-0 truncate text-foreground">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -288,7 +301,7 @@ function ScheduleCard({
               {metaTags.map((tag) => (
                 <span
                   key={`m-${tag}`}
-                  className="rounded-full border border-rose-200 bg-rose-100/70 px-2 py-0.5 font-mono text-[10px] font-semibold text-rose-700"
+                  className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary"
                 >
                   {tag}
                 </span>
@@ -296,7 +309,7 @@ function ScheduleCard({
               {tags.map((tag) => (
                 <span
                   key={`t-${tag}`}
-                  className="rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 font-mono text-[10px] text-rose-700"
+                  className="rounded-full border border-border/80 bg-accent/60 px-2 py-0.5 font-mono text-[10px] text-foreground"
                 >
                   {tag}
                 </span>
@@ -305,9 +318,9 @@ function ScheduleCard({
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-rose-100 pt-3">
+        <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-mono text-[10px] font-semibold text-slate-500">
+            <span className="font-mono text-[10px] font-semibold text-muted-foreground">
               {ratingTotal
                 ? `${ratingTotal.toLocaleString()} 人评分`
                 : item.platform || "Bangumi Calendar"}
@@ -318,7 +331,7 @@ function ScheduleCard({
           <Link
             to={buildDetailUrl(item.id, listParams)}
             prefetch="intent"
-            className="shrink-0 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm transition-colors hover:from-rose-200 hover:to-sky-200"
+            className="shrink-0 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary shadow-xs transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             查看详情
           </Link>
@@ -410,40 +423,54 @@ export function AnimeSchedule({ schedule, activeId, listParams }: AnimeScheduleP
       />
 
       {mode === "day" ? (
-        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto rounded-lg border border-white/80 bg-white/42 p-1.5 shadow-inner">
+        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-border/70 bg-card p-2 shadow-xs">
           {orderedDays.map((day) => {
             const isActive = selectedDay?.weekday.id === day.weekday.id;
             const isToday = todayId === day.weekday.id;
 
             return (
-              <button
+              <Button
+                variant="ghost"
                 key={day.weekday.id}
                 ref={isActive ? selectedButtonRef : undefined}
                 type="button"
                 onClick={() => selectDay(day.weekday.id)}
                 className={cn(
-                  "relative flex min-w-[82px] flex-1 flex-col items-center justify-center gap-1 rounded-lg border px-4 py-3 font-serif text-xs font-bold tracking-wider transition-all duration-300",
+                  "relative flex min-w-[84px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border px-4 py-3 font-serif text-xs font-bold tracking-wider transition-all duration-300",
                   isActive
-                    ? "border-rose-300 bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 shadow-md"
-                    : "border-white/70 bg-white/55 text-slate-600 hover:border-rose-200 hover:text-rose-700",
+                    ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/95 hover:text-primary-foreground"
+                    : "border-border/70 bg-card text-foreground hover:border-primary/40 hover:bg-muted/40 hover:text-primary",
                 )}
               >
-                <span>
+                <span className="flex items-center">
                   {day.weekday.cn.replace("星期", "周")}
                   {isToday ? (
-                    <span className="ml-1 font-mono text-[10px] opacity-80">今天</span>
+                    <span
+                      className={cn(
+                        "ml-1.5 rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none",
+                        isActive
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-primary/15 text-primary",
+                      )}
+                    >
+                      今天
+                    </span>
                   ) : null}
                 </span>
-                <span className="flex items-center gap-1 font-mono text-[10px] font-semibold opacity-85">
+                <span className="flex items-center gap-1.5 font-mono text-[10px] font-semibold opacity-90">
                   {day.items.length} 部
                   <span
                     className={cn(
                       "size-1.5 rounded-full",
-                      isActive ? "bg-white" : isToday ? "bg-rose-500" : "bg-slate-300",
+                      isActive
+                        ? "bg-primary-foreground"
+                        : isToday
+                          ? "bg-primary animate-pulse"
+                          : "bg-muted-foreground/40",
                     )}
                   />
                 </span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -473,9 +500,9 @@ export function AnimeSchedule({ schedule, activeId, listParams }: AnimeScheduleP
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-rose-200 bg-white/42 py-14 text-center shadow-inner">
-              <Tv className="mx-auto size-8 text-rose-500/35" />
-              <p className="mt-3 font-serif text-sm font-semibold text-slate-500">
+            <div className="rounded-lg border border-dashed border-primary/25 bg-card py-14 text-center shadow-inner">
+              <Tv className="mx-auto size-8 text-primary" />
+              <p className="mt-3 font-serif text-sm font-semibold text-muted-foreground">
                 本日暂无新番放送
               </p>
             </div>
