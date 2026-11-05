@@ -26,9 +26,9 @@ export function SearchResultGroups({
       {groups.map((group) => (
         <section key={group.type} className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h3 className="font-serif text-base font-bold text-slate-800">
+            <h3 className="font-serif text-base font-bold text-foreground">
               {group.label}
-              <span className="ml-2 font-mono text-xs font-semibold text-slate-400">
+              <span className="ml-2 font-mono text-xs font-semibold text-muted-foreground">
                 {group.total} 条
               </span>
             </h3>
@@ -40,7 +40,7 @@ export function SearchResultGroups({
                   q: query,
                 })}
                 prefetch="intent"
-                className="text-xs font-bold text-rose-700 hover:text-rose-800"
+                className="text-xs font-bold text-primary hover:text-primary"
               >
                 查看更多
               </Link>

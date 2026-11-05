@@ -31,7 +31,7 @@ function pageRange(current: number, total: number): (number | "…")[] {
 }
 
 const navBtnClass =
-  "inline-flex h-8 items-center gap-1 rounded-lg border border-rose-100 bg-white/70 px-2.5 text-sm font-bold text-rose-800 shadow-sm transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-8 items-center gap-1 rounded-xl border border-border/70 bg-card px-3 text-xs font-bold text-foreground shadow-xs transition-colors hover:border-primary/40 hover:text-primary disabled:pointer-events-none disabled:opacity-40";
 
 export function AnimePagination({
   page,
@@ -49,11 +49,11 @@ export function AnimePagination({
   return (
     <nav
       aria-label="分页"
-      className="flex flex-wrap items-center justify-center gap-1 border-t border-rose-100/80 px-4 py-4"
+      className="flex flex-wrap items-center justify-center gap-1.5 border-t border-border/70 px-4 py-4"
     >
       {page > 1 ? (
         <Link to={prevUrl} prefetch="intent" className={navBtnClass}>
-          <ChevronLeft className="size-4" />
+          <ChevronLeft className="size-4 text-primary" />
           上一页
         </Link>
       ) : (
@@ -63,7 +63,7 @@ export function AnimePagination({
         </span>
       )}
 
-      <div className="flex items-center gap-0.5 px-1">
+      <div className="flex items-center gap-1 px-1">
         {pages.map((p, i) =>
           p === "…" ? (
             <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-muted-foreground">
@@ -75,10 +75,10 @@ export function AnimePagination({
               to={buildPageUrl(baseParams, p)}
               prefetch="intent"
               className={cn(
-                "inline-flex size-8 items-center justify-center rounded-lg font-mono text-xs font-bold transition-colors",
+                "inline-flex size-8 items-center justify-center rounded-lg font-mono text-xs font-bold transition-all",
                 p === page
-                  ? "bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 shadow-sm"
-                  : "text-slate-500 hover:bg-white/70 hover:text-rose-700",
+                  ? "bg-primary text-primary-foreground shadow-xs shadow-primary/20"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-primary",
               )}
               aria-current={p === page ? "page" : undefined}
             >
@@ -91,7 +91,7 @@ export function AnimePagination({
       {page < totalPages ? (
         <Link to={nextUrl} prefetch="intent" className={navBtnClass}>
           下一页
-          <ChevronRight className="size-4" />
+          <ChevronRight className="size-4 text-primary" />
         </Link>
       ) : (
         <span className={cn(navBtnClass, "opacity-40")} aria-disabled>
@@ -100,7 +100,7 @@ export function AnimePagination({
         </span>
       )}
 
-      <span className="w-full text-center font-mono text-[11px] text-slate-500 sm:w-auto sm:pl-2">
+      <span className="w-full text-center font-mono text-[11px] text-muted-foreground sm:w-auto sm:pl-2">
         第 {page} / {totalPages} 页 · 共 {total} 条
       </span>
     </nav>

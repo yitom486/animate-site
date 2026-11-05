@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, useLocation, useNavigation, useOutlet, useParams } from "react-router";
-import { CalendarDays, MessageSquareText, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Link, useNavigation, useOutlet, useParams, useSearchParams } from "react-router";
+import { CalendarDays, MessageSquareText } from "lucide-react";
 import type { Route } from "./+types/layout";
 import { AnimeCard } from "~/components/anime-card";
 import { AnimeSchedule } from "~/components/anime-schedule";
@@ -23,7 +24,6 @@ import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bang
 import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
 import { COVER_PRIORITY_COUNT } from "~/lib/anime-meta";
 import { isAbortLike, throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
-import { closeSplitWithFrozenPanel, flipElements, unfreezeDetailPanel } from "./split-motion";
 
 const clientCache = createCache<AnimeListResult>({
   ttlMs: CACHE_TTL_LIST_MS,
@@ -88,20 +88,34 @@ function useViewportLayout() {
   return { isMobile, layoutReady };
 }
 
+function hasListFilterParams(searchParams: URLSearchParams): boolean {
+  return (
+    searchParams.has("type") ||
+    searchParams.has("sort") ||
+    searchParams.has("view") ||
+    searchParams.has("page") ||
+    searchParams.has("cat") ||
+    searchParams.has("tag") ||
+    searchParams.has("q") ||
+    searchParams.has("year") ||
+    searchParams.has("month") ||
+    searchParams.has("series") ||
+    searchParams.has("platform")
+  );
+}
+
 function gridCols(isMobile: boolean, hasDetail: boolean, expanded: boolean): string {
-  if (isMobile) {
-    return hasDetail ? "0fr 1fr" : "1fr 0fr";
+  if (isMobile || !hasDetail || expanded) {
+    return "1fr";
   }
-  if (!hasDetail) return "1fr 0fr";
-  if (expanded) return "0fr 1fr";
   return "1.6fr 1fr";
 }
 
 export function HydrateFallback() {
   return (
-    <div className="celadon-page flex h-screen flex-col">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <SiteNav activeType={SUBJECT_TYPE.anime} />
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_0fr] overflow-hidden">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden p-3">
         <AnimeListSkeleton />
       </div>
     </div>
@@ -124,20 +138,24 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     view,
   } = loaderData;
   const params = useParams();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigation = useNavigation();
   const routeHasDetail = Boolean(params.id);
-  const [expanded, setExpandedState] = useState(false);
-  const { isMobile, layoutReady } = useViewportLayout();
+
+  // 1. 直链无筛选访问（如直接进入 /anime/25961）：默认完整大页；若用户收起则记录 split=1
+  // 2. 列表浏览（带有列表筛选参数如 ?type=2&sort=rank）：默认半屏并排；若用户展开则记录 full=1
+  // 这种状态由 URL 驱动，SSR 与客户端首帧完全一致（彻底解决水合闪屏）；
+  // 且用户浏览时点击新番剧卡片自动以半屏打开，不会被全局状态永久绑死。
+  const isDirectDetail = routeHasDetail && !hasListFilterParams(searchParams);
+  const isFullParam = searchParams.get("full") === "1";
+  const isSplitParam = searchParams.get("split") === "1";
+  const expanded = routeHasDetail && (isDirectDetail ? !isSplitParam : isFullParam);
+
+  const { isMobile } = useViewportLayout();
   const listScrollRef = useRef<HTMLDivElement>(null);
   const listPanelRef = useRef<HTMLElement>(null);
   const detailPanelRef = useRef<HTMLElement>(null);
-  const flipAnimsRef = useRef<Animation[]>([]);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [splitOpen, setSplitOpen] = useState(routeHasDetail);
-  const [holdExitContent, setHoldExitContent] = useState(false);
-  const cachedOutletRef = useRef<ReactNode>(null);
-  const closingRef = useRef(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -147,101 +165,59 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  const animateSplit = layoutReady && !isMobile && !reduceMotion;
-
-  const runFlip = useCallback(
-    (apply: () => void) => {
-      flipAnimsRef.current.forEach((a) => a.cancel());
-      flipAnimsRef.current = flipElements(
-        [listPanelRef.current, detailPanelRef.current],
-        apply,
-        animateSplit,
-      );
-    },
-    [animateSplit],
-  );
+  // 清除之前保存在 localStorage 的遗留偏好键
+  useEffect(() => {
+    try {
+      localStorage.removeItem("yayu-detail-layout");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const setExpanded = useCallback(
     (next: boolean) => {
-      if (next === expanded) return;
-      runFlip(() => setExpandedState(next));
+      const update = () => {
+        setSearchParams(
+          (prev) => {
+            const nextParams = new URLSearchParams(prev);
+            if (isDirectDetail) {
+              if (!next) {
+                nextParams.set("split", "1");
+              } else {
+                nextParams.delete("split");
+              }
+            } else {
+              if (next) {
+                nextParams.set("full", "1");
+              } else {
+                nextParams.delete("full");
+              }
+            }
+            return nextParams;
+          },
+          { replace: true },
+        );
+      };
+
+      if (typeof document !== "undefined" && "startViewTransition" in document && !reduceMotion) {
+        document.startViewTransition(() => {
+          flushSync(update);
+        });
+      } else {
+        update();
+      }
     },
-    [expanded, runFlip],
+    [isDirectDetail, reduceMotion, setSearchParams],
   );
 
   const outletContext = { expanded, setExpanded, isMobile } satisfies AnimeOutletContext;
   const outlet = useOutlet(outletContext);
-  if (outlet) cachedOutletRef.current = outlet;
-
-  useEffect(() => {
-    if (params.id) setExpandedState(false);
-  }, [params.id]);
 
   useEffect(() => {
     listScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [page, viewLabel, typeLabel]);
 
-  // 打开详情：瞬时改列宽 + FLIP
-  useEffect(() => {
-    if (!routeHasDetail) return;
-    closingRef.current = false;
-    const panel = detailPanelRef.current;
-    if (panel) unfreezeDetailPanel(panel);
-    setHoldExitContent(false);
-    if (splitOpen) return;
-    runFlip(() => setSplitOpen(true));
-  }, [routeHasDetail, splitOpen, runFlip]);
-
-  // 关闭详情：方案 C — 冻右栏 → 列表立刻占满 → 同时滑出 + 左栏 FLIP
-  useEffect(() => {
-    if (routeHasDetail) return;
-    if (!splitOpen || closingRef.current) return;
-
-    closingRef.current = true;
-    setHoldExitContent(true);
-
-    const panel = detailPanelRef.current;
-    if (!panel) {
-      setSplitOpen(false);
-      setHoldExitContent(false);
-      cachedOutletRef.current = null;
-      setExpandedState(false);
-      closingRef.current = false;
-      return;
-    }
-
-    let cancelled = false;
-    flipAnimsRef.current.forEach((a) => a.cancel());
-
-    const { animations, cleanup } = closeSplitWithFrozenPanel({
-      list: listPanelRef.current,
-      panel,
-      animate: animateSplit,
-      applyClosedLayout: () => {
-        setSplitOpen(false);
-        setExpandedState(false);
-      },
-    });
-    flipAnimsRef.current = animations;
-
-    void Promise.all(animations.map((a) => a.finished.catch(() => undefined))).then(() => {
-      if (cancelled) return;
-      cleanup();
-      setHoldExitContent(false);
-      cachedOutletRef.current = null;
-      closingRef.current = false;
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup();
-    };
-  }, [routeHasDetail, splitOpen, animateSplit]);
-
-  const cols = gridCols(isMobile, splitOpen, expanded);
-  /** 关闭动画中 splitOpen 已 false，但仍需挂住详情 DOM；gap 只在真正分栏时加 */
-  const panelShown = splitOpen || holdExitContent;
-  const detailNode = outlet ?? (holdExitContent ? cachedOutletRef.current : null);
+  const cols = gridCols(isMobile, routeHasDetail, expanded);
 
   const isListLoading =
     navigation.state === "loading" &&
@@ -257,30 +233,32 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const listParams = mergeListParams(baseParams, page);
 
   return (
-    <div className="celadon-page flex h-screen flex-col text-slate-800">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <SiteNav activeType={type === SUBJECT_TYPE_ALL ? undefined : type} />
 
       <div
-        className={cn("grid min-h-0 flex-1 overflow-hidden p-3", splitOpen && "gap-x-3")}
+        className={cn(
+          "grid min-h-0 flex-1 overflow-hidden p-3 transition-all duration-300 ease-out",
+          routeHasDetail && !expanded && "gap-x-3",
+        )}
         style={{ gridTemplateColumns: cols }}
       >
         <section
           ref={listPanelRef}
-          className="celadon-glass flex min-w-0 flex-col overflow-hidden rounded-lg will-change-transform"
+          className={cn(
+            "flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-opacity duration-300",
+            (expanded || (isMobile && routeHasDetail)) && "hidden",
+          )}
         >
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-rose-100/80 px-4 py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
             <div>
-              <span className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
-                <Sparkles className="size-3.5" />
-                Bangumi Archive
-              </span>
               <div className="mt-1 flex items-baseline gap-2">
-                <h2 className="font-serif text-xl font-bold text-slate-800">{typeLabel}</h2>
-                <span className="text-sm text-slate-500">· {viewLabel}</span>
+                <h2 className="font-serif text-xl font-bold text-foreground">{typeLabel}</h2>
+                <span className="text-sm text-muted-foreground">· {viewLabel}</span>
               </div>
             </div>
             {isListLoading ? (
-              <span className="rounded-full border border-rose-100 bg-white/70 px-3 py-1 font-mono text-xs text-rose-700">
+              <span className="rounded-full border border-primary/25 bg-card px-3 py-1 font-mono text-xs text-primary">
                 加载中…
               </span>
             ) : null}
@@ -292,7 +270,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                   calendar: "overview",
                 })}
                 prefetch="intent"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white/70 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-card px-3 py-2 text-xs font-bold text-primary shadow-sm transition-colors hover:bg-muted/50"
               >
                 <CalendarDays className="size-3.5" />
                 周总览
@@ -350,7 +328,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                 <Link
                   to="/anime/blog"
                   prefetch="intent"
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-rose-200 bg-white/50 px-3 py-3 text-xs font-bold text-rose-700 transition-colors hover:border-rose-300 hover:bg-white"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/25 bg-card px-3 py-3 text-xs font-bold text-primary transition-colors hover:border-primary/25 hover:bg-muted/50"
                 >
                   <MessageSquareText className="size-3.5" />
                   浏览 Bangumi 动画日志 →
@@ -360,16 +338,14 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
           </div>
         </section>
 
-        <section
-          ref={detailPanelRef}
-          className={cn(
-            "min-w-0 overflow-hidden rounded-lg border border-white/75 bg-white/48 backdrop-blur-xl will-change-transform",
-            !panelShown && "pointer-events-none",
-          )}
-          aria-hidden={!panelShown}
-        >
-          {detailNode}
-        </section>
+        {routeHasDetail ? (
+          <section
+            ref={detailPanelRef}
+            className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs transition-opacity duration-200"
+          >
+            {outlet}
+          </section>
+        ) : null}
       </div>
     </div>
   );

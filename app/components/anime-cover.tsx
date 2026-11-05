@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+import { toProxiedImageUrl } from "~/lib/anime-meta";
 
 type AnimeCoverProps = {
   url?: string;
+  fallbackUrl?: string;
   srcSet?: string;
   sizes?: string;
   alt: string;
@@ -17,20 +19,45 @@ type AnimeCoverProps = {
  * priority 时 eager + high；其余 lazy + auto。
  * 有 srcSet/sizes 时由浏览器按布局宽度选档。
  */
-export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: AnimeCoverProps) {
+export function AnimeCover({
+  url,
+  fallbackUrl,
+  srcSet,
+  sizes,
+  alt,
+  className,
+  priority,
+}: AnimeCoverProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [activeUrl, setActiveUrl] = useState(() => url);
   const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    setActiveUrl(url);
+    setLoaded(false);
+    setError(false);
+  }, [url]);
+
+  const proxiedUrl = toProxiedImageUrl(activeUrl);
 
   useEffect(() => {
     setLoaded(false);
     setError(false);
-    if (imgRef.current?.complete) {
+    if (imgRef.current?.complete && (imgRef.current?.naturalWidth ?? 0) > 0) {
       setLoaded(true);
     }
-  }, [url, srcSet]);
+  }, [proxiedUrl, srcSet]);
 
-  if (!url) {
+  const handleError = () => {
+    if (fallbackUrl && activeUrl !== fallbackUrl) {
+      setActiveUrl(fallbackUrl);
+    } else {
+      setError(true);
+    }
+  };
+
+  if (!proxiedUrl) {
     return (
       <div
         className={cn(
@@ -49,8 +76,8 @@ export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: Ani
 
       <img
         ref={imgRef}
-        src={url}
-        srcSet={srcSet}
+        src={proxiedUrl}
+        srcSet={activeUrl === url ? srcSet : undefined}
         sizes={srcSet ? sizes : undefined}
         alt={alt}
         referrerPolicy="no-referrer"
@@ -58,7 +85,7 @@ export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: Ani
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
         onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
+        onError={handleError}
         className={cn(
           "size-full object-cover transition-opacity duration-300",
           loaded ? "opacity-100" : "opacity-0",
@@ -66,7 +93,7 @@ export function AnimeCover({ url, srcSet, sizes, alt, className, priority }: Ani
       />
 
       {error ? (
-        <div className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
+        <div className="flex size-full items-center justify-center bg-muted text-[10px] text-muted-foreground">
           加载失败
         </div>
       ) : null}

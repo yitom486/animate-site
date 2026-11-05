@@ -1,17 +1,18 @@
 # 亚域空间 — 架构说明
 
-> 描述当前代码的真实结构与数据流。最后更新：2026-08-21。  
+> 描述当前代码的真实结构与数据流。最后更新：2026-11-06。
 > 早期产品设想见 [requirements.md](./requirements.md)（部分内容已过时，以本文为准）。
 
 ## 1. 总览
 
 亚域空间是一个**只读**的 Bangumi 条目门户：列表浏览、分栏详情、多类型板块日志、首页资讯与日历卡片增强。不提供登录、收藏或任何需鉴权的 Bangumi 接口。
 
-| 层       | 技术                                                         |
-| -------- | ------------------------------------------------------------ |
-| 应用框架 | React Router v7 Framework Mode（SSR + 客户端导航）           |
-| UI       | React 19 · Tailwind CSS v4 · Base UI / shadcn 风格组件       |
-| 包管理   | **Bun**（`bun.lock`）；生产运行在 Cloudflare Pages Functions |
+| 层       | 技术                                                                                   |
+| -------- | -------------------------------------------------------------------------------------- |
+| 应用框架 | React Router v7 Framework Mode（SSR + 客户端导航）                                     |
+| UI       | React 19 · Tailwind CSS v4 · Base UI / shadcn 风格组件                                 |
+| 包管理   | **Bun**（`bun.lock`）；生产运行在 Cloudflare Pages Functions                           |
+| 资讯存储 | Cloudflare D1，生产/预览隔离；独立 Worker 定时同步自有 RSS，保留 30 天                 |
 | 上游     | Bangumi API / 官网 HTML·RSS · 资讯 RSS · bangumi-data（静态切片）· B 站 / 下载检索跳转 |
 
 ### 请求分层
@@ -22,9 +23,12 @@ flowchart TB
   Page[页面路由<br/>loader / clientLoader]
   Api["同源 /api/* BFF"]
   Server["app/lib/*/server/*.server.ts"]
-  Cache[进程内 LRU<br/>+ single-flight]
+  Cache[进程内 LRU<br/>+ Cache API + single-flight]
   Up[上游：Bangumi / RSS / HTML]
   StaticCDN[静态 CDN：bangumi-data 年份切片]
+  NewsCron[资讯定时 Worker]
+  NewsRSS[自有动漫 / 漫展 RSS]
+  NewsDB[D1：最近 30 天资讯]
 
   Browser --> Page
   Browser --> Api
@@ -35,9 +39,15 @@ flowchart TB
   Cache -->|未命中| Up
   Up --> Cache
   Cache --> Server
+  NewsCron -->|ETag 条件请求| NewsRSS
+  NewsCron -->|GUID 去重 / 净化正文| NewsDB
+  Page -->|资讯列表 / 详情| NewsDB
+  Api -->|资讯 API 只读| NewsDB
 ```
 
 页面 loader 与 `/api/*` **共用**同一套 server 模块：字段裁剪、超时、可失败降级。流媒体与正版平台采用客户端水合后静态切片加载，服务端 0 消耗。
+
+资讯请求不直接拉取 RSS。独立同步任务将两个源写入 D1，站点只读；失败保留旧文章，按发布时间清理 30 天以前内容。详情见 [资讯 RSS 与 D1](./news-storage.md)。
 
 ## 2. 路由地图
 
@@ -51,6 +61,7 @@ flowchart LR
   Layout --> Detail["/:id · 详情 Outlet"]
   BlogList["/:section/blog"] --> BlogL[blog/list.tsx]
   BlogDetail["/:section/blog/:id"] --> BlogD[blog/detail.tsx]
+  News["/news · /news/:id"] --> NewsPages[news/list.tsx · detail.tsx]
   Api["/api/anime/* · /api/news · /api/bgm-blog"] --> ApiR[routes/api/*]
 ```
 
@@ -60,6 +71,7 @@ flowchart LR
 | `/anime` · `/anime/:id`                        | `routes/anime/*`         | 列表 + 详情分栏；query 决定类型与视图            |
 | `/:section/blog`                               | `routes/blog/list.tsx`   | 板块日志列表（`anime\|book\|music\|game\|real`） |
 | `/:section/blog/:id`                           | `routes/blog/detail.tsx` | 日志详情（HTML 抓取 + 消毒）                     |
+| `/news` · `/news/:id`                          | `routes/news/*`          | 自有 RSS 站内列表与详情，读取 D1                 |
 | `/api/anime/*` · `/api/news` · `/api/bgm-blog` | `routes/api/*`           | 同源 BFF                                         |
 
 列表筛选一律进 URL query，用 `buildListHref` / `buildListUrl`（`app/lib/bangumi/params.ts`）生成，避免在 JSX 里手写路径。
@@ -75,6 +87,7 @@ app/
 │   ├── home.tsx
 │   ├── anime/                # 布局 + 列表壳 + 详情 Outlet
 │   ├── blog/                 # 多类型板块日志
+│   ├── news/                 # 资讯频道分页与站内详情（D1）
 │   └── api/                  # 同源资源路由
 ├── components/               # 业务 UI（日历卡、顶栏、日志卡片等）
 │   └── ui/                   # 基础组件
@@ -154,6 +167,7 @@ sequenceDiagram
 ### 流媒体与下载源分级策略（021 规划）
 
 针对海外 Serverless（Cloudflare Pages）调用第三方搜索接口常遭反爬与 412 风控拦截的问题，系统采用**客户端水合 + 三级漏斗**处理：
+
 1. **L1（静态切片与客户端水合，服务端 0 消耗）**：构建期将 `bangumi-data` 按年份分片存入 `public/data/bangumi-data/`。水合后浏览器异步拉取静态 JSON，纯本地拼接 B 站、巴哈姆特動畫瘋、Netflix、爱奇艺及蜜柑计划（Mikan）专属条目直链，0 服务端成本，不受风控影响。
 2. **L2（动态选集探测）**：在已知 B 站 `season_id` 基础上，可选尝试获取选集列表以渲染内嵌播放器。
 3. **L3（前端友好降级）**：若无静态收录且动态接口风控，平滑回退为规范关键词的外链搜索按钮。

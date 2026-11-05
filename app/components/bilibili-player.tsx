@@ -8,7 +8,7 @@ import type {
 import { THIRD_PARTY_SEARCH } from "~/lib/external-links";
 import { createCache } from "~/lib/cache";
 import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
-import { buttonVariants } from "~/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 
@@ -50,23 +50,23 @@ function MatchedPanel({ match }: { match: BilibiliMatch }) {
   return (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-bold text-slate-800">B 站观看</h3>
+        <h3 className="text-sm font-bold text-foreground">B 站观看</h3>
         <a
           href={match.seasonUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-xs font-bold text-rose-700 hover:underline"
+          className="text-xs font-bold text-primary hover:underline"
         >
           番剧主页 →
         </a>
       </div>
-      <p className="text-[11px] text-slate-500">
+      <p className="text-[11px] text-muted-foreground">
         已匹配：{match.title}
-        <span className="text-slate-400"> · 换集后播放器会重新加载</span>
+        <span className="text-muted-foreground"> · 换集后播放器会重新加载</span>
       </p>
 
       {selected?.embedUrl ? (
-        <div className="overflow-hidden rounded-lg border border-rose-100 bg-black/5">
+        <div className="overflow-hidden rounded-lg border border-border bg-player">
           <iframe
             key={selected.epId}
             src={selected.embedUrl}
@@ -78,8 +78,8 @@ function MatchedPanel({ match }: { match: BilibiliMatch }) {
           />
         </div>
       ) : (
-        <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-rose-100 bg-gradient-to-b from-slate-900/5 to-rose-50/40 px-4 text-center">
-          <p className="text-xs leading-relaxed text-slate-500">
+        <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-primary/25 bg-muted px-4 text-center">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             已定位到番剧，但无法生成嵌入地址。请用下方按钮在 B 站观看。
           </p>
         </div>
@@ -87,12 +87,13 @@ function MatchedPanel({ match }: { match: BilibiliMatch }) {
 
       {episodes.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="text-[11px] font-medium text-slate-600">选集</p>
+          <p className="text-[11px] font-medium text-foreground">选集</p>
           <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto pr-0.5">
             {episodes.map((ep) => {
               const active = ep.epId === selected?.epId;
               return (
-                <button
+                <Button
+                  variant="ghost"
                   key={ep.epId}
                   type="button"
                   title={episodeTooltip(ep)}
@@ -100,22 +101,22 @@ function MatchedPanel({ match }: { match: BilibiliMatch }) {
                   className={cn(
                     "relative min-w-9 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
                     active
-                      ? "border-rose-300 bg-rose-100 text-rose-800"
-                      : "border-rose-100 bg-white/80 text-slate-600 hover:border-rose-200 hover:bg-rose-50",
+                      ? "border-primary/25 bg-accent text-primary"
+                      : "border-primary/25 bg-card text-foreground hover:border-primary/25 hover:bg-accent",
                   )}
                 >
                   {ep.indexLabel}
                   {ep.badge ? (
-                    <span className="absolute -top-1 -right-1 rounded bg-amber-500 px-0.5 text-[9px] leading-none text-white">
+                    <span className="absolute -top-1 -right-1 rounded bg-warning/10 px-0.5 text-[9px] leading-none text-warning">
                       会
                     </span>
                   ) : null}
-                </button>
+                </Button>
               );
             })}
           </div>
           {selected?.title ? (
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-muted-foreground">
               当前：第 {selected.indexLabel} 集 · {selected.title}
             </p>
           ) : null}
@@ -128,7 +129,7 @@ function MatchedPanel({ match }: { match: BilibiliMatch }) {
         rel="noreferrer"
         className={buttonVariants({
           size: "sm",
-          className: "h-8 bg-rose-600 text-white hover:bg-rose-700",
+          className: "h-8 bg-primary text-primary-foreground hover:bg-primary",
         })}
       >
         在 B 站打开{selected ? `第 ${selected.indexLabel} 集` : ""}
@@ -149,24 +150,25 @@ function SearchFallback({
   const searchUrl = THIRD_PARTY_SEARCH.online.build(keyword);
   return (
     <>
-      <p className="text-xs leading-relaxed text-slate-500">{hint}</p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p>
       <div className="flex flex-wrap items-center gap-3">
         <a
           href={searchUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex text-xs font-bold text-rose-700 hover:underline"
+          className="inline-flex text-xs font-bold text-primary hover:underline"
         >
           在 B 站搜索「{keyword}」→
         </a>
         {onRetry ? (
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={onRetry}
-            className="text-xs font-bold text-slate-500 hover:text-rose-700 hover:underline"
+            className="text-xs font-bold text-muted-foreground hover:text-primary hover:underline"
           >
             重试自动匹配
-          </button>
+          </Button>
         ) : null}
       </div>
     </>
@@ -213,14 +215,14 @@ export function BilibiliPlayer({ id, fallbackKeyword }: BilibiliPlayerProps) {
   };
 
   return (
-    <section className="space-y-2 rounded-lg border border-rose-100 bg-white/58 p-3 shadow-sm">
+    <section className="space-y-2 rounded-lg border border-primary/25 bg-card p-3 shadow-sm">
       {state.kind === "matched" ? (
         <MatchedPanel match={state.match} />
       ) : (
         <>
-          <h3 className="text-sm font-bold text-slate-800">B 站观看</h3>
+          <h3 className="text-sm font-bold text-foreground">B 站观看</h3>
           {state.kind === "loading" ? (
-            <Skeleton className="aspect-video w-full rounded-lg bg-rose-50/80" />
+            <Skeleton className="aspect-video w-full rounded-lg bg-accent" />
           ) : (
             <SearchFallback
               keyword={fallbackKeyword}

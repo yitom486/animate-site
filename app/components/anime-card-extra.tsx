@@ -61,13 +61,13 @@ export function SummaryModal({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="flex max-h-[80vh] flex-col gap-0 overflow-hidden border-white/85 bg-white/95 p-0 shadow-2xl sm:max-w-2xl">
-        <DialogHeader className="border-b border-rose-100 px-6 py-4 pr-14">
-          <DialogTitle className="font-serif text-lg font-bold leading-snug text-slate-800">
+      <DialogContent className="flex max-h-[80vh] flex-col gap-0 overflow-hidden border-border bg-card p-0 shadow-2xl sm:max-w-2xl">
+        <DialogHeader className="border-b border-primary/25 px-6 py-4 pr-14">
+          <DialogTitle className="font-serif text-lg font-bold leading-snug text-foreground">
             {title}
           </DialogTitle>
         </DialogHeader>
-        <DialogDescription className="overflow-y-auto whitespace-pre-line px-6 py-5 font-serif leading-relaxed text-slate-700">
+        <DialogDescription className="overflow-y-auto whitespace-pre-line px-6 py-5 font-serif leading-relaxed text-foreground">
           {summary}
         </DialogDescription>
       </DialogContent>

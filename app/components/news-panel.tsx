@@ -1,37 +1,40 @@
-import { ExternalLink, Newspaper } from "lucide-react";
-import { useMemo, useState } from "react";
-import type { NewsFeed } from "~/lib/news";
+import { ArrowRight, Building2, CalendarDays, Clock, MapPin, Sparkles, Tv } from "lucide-react";
+import { Link } from "react-router";
+import type { NewsFeed, NewsItem } from "~/lib/news/types";
+import { NEWS_FEEDS, formatNewsDate, newsListHref } from "~/lib/news/config";
+import { parseNewsItemMeta } from "~/lib/news/display";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 
-type NewsPanelProps = {
-  feed: NewsFeed;
-  className?: string;
-};
-
-/** 固定结构骨架，避免异步资讯插入时把页脚顶得乱跳 */
 export function NewsPanelSkeleton({ className }: { className?: string }) {
   return (
     <section
-      className={cn("celadon-glass rounded-lg p-5", className)}
+      className={cn("rounded-2xl border border-border/70 bg-card p-6 shadow-xs", className)}
       aria-busy="true"
       aria-label="资讯加载中"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-3 w-24 bg-rose-100/80" />
-          <Skeleton className="h-6 w-40 bg-rose-100/70" />
-          <Skeleton className="h-3 w-64 max-w-full bg-slate-100" />
-        </div>
-        <Skeleton className="size-5 shrink-0 rounded bg-rose-100/80" />
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-7 w-48 rounded-lg" />
+        <Skeleton className="h-6 w-20 rounded-full" />
       </div>
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        {[0, 1].map((col) => (
-          <div key={col} className="space-y-2">
-            <Skeleton className="mb-2 h-4 w-20 bg-rose-100/70" />
-            {Array.from({ length: 4 }, (_, i) => (
-              <Skeleton key={i} className="h-[4.5rem] w-full rounded-lg bg-white/70" />
-            ))}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {[0, 1, 2, 3].map((idx) => (
+          <div
+            key={idx}
+            className="flex flex-col justify-between rounded-xl border border-border/60 bg-muted/20 p-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-20 rounded-md" />
+                <Skeleton className="h-4 w-28 rounded-md" />
+              </div>
+              <Skeleton className="h-6 w-4/5 rounded-md" />
+              <Skeleton className="h-12 w-full rounded-md" />
+            </div>
+            <div className="mt-4 flex items-center justify-between pt-3">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-4 w-16 rounded-md" />
+            </div>
           </div>
         ))}
       </div>
@@ -41,186 +44,232 @@ export function NewsPanelSkeleton({ className }: { className?: string }) {
 
 export function NewsPanelError({
   className,
-  message = "暂时无法拉取资讯，请稍后刷新。",
+  message = "资讯暂时无法读取。",
 }: {
   className?: string;
   message?: string;
 }) {
   return (
-    <section className={cn("celadon-glass rounded-lg p-5", className)}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
-            ACG Chronicle
-          </span>
-          <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日亚文化资讯</h2>
-        </div>
-        <Newspaper className="size-5 shrink-0 text-rose-600" />
-      </div>
-      <p className="mt-5 rounded-lg border border-rose-100 bg-white/60 px-4 py-6 text-center text-sm text-slate-500">
+    <section className={cn("rounded-2xl border border-border/70 bg-card p-6 shadow-xs", className)}>
+      <h2 className="font-serif text-xl font-bold text-foreground">动漫与漫展资讯</h2>
+      <p role="status" className="mt-4 text-sm text-muted-foreground">
         {message}
       </p>
     </section>
   );
 }
 
-function formatWhen(iso?: string) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("zh-CN", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export function NewsPanel({ feed, className }: NewsPanelProps) {
-  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
-
-  // 筛选项从条目本身的 source 去重（AniNews 会拆成 Comic Book / Anime Corner 等）
-  const sourceStats = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const item of feed.items) {
-      counts.set(item.source, (counts.get(item.source) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([label, count]) => ({ label, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [feed.items]);
-
-  const toggleSource = (label: string) => {
-    setHidden((prev) => {
-      const next = new Set(prev);
-      next.has(label) ? next.delete(label) : next.add(label);
-      return next;
-    });
-  };
-
-  const visibleItems = feed.items.filter((x) => !hidden.has(x.source));
-  const zhItems = visibleItems.filter((x) => x.locale === "zh");
-  const enItems = visibleItems.filter((x) => x.locale === "en");
-  const failedSources = feed.sources.filter((s) => !s.ok);
+/**
+ * 现代二次元资讯与漫展单卡：
+ * 采用胶囊化元数据（地点/场馆/排期）、高响应微动效与柔粉阴影悬停，
+ * 剔除冗长样板文字，实现高品质的 ACGN 媒体卡片。
+ */
+export function NewsCard({ item }: { item: NewsItem }) {
+  const meta = parseNewsItemMeta(item);
+  const isEvent = item.channel === "events";
 
   return (
-    <section className={cn("celadon-glass rounded-lg p-5", className)}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
-            ACG Chronicle
-          </span>
-          <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日亚文化资讯</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            中文：Bangumi 动画日志 · Google 新闻 · 垂直源（需自建 RSSHub）· 国际：AniNews
-          </p>
+    <Link
+      to={`/news/${item.id}`}
+      prefetch="intent"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-2 focus-visible:outline-ring sm:p-5"
+    >
+      <div className="space-y-3">
+        {/* 顶部标签行 */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold",
+                isEvent
+                  ? "border border-primary/25 bg-primary/10 text-primary"
+                  : "border border-primary/30 bg-primary/15 text-primary",
+              )}
+            >
+              {isEvent ? (
+                <MapPin className="size-3 text-primary" />
+              ) : (
+                <Tv className="size-3 text-primary" />
+              )}
+              {isEvent ? "漫展情报" : "动画速报"}
+            </span>
+
+            {meta.location ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
+                <MapPin className="size-3 text-muted-foreground" />
+                {meta.location}
+              </span>
+            ) : null}
+
+            {meta.eventDates ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
+                <CalendarDays className="size-3 text-muted-foreground" />
+                {meta.eventDates}
+              </span>
+            ) : null}
+
+            {meta.status ? (
+              <span className="rounded-md border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                {meta.status}
+              </span>
+            ) : null}
+          </div>
+
+          {item.publishedAt ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="size-3 text-muted-foreground/80" />
+              <time dateTime={item.publishedAt}>{formatNewsDate(item.publishedAt)}</time>
+            </span>
+          ) : null}
         </div>
-        <Newspaper className="size-5 shrink-0 text-rose-600" />
+
+        {/* 标题 */}
+        <h3 className="font-serif text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary sm:text-lg">
+          {item.title}
+        </h3>
+
+        {/* 场馆标签 */}
+        {meta.venue ? (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Building2 className="size-3.5 shrink-0 text-primary/70" />
+            <span className="truncate">{meta.venue}</span>
+          </div>
+        ) : null}
+
+        {/* 摘要正文 */}
+        {meta.cleanExcerpt ? (
+          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            {meta.cleanExcerpt}
+          </p>
+        ) : null}
       </div>
 
-      {sourceStats.length > 0 ? (
-        <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-medium text-slate-400">来源（点击筛选）</span>
-          {sourceStats.map((s) => {
-            const off = hidden.has(s.label);
-            return (
-              <button
-                key={s.label}
-                type="button"
-                onClick={() => toggleSource(s.label)}
-                aria-pressed={!off}
-                className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] transition-colors",
-                  off
-                    ? "border-slate-200 bg-slate-50 text-slate-400 line-through"
-                    : "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300",
-                )}
-              >
-                {s.label} {s.count}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {feed.items.length === 0 ? (
-        <p className="mt-5 rounded-lg border border-rose-100 bg-white/60 px-4 py-6 text-center text-sm text-slate-500">
-          暂时无法拉取资讯，请稍后刷新。
-        </p>
-      ) : (
-        <div className="mt-5 grid gap-5 lg:grid-cols-2">
-          <NewsColumn title="中文快讯" items={zhItems} emptyHint="中文源暂不可用" />
-          <NewsColumn title="国际快讯" items={enItems} emptyHint="AniNews 暂不可用" />
-        </div>
-      )}
-
-      {failedSources.length > 0 ? (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-rose-100/80 pt-3 text-[10px] text-slate-400">
-          {failedSources.map((s) => (
-            <span
-              key={s.id}
-              title={s.error}
-              className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-700"
-            >
-              {s.label} 离线
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </section>
+      {/* 底部信息条 */}
+      <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+        <span className="text-muted-foreground">{item.source}</span>
+        <span className="inline-flex items-center gap-1 font-medium text-primary transition-transform group-hover:translate-x-0.5">
+          阅读解读
+          <ArrowRight
+            className="size-3.5 transition-transform group-hover:translate-x-1"
+            aria-hidden
+          />
+        </span>
+      </div>
+    </Link>
   );
 }
 
-function NewsColumn({
-  title,
+export function NewsArticleList({
   items,
-  emptyHint,
+  variant = "grid",
 }: {
-  title: string;
-  items: NewsFeed["items"];
-  emptyHint: string;
+  items: NewsItem[];
+  variant?: "grid" | "list";
 }) {
+  if (variant === "grid") {
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {items.map((item) => (
+          <NewsCard key={item.id} item={item} />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h3 className="mb-2 font-serif text-sm font-bold text-rose-800">{title}</h3>
-      {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-rose-100 bg-white/50 px-3 py-4 text-xs text-slate-500">
-          {emptyHint}
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {items.slice(0, 8).map((item) => (
-            <li key={item.id}>
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noreferrer"
-                className="group block rounded-lg border border-rose-100/80 bg-white/65 px-3 py-2.5 transition-colors hover:border-rose-300 hover:bg-white"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="line-clamp-2 text-sm font-medium leading-snug text-slate-800 group-hover:text-rose-800">
-                    {item.title}
-                  </span>
-                  <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
-                  <span className="rounded bg-rose-50 px-1.5 py-px font-medium text-rose-700">
-                    {item.source}
-                  </span>
-                  {item.publishedAt ? (
-                    <time dateTime={item.publishedAt}>{formatWhen(item.publishedAt)}</time>
-                  ) : null}
-                </div>
-                {item.excerpt ? (
-                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
-                    {item.excerpt}
-                  </p>
-                ) : null}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="space-y-3">
+      {items.map((item) => (
+        <NewsCard key={item.id} item={item} />
+      ))}
     </div>
+  );
+}
+
+export function NewsSyncStatus({ feed }: { feed: NewsFeed }) {
+  const failed = feed.sources.filter((source) => !source.ok);
+  if (!failed.length) return null;
+  return (
+    <p
+      role="status"
+      className="mt-4 border-t border-border/60 pt-3 text-xs leading-relaxed text-muted-foreground"
+    >
+      {failed
+        .map(
+          (source) =>
+            `${source.label}：${source.lastSuccessAt ? `同步暂时失败，保留 ${formatNewsDate(source.lastSuccessAt)} 的内容` : "等待首次成功同步"}`,
+        )
+        .join("；")}
+    </p>
+  );
+}
+
+export function NewsPanel({ feed, className }: { feed: NewsFeed; className?: string }) {
+  return (
+    <section className={cn("rounded-2xl border border-border/70 bg-card p-6 shadow-xs", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-serif text-xl font-bold text-foreground">动漫与漫展资讯</h2>
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+              <Sparkles className="size-3 text-primary" />
+              实时情报
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            站内阅读中文精炼摘要与 AI 解读，保留原文官方链接。
+          </p>
+        </div>
+        <Link
+          to="/news"
+          className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background/50 px-3 py-1.5 text-xs font-semibold text-primary shadow-2xs transition-all hover:border-primary/40 hover:bg-card hover:text-primary"
+        >
+          进入资讯中心
+          <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        {NEWS_FEEDS.map((channel) => {
+          const items = feed.items.filter((item) => item.channel === channel.id).slice(0, 4);
+          const isEvent = channel.id === "events";
+
+          return (
+            <div key={channel.id} className="space-y-3">
+              <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-2">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  {isEvent ? (
+                    <CalendarDays className="size-4 text-primary" />
+                  ) : (
+                    <Tv className="size-4 text-primary" />
+                  )}
+                  {channel.label}
+                </h3>
+                <Link
+                  to={newsListHref(channel.id)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+                >
+                  查看全部
+                  <ArrowRight className="size-3" aria-hidden />
+                </Link>
+              </div>
+
+              {items.length ? (
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <NewsCard key={item.id} item={item} />
+                  ))}
+                </div>
+              ) : (
+                <p className="py-8 text-center text-xs text-muted-foreground">
+                  最近 30 天暂无资讯。
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <NewsSyncStatus feed={feed} />
+    </section>
   );
 }

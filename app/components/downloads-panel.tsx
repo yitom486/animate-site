@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/motion/tabs";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Magnet, Package, Film, Download } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
@@ -35,16 +36,16 @@ function DownloadRow({
   const sources = visibleSources ?? item.sources;
 
   return (
-    <li className="rounded-lg border border-rose-100/80 bg-white/70 px-3 py-2.5">
-      <p className="text-xs font-medium leading-snug text-slate-800">{item.title}</p>
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+    <li className="rounded-lg border border-primary/25 bg-card px-3 py-2.5">
+      <p className="text-xs font-medium leading-snug text-foreground">{item.title}</p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
         {sources.map((s) => (
-          <span key={s} className="rounded bg-rose-50 px-1.5 py-0.5 font-mono text-rose-700">
+          <span key={s} className="rounded bg-accent px-1.5 py-0.5 font-mono text-primary">
             {SOURCE_LABEL[s]}
           </span>
         ))}
         {item.resolution ? (
-          <span className="rounded bg-sky-50 px-1.5 py-0.5 font-mono text-sky-700">
+          <span className="rounded bg-info/10 px-1.5 py-0.5 font-mono text-info">
             {item.resolution}
           </span>
         ) : null}
@@ -55,13 +56,13 @@ function DownloadRow({
           href={item.detailUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
         >
           详情页
         </a>
         <a
           href={item.magnet}
-          className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-rose-700 hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-bold text-foreground hover:text-primary hover:underline"
         >
           <Magnet className="size-3" />
           磁力链接
@@ -92,10 +93,12 @@ function Group({
 
   return (
     <div className="space-y-2">
-      <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-        <Icon className="size-3.5 text-rose-600" />
+      <h4 className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+        <Icon className="size-3.5 text-primary" />
         {label}
-        <span className="font-mono text-[11px] font-normal text-slate-400">({items.length})</span>
+        <span className="font-mono text-[11px] font-normal text-muted-foreground">
+          ({items.length})
+        </span>
       </h4>
       <ul className="space-y-2">
         {initiallyVisible.map((item) => (
@@ -111,7 +114,7 @@ function Group({
               ))}
             </ul>
           </CollapsibleContent>
-          <CollapsibleTrigger className="flex w-full items-center justify-center gap-1 rounded-md border border-rose-100 px-2 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-50">
+          <CollapsibleTrigger className="flex w-full items-center justify-center gap-1 rounded-md border border-primary/25 px-2 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-accent">
             {open ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
             {open ? "收起" : `显示剩余 ${remaining.length} 条`}
           </CollapsibleTrigger>
@@ -189,90 +192,99 @@ export function DownloadsPanel({ id, date, searchKeyword }: DownloadsPanelProps)
   ];
 
   return (
-    <section className="space-y-3 rounded-lg border border-rose-100 bg-white/58 p-3 shadow-sm">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-slate-800">下载资源</h3>
-          {mikanHref ? (
-            <a
-              href={mikanHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-mono text-[11px] font-bold text-amber-700 hover:bg-amber-100 hover:underline"
-            >
-              <Download className="size-3" />
-              蜜柑专属页 ↗
-            </a>
-          ) : null}
-        </div>
-        <a
-          href={comicatSearch}
-          target="_blank"
-          rel="noreferrer"
-          className="text-xs font-bold text-rose-700 hover:underline"
-        >
-          在漫猫搜索 →
-        </a>
-      </div>
-
-      <p className="text-[11px] leading-relaxed text-slate-500">
-        数据来自漫猫 + 動漫花園，按番名关键词搜索并去重，分为合集与单集。
-      </p>
-
-      {state === "idle" && view && view.counts.all > 0 ? (
-        <div className="flex gap-1 rounded-lg border border-rose-100 bg-white/60 p-0.5">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setSource(f.key)}
-              className={
-                "flex-1 rounded-md px-2 py-1 font-mono text-[11px] font-bold transition-colors " +
-                (source === f.key
-                  ? "bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700 shadow-sm"
-                  : "text-slate-500 hover:text-rose-700")
-              }
-            >
-              {f.label}（{view.counts[f.key]}）
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {state === "loading" ? (
-        <p className="px-3 py-4 text-center text-xs text-slate-400">搜索下载资源中…</p>
-      ) : state === "error" ? (
-        <p className="rounded-lg border border-dashed border-rose-100 bg-rose-50/40 px-3 py-4 text-center text-xs text-slate-500">
-          下载资源加载失败，可点上方「在漫猫搜索」手动查找。
-        </p>
-      ) : view && view.counts.all > 0 ? (
-        view.batch.length || view.single.length ? (
-          <div key={source} className="space-y-4">
-            <Group
-              icon={Package}
-              label="合集 / 整季"
-              items={view.batch}
-              initialCount={5}
-              visibleSources={view.visibleSources}
-            />
-            <Group
-              icon={Film}
-              label="单集"
-              items={view.single}
-              initialCount={3}
-              visibleSources={view.visibleSources}
-            />
+    <section className="rounded-lg border border-border bg-card p-3.5">
+      <Tabs
+        value={source}
+        onValueChange={(value) => {
+          if (value === "all" || value === "comicat" || value === "dmhy") setSource(value);
+        }}
+        variant="underline"
+        className="space-y-3"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-foreground">下载资源</h3>
+            {mikanHref ? (
+              <a
+                href={mikanHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded bg-warning/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-rating hover:bg-warning/10 hover:underline"
+              >
+                <Download className="size-3" />
+                蜜柑专属页 ↗
+              </a>
+            ) : null}
           </div>
-        ) : (
-          <p className="px-3 py-4 text-center text-xs text-slate-400">
-            该来源暂无资源，换个来源试试。
-          </p>
-        )
-      ) : (
-        <p className="rounded-lg border border-dashed border-rose-100 bg-rose-50/40 px-3 py-4 text-center text-xs text-slate-500">
-          未搜索到相关资源，可点上方「在漫猫搜索」手动查找。
+          <a
+            href={comicatSearch}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-bold text-primary hover:underline"
+          >
+            在漫猫搜索 →
+          </a>
+        </div>
+
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          数据来自漫猫 + 動漫花園，按番名关键词搜索并去重，分为合集与单集。
         </p>
-      )}
+
+        {state === "idle" && view && view.counts.all > 0 ? (
+          <TabsList aria-label="下载来源" className="w-full gap-1">
+            {FILTERS.map((filter) => (
+              <TabsTrigger key={filter.key} value={filter.key} className="px-2 text-xs">
+                {filter.label}（{view.counts[filter.key]}）
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        ) : null}
+
+        {FILTERS.map((filter) => (
+          <TabsContent key={filter.key} value={filter.key} className="mt-3">
+            {source === filter.key ? (
+              <>
+                {state === "loading" ? (
+                  <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                    搜索下载资源中…
+                  </p>
+                ) : state === "error" ? (
+                  <p className="rounded-lg border border-dashed border-primary/25 bg-accent px-3 py-4 text-center text-xs text-muted-foreground">
+                    下载资源加载失败，可点上方「在漫猫搜索」手动查找。
+                  </p>
+                ) : view && view.counts.all > 0 ? (
+                  view.batch.length || view.single.length ? (
+                    <div key={source} className="space-y-4">
+                      <Group
+                        icon={Package}
+                        label="合集 / 整季"
+                        items={view.batch}
+                        initialCount={5}
+                        visibleSources={view.visibleSources}
+                      />
+                      <Group
+                        icon={Film}
+                        label="单集"
+                        items={view.single}
+                        initialCount={3}
+                        visibleSources={view.visibleSources}
+                      />
+                    </div>
+                  ) : (
+                    <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                      该来源暂无资源，换个来源试试。
+                    </p>
+                  )
+                ) : (
+                  <p className="rounded-lg border border-dashed border-primary/25 bg-accent px-3 py-4 text-center text-xs text-muted-foreground">
+                    未搜索到相关资源，可点上方「在漫猫搜索」手动查找。
+                  </p>
+                )}
+              </>
+            ) : null}
+          </TabsContent>
+        ))}
+      </Tabs>
     </section>
   );
 }

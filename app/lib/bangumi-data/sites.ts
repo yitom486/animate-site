@@ -6,10 +6,10 @@ export type SiteMeta = {
   category: "domestic" | "hktw" | "overseas" | "download" | "db";
   badge: string;
   themeColor: {
-    bg: string;
-    text: string;
-    border: string;
-    hover: string;
+    bg: "bg-accent";
+    text: "text-accent-foreground";
+    border: "border-border";
+    hover: "hover:bg-accent";
   };
   buildUrl: (id: string) => string;
 };
@@ -21,10 +21,10 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "domestic",
     badge: "B站",
     themeColor: {
-      bg: "bg-pink-50",
-      text: "text-pink-700",
-      border: "border-pink-200",
-      hover: "hover:bg-pink-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
     buildUrl: (id) =>
       id.startsWith("http") ? id : `https://www.bilibili.com/bangumi/media/md${id}`,
@@ -35,10 +35,10 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "hktw",
     badge: "B站港澳台",
     themeColor: {
-      bg: "bg-pink-50",
-      text: "text-pink-700",
-      border: "border-pink-200",
-      hover: "hover:bg-pink-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
     buildUrl: (id) =>
       id.startsWith("http") ? id : `https://www.bilibili.com/bangumi/media/md${id}`,
@@ -49,15 +49,13 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "hktw",
     badge: "動畫瘋",
     themeColor: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
-      hover: "hover:bg-emerald-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
     buildUrl: (id) =>
-      id.startsWith("http")
-        ? id
-        : `https://ani.gamer.com.tw/animeVideo.php?sn=${id}`,
+      id.startsWith("http") ? id : `https://ani.gamer.com.tw/animeVideo.php?sn=${id}`,
   },
   gamer_hk: {
     id: "gamer_hk",
@@ -65,15 +63,13 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "hktw",
     badge: "動畫瘋(港)",
     themeColor: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
-      hover: "hover:bg-emerald-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
     buildUrl: (id) =>
-      id.startsWith("http")
-        ? id
-        : `https://ani.gamer.com.tw/animeVideo.php?sn=${id}`,
+      id.startsWith("http") ? id : `https://ani.gamer.com.tw/animeVideo.php?sn=${id}`,
   },
   mikan: {
     id: "mikan",
@@ -81,13 +77,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "download",
     badge: "蜜柑专属",
     themeColor: {
-      bg: "bg-amber-50",
-      text: "text-amber-700",
-      border: "border-amber-200",
-      hover: "hover:bg-amber-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http") ? id : `https://mikanani.me/Home/Bangumi/${id}`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://mikanani.me/Home/Bangumi/${id}`),
   },
   iqiyi: {
     id: "iqiyi",
@@ -95,13 +90,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "domestic",
     badge: "爱奇艺",
     themeColor: {
-      bg: "bg-green-50",
-      text: "text-green-700",
-      border: "border-green-200",
-      hover: "hover:bg-green-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http") ? id : `https://www.iqiyi.com/a_${id}.html`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://www.iqiyi.com/a_${id}.html`),
   },
   tencent: {
     id: "tencent",
@@ -109,13 +103,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "domestic",
     badge: "腾讯视频",
     themeColor: {
-      bg: "bg-orange-50",
-      text: "text-orange-700",
-      border: "border-orange-200",
-      hover: "hover:bg-orange-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http") ? id : `https://v.qq.com/detail/${id}.html`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://v.qq.com/detail/${id}.html`),
   },
   youku: {
     id: "youku",
@@ -123,13 +116,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "domestic",
     badge: "优酷",
     themeColor: {
-      bg: "bg-sky-50",
-      text: "text-sky-700",
-      border: "border-sky-200",
-      hover: "hover:bg-sky-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http") ? id : `https://list.youku.com/show/id_z${id}.html`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://list.youku.com/show/id_z${id}.html`),
   },
   netflix: {
     id: "netflix",
@@ -137,13 +129,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "overseas",
     badge: "Netflix",
     themeColor: {
-      bg: "bg-rose-50",
-      text: "text-rose-700",
-      border: "border-rose-200",
-      hover: "hover:bg-rose-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http") ? id : `https://www.netflix.com/title/${id}`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://www.netflix.com/title/${id}`),
   },
   crunchyroll: {
     id: "crunchyroll",
@@ -151,13 +142,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "overseas",
     badge: "Crunchyroll",
     themeColor: {
-      bg: "bg-amber-50",
-      text: "text-amber-700",
-      border: "border-amber-200",
-      hover: "hover:bg-amber-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http") ? id : `https://www.crunchyroll.com/series/${id}`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://www.crunchyroll.com/series/${id}`),
   },
   danime: {
     id: "danime",
@@ -165,15 +155,13 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "overseas",
     badge: "dAnime",
     themeColor: {
-      bg: "bg-orange-50",
-      text: "text-orange-700",
-      border: "border-orange-200",
-      hover: "hover:bg-orange-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
     buildUrl: (id) =>
-      id.startsWith("http")
-        ? id
-        : `https://animestore.docomo.ne.jp/animestore/ci_pc?partId=${id}`,
+      id.startsWith("http") ? id : `https://animestore.docomo.ne.jp/animestore/ci_pc?partId=${id}`,
   },
   abema: {
     id: "abema",
@@ -181,13 +169,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "overseas",
     badge: "ABEMA",
     themeColor: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
-      hover: "hover:bg-emerald-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http") ? id : `https://abema.tv/video/title/${id}`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://abema.tv/video/title/${id}`),
   },
   unext: {
     id: "unext",
@@ -195,15 +182,12 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "overseas",
     badge: "U-NEXT",
     themeColor: {
-      bg: "bg-blue-50",
-      text: "text-blue-700",
-      border: "border-blue-200",
-      hover: "hover:bg-blue-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
-    buildUrl: (id) =>
-      id.startsWith("http")
-        ? id
-        : `https://video.unext.jp/title/${id}`,
+    buildUrl: (id) => (id.startsWith("http") ? id : `https://video.unext.jp/title/${id}`),
   },
   disneyplus: {
     id: "disneyplus",
@@ -211,15 +195,13 @@ export const SITE_METAS: Record<string, SiteMeta> = {
     category: "overseas",
     badge: "Disney+",
     themeColor: {
-      bg: "bg-indigo-50",
-      text: "text-indigo-700",
-      border: "border-indigo-200",
-      hover: "hover:bg-indigo-100",
+      bg: "bg-accent",
+      text: "text-accent-foreground",
+      border: "border-border",
+      hover: "hover:bg-accent",
     },
     buildUrl: (id) =>
-      id.startsWith("http")
-        ? id
-        : `https://www.disneyplus.com/series/title/${id}`,
+      id.startsWith("http") ? id : `https://www.disneyplus.com/series/title/${id}`,
   },
 };
 

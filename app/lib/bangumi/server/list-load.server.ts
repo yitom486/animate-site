@@ -23,7 +23,7 @@ export async function loadCachedAnimeList(
     key,
     // 共享任务只带 timeout，不绑定单次请求的 abort，避免一人取消拖死其他等待者
     () => fetchAnimeList(searchParams, { timeoutMs: options?.timeoutMs }),
-    { signal: options?.signal, useEdge: true },
+    { signal: options?.signal, useEdge: true, onStatus: options?.onCacheStatus },
   );
 }
 

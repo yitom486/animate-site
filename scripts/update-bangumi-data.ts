@@ -160,7 +160,9 @@ async function main() {
     console.log(`[bangumi-data] 写入分片 ${key}.json: ${count} 条目 (${sizeKb} KB)`);
   }
 
-  console.log(`[bangumi-data] 处理完成！共映射 ${totalMapped} 部番剧，生成 ${shardKeys.length} 个分片文件。`);
+  console.log(
+    `[bangumi-data] 处理完成！共映射 ${totalMapped} 部番剧，生成 ${shardKeys.length} 个分片文件。`,
+  );
 }
 
 main().catch((err) => {

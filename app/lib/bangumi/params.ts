@@ -83,7 +83,8 @@ export function parseListQuery(searchParams: URLSearchParams): ListQuery {
   const view = rawView ? (rawView as ListView) : resolveView(searchParams, typeHint);
   const type = parseListType(searchParams, view);
   const sort = searchParams.get("sort") === "date" ? "date" : "rank";
-  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const rawPage = Number(searchParams.get("page"));
+  const page = Number.isFinite(rawPage) ? Math.max(1, Math.floor(rawPage)) : 1;
 
   return {
     type,
@@ -91,8 +92,8 @@ export function parseListQuery(searchParams: URLSearchParams): ListQuery {
     view,
     page,
     cat: searchParams.get("cat") ?? "",
-    tag: searchParams.get("tag") ?? "",
-    q: searchParams.get("q") ?? "",
+    tag: searchParams.get("tag")?.trim() ?? "",
+    q: searchParams.get("q")?.trim() ?? "",
     year: searchParams.get("year") ?? "",
     month: searchParams.get("month") ?? "",
     series: searchParams.get("series") === "1" || searchParams.get("series") === "true",
@@ -169,23 +170,20 @@ export function buildDetailUrl(id: string | number, listParams: URLSearchParams)
  */
 export function listCacheKey(searchParams: URLSearchParams): string {
   const query = parseListQuery(searchParams);
-  const parts = [
-    "list:v2",
-    `type=${query.type}`,
-    `view=${query.view}`,
-    `sort=${query.sort}`,
-    `cat=${query.cat}`,
-    `tag=${query.tag.trim()}`,
-    `q=${query.q.trim()}`,
-    `year=${query.year}`,
-    `month=${query.month}`,
-    `series=${query.series ? "1" : "0"}`,
-    `platform=${query.platform}`,
-  ];
-  if (query.view !== "calendar") {
-    parts.push(`page=${query.page}`);
-  }
-  return parts.join("&");
+  // 结构化编码避免 q/tag 中的 &、= 与字段分隔符发生碰撞。
+  return `list:v3:${JSON.stringify([
+    query.type,
+    query.view,
+    query.sort,
+    query.cat,
+    query.tag,
+    query.q,
+    query.year,
+    query.month,
+    query.series,
+    query.platform,
+    query.view === "calendar" ? 1 : query.page,
+  ])}`;
 }
 
 export function getTypeLabel(type: string): string {

@@ -53,7 +53,7 @@ export async function fetchCardExtra(
       });
       return toCardExtra(raw);
     },
-    { signal: options?.signal, useEdge: true },
+    { signal: options?.signal, useEdge: true, onStatus: options?.onCacheStatus },
   );
 }
 

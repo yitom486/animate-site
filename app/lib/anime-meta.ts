@@ -56,16 +56,77 @@ export function toHttps(url?: string): string | undefined {
   return url.replace(/^http:\/\//, "https://");
 }
 
+/** 判断是否为 Bangumi 官方静态资源域名 */
+export function isBangumiHost(hostname: string): boolean {
+  return (
+    hostname === "lain.bgm.tv" ||
+    hostname === "bgm.tv" ||
+    hostname.endsWith(".bgm.tv") ||
+    hostname.endsWith(".chii.in")
+  );
+}
+
+/**
+ * 将 Bangumi 图片 URL 转换为通过本项目边缘代理的 URL，解决国内直连 lain.bgm.tv 被阻断的问题
+ */
+export function toProxiedImageUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  const normalized = toHttps(url);
+  if (!normalized) return undefined;
+
+  // 已经是代理地址或站内相对路径或 data: URL
+  if (normalized.startsWith("/") || normalized.startsWith("data:")) {
+    return normalized;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    if (isBangumiHost(parsed.hostname)) {
+      return `/api/img?url=${encodeURIComponent(normalized)}`;
+    }
+  } catch {
+    // 忽略无效 URL 格式
+  }
+
+  return normalized;
+}
+
+/**
+ * 递归或批量为条目图片对象中的所有链接（large, common, medium, grid, small 等）补充边缘代理前缀
+ */
+export function proxySubjectImages<T extends Record<string, string | undefined>>(
+  images?: T,
+): T | undefined {
+  if (!images) return undefined;
+  const proxied: Record<string, string | undefined> = { ...images };
+  for (const [key, val] of Object.entries(images)) {
+    if (typeof val === "string") {
+      proxied[key] = toProxiedImageUrl(val);
+    }
+  }
+  return proxied as T;
+}
+
 /**
  * 从 lain.bgm.tv 封面 URL 提取 `pic/cover/l/...` 路径。
  * 仅 large（/l/）可套 /r/N/；/c/ /m/ 等变体不可靠，不推导。
  */
 function extractLainLargePath(url: string): string | null {
-  const https = toHttps(url);
+  let target = url;
+  if (target.startsWith("/api/img?url=")) {
+    try {
+      const u = new URL(target, "https://dummy.local");
+      const param = u.searchParams.get("url");
+      if (param) target = param;
+    } catch {
+      // ignore
+    }
+  }
+  const https = toHttps(target);
   if (!https) return null;
   try {
     const { hostname, pathname } = new URL(https);
-    if (hostname !== "lain.bgm.tv") return null;
+    if (!isBangumiHost(hostname)) return null;
     const match = pathname.match(/^(?:\/r\/\d+)?\/(pic\/cover\/l\/.+)$/i);
     return match?.[1] ?? null;
   } catch {
@@ -74,10 +135,11 @@ function extractLainLargePath(url: string): string | null {
 }
 
 function lainResizeUrl(largePath: string, width: number): string {
-  return `https://lain.bgm.tv/r/${width}/${largePath}`;
+  const direct = `https://lain.bgm.tv/r/${width}/${largePath}`;
+  return `/api/img?url=${encodeURIComponent(direct)}`;
 }
 
-/** 列表封面：优先 v0 medium；Legacy 日历接口则改用 large */
+/** 列表封面：优先 v0 medium；Legacy 日历接口则改用 large，并走代理 */
 export function getCoverUrl(images?: AnimeCardData["images"]): string | undefined {
   if (!images) return undefined;
 
@@ -91,12 +153,12 @@ export function getCoverUrl(images?: AnimeCardData["images"]): string | undefine
     url = images.medium || images.common || images.grid;
   }
 
-  return toHttps(url);
+  return toProxiedImageUrl(url);
 }
 
 /**
  * 列表/日历封面：在可验证的 lain `/r/N/` 规则下提供 srcset。
- * 默认 src 用 400 档，减少无 srcset 浏览器的过度下载。
+ * 默认 src 用 400 档，并通过 /api/img 边缘代理输出。
  */
 export function getCoverSources(images?: AnimeCardData["images"]): CoverSources | undefined {
   const fallback = getCoverUrl(images);
@@ -119,7 +181,7 @@ export function getCoverSources(images?: AnimeCardData["images"]): CoverSources 
   }
 
   if (!largePath) {
-    return { src: fallback };
+    return { src: toProxiedImageUrl(fallback) ?? fallback };
   }
 
   const srcSet = COVER_SRCSET_WIDTHS.map((w) => `${lainResizeUrl(largePath, w)} ${w}w`).join(", ");
