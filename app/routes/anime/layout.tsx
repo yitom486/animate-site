@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { Link, useLocation, useNavigation, useOutlet, useParams } from "react-router";
-import { CalendarDays, MessageSquareText, Sparkles } from "lucide-react";
+import { CalendarDays, MessageSquareText } from "lucide-react";
 import type { Route } from "./+types/layout";
 import { AnimeCard } from "~/components/anime-card";
 import { AnimeSchedule } from "~/components/anime-schedule";
@@ -99,9 +100,9 @@ function gridCols(isMobile: boolean, hasDetail: boolean, expanded: boolean): str
 
 export function HydrateFallback() {
   return (
-    <div className="celadon-page flex h-screen flex-col">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <SiteNav activeType={SUBJECT_TYPE.anime} />
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_0fr] overflow-hidden">
+      <div className="grid min-h-0 flex-1 grid-cols-[1fr_0fr] overflow-hidden p-3">
         <AnimeListSkeleton />
       </div>
     </div>
@@ -164,9 +165,17 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const setExpanded = useCallback(
     (next: boolean) => {
       if (next === expanded) return;
-      runFlip(() => setExpandedState(next));
+      if (typeof document !== "undefined" && "startViewTransition" in document && !reduceMotion) {
+        document.startViewTransition(() => {
+          flushSync(() => {
+            setExpandedState(next);
+          });
+        });
+      } else {
+        runFlip(() => setExpandedState(next));
+      }
     },
-    [expanded, runFlip],
+    [expanded, reduceMotion, runFlip],
   );
 
   const outletContext = { expanded, setExpanded, isMobile } satisfies AnimeOutletContext;
@@ -181,7 +190,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     listScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [page, viewLabel, typeLabel]);
 
-  // 打开详情：瞬时改列宽 + FLIP
+  // 打开详情：支持 View Transitions API
   useEffect(() => {
     if (!routeHasDetail) return;
     closingRef.current = false;
@@ -189,8 +198,16 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     if (panel) unfreezeDetailPanel(panel);
     setHoldExitContent(false);
     if (splitOpen) return;
-    runFlip(() => setSplitOpen(true));
-  }, [routeHasDetail, splitOpen, runFlip]);
+    if (typeof document !== "undefined" && "startViewTransition" in document && !reduceMotion) {
+      document.startViewTransition(() => {
+        flushSync(() => {
+          setSplitOpen(true);
+        });
+      });
+    } else {
+      runFlip(() => setSplitOpen(true));
+    }
+  }, [routeHasDetail, splitOpen, runFlip, reduceMotion]);
 
   // 关闭详情：方案 C — 冻右栏 → 列表立刻占满 → 同时滑出 + 左栏 FLIP
   useEffect(() => {
@@ -257,7 +274,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const listParams = mergeListParams(baseParams, page);
 
   return (
-    <div className="celadon-page flex h-screen flex-col text-slate-800">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <SiteNav activeType={type === SUBJECT_TYPE_ALL ? undefined : type} />
 
       <div
@@ -266,21 +283,17 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
       >
         <section
           ref={listPanelRef}
-          className="celadon-glass flex min-w-0 flex-col overflow-hidden rounded-lg will-change-transform"
+          className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card/60 backdrop-blur-xs will-change-transform"
         >
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-rose-100/80 px-4 py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
             <div>
-              <span className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
-                <Sparkles className="size-3.5" />
-                Bangumi Archive
-              </span>
               <div className="mt-1 flex items-baseline gap-2">
-                <h2 className="font-serif text-xl font-bold text-slate-800">{typeLabel}</h2>
-                <span className="text-sm text-slate-500">· {viewLabel}</span>
+                <h2 className="font-serif text-xl font-bold text-foreground">{typeLabel}</h2>
+                <span className="text-sm text-muted-foreground">· {viewLabel}</span>
               </div>
             </div>
             {isListLoading ? (
-              <span className="rounded-full border border-rose-100 bg-white/70 px-3 py-1 font-mono text-xs text-rose-700">
+              <span className="rounded-full border border-primary/25 bg-card px-3 py-1 font-mono text-xs text-primary">
                 加载中…
               </span>
             ) : null}
@@ -292,7 +305,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                   calendar: "overview",
                 })}
                 prefetch="intent"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white/70 px-3 py-2 text-xs font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-card px-3 py-2 text-xs font-bold text-primary shadow-sm transition-colors hover:bg-muted/50"
               >
                 <CalendarDays className="size-3.5" />
                 周总览
@@ -350,7 +363,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
                 <Link
                   to="/anime/blog"
                   prefetch="intent"
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-rose-200 bg-white/50 px-3 py-3 text-xs font-bold text-rose-700 transition-colors hover:border-rose-300 hover:bg-white"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/25 bg-card px-3 py-3 text-xs font-bold text-primary transition-colors hover:border-primary/25 hover:bg-muted/50"
                 >
                   <MessageSquareText className="size-3.5" />
                   浏览 Bangumi 动画日志 →
@@ -363,7 +376,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
         <section
           ref={detailPanelRef}
           className={cn(
-            "min-w-0 overflow-hidden rounded-lg border border-white/75 bg-white/48 backdrop-blur-xl will-change-transform",
+            "min-w-0 overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs will-change-transform",
             !panelShown && "pointer-events-none",
           )}
           aria-hidden={!panelShown}

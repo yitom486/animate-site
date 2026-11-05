@@ -4,20 +4,22 @@
 
 技术栈：**React Router v7（Framework Mode / SSR）· React 19 · TypeScript · Tailwind CSS v4**，UI 基于 [Base UI](https://base-ui.com) + shadcn 风格组件，部署在 **Cloudflare Pages**。
 
+界面保留客户指定的淡粉色品牌，支持亮色、暗色和跟随系统。颜色由 `app/app.css` 的 CSS 变量统一定义，业务组件使用 Tailwind 语义类。播放平台与下载来源使用 beUI Tabs，日期选择使用 shadcn Calendar；新增组件均通过 shadcn CLI 安装，保留已有 Base UI 体系。
+
 > ⚠️ **本项目使用 [Bun](https://bun.sh) 作为唯一包管理器**（本地开发与 Cloudflare 构建都用 bun）。  
 > **请勿使用 `npm` / `pnpm` / `yarn`** —— 会与 `bun.lock` 冲突。仓库已忽略 `package-lock.json`。
 
 ## 功能概览
 
-| 能力           | 说明                                                               |
-| -------------- | ------------------------------------------------------------------ |
-| 条目列表       | 排行 / 关注 / 最新 / 搜索；分类、平台、系列等 browse（标签云暂缓） |
-| 详情分栏       | 桌面列表+详情并排，可展开全屏；**手机端全屏且一步展示完整信息**    |
-| 多类型适配     | 非动画隐藏 B 站/下载等动画插件；职员字段、关联条目按类型展示       |
+| 能力           | 说明                                                                    |
+| -------------- | ----------------------------------------------------------------------- |
+| 条目列表       | 排行 / 关注 / 最新 / 搜索；分类、平台、系列等 browse（标签云暂缓）      |
+| 详情分栏       | 桌面列表+详情并排，可展开全屏；**手机端全屏且一步展示完整信息**         |
+| 多类型适配     | 非动画隐藏 B 站/下载等动画插件；职员字段、关联条目按类型展示            |
 | 流媒体与下载源 | **三级漏斗降级**：bangumi-data 静态正版直达 → 动态选集探测 → 搜索页保底 |
-| 板块日志       | `/anime/blog`、`/book/blog`… 列表 + 站内消毒正文                   |
-| 日历与卡片增强 | 每日放送；批量补简介 / staff，避免日历 N+1                         |
-| 首页           | Hero 搜索、资讯面板                                                |
+| 板块日志       | `/anime/blog`、`/book/blog`… 列表 + 站内消毒正文                        |
+| 日历与卡片增强 | 每日放送；批量补简介 / staff，避免日历 N+1                              |
+| 首页           | Hero 搜索、资讯面板                                                     |
 
 ## 快速开始
 
@@ -30,15 +32,16 @@ bun run dev
 
 ## 常用命令
 
-| 命令                | 说明                                          |
-| ------------------- | --------------------------------------------- |
-| `bun install`       | 安装 / 同步依赖（写入 `bun.lock`）            |
-| `bun run dev`       | 本地开发，热更新                              |
-| `bun run typecheck` | 生成路由类型 + `tsc`                          |
-| `bun run fmt`       | Oxfmt 格式化                                  |
-| `bun run lint`      | Oxlint 检查                                   |
-| `bun run build`     | 生产构建 → `build/client` + `build/server`    |
-| `bun run start`     | `wrangler pages dev` 预览构建产物（贴近线上） |
+| 命令                  | 说明                                          |
+| --------------------- | --------------------------------------------- |
+| `bun install`         | 安装 / 同步依赖（写入 `bun.lock`）            |
+| `bun run dev`         | 本地开发，热更新                              |
+| `bun run typecheck`   | 生成路由类型 + `tsc`                          |
+| `bun run fmt`         | Oxfmt 格式化                                  |
+| `bun run lint`        | Oxlint 检查                                   |
+| `bun run check:theme` | 检查业务颜色硬编码及亮暗主题变量完整性        |
+| `bun run build`       | 生产构建 → `build/client` + `build/server`    |
+| `bun run start`       | `wrangler pages dev` 预览构建产物（贴近线上） |
 
 ## 部署（Cloudflare Pages）
 
@@ -80,14 +83,14 @@ docs/
 
 ## 相关文档
 
-| 文档                               | 说明                                            |
-| ---------------------------------- | ----------------------------------------------- |
-| [架构说明](./docs/architecture.md) | **当前**路由、数据流与目录职责（含 Mermaid 图） |
-| [Agent / 工程约定](./AGENTS.md) | 包管理、路由、取数等硬规则 |
-| [性能与工程优化规划](./docs/planning/README.md) | 分项优化索引（含 020 多类型、021 流媒体降级） |
-| [Bangumi API 调研](./docs/bangumi-api.md) | 上游接口笔记 |
-| [外部评分数据源调研](./docs/external-ratings.md) | AniList / MAL 等 |
-| [需求文档（历史）](./docs/requirements.md) | 早期设想，部分已过时 |
+| 文档                                             | 说明                                            |
+| ------------------------------------------------ | ----------------------------------------------- |
+| [架构说明](./docs/architecture.md)               | **当前**路由、数据流与目录职责（含 Mermaid 图） |
+| [Agent / 工程约定](./AGENTS.md)                  | 包管理、路由、取数等硬规则                      |
+| [性能与工程优化规划](./docs/planning/README.md)  | 分项优化索引（含 020 多类型、021 流媒体降级）   |
+| [Bangumi API 调研](./docs/bangumi-api.md)        | 上游接口笔记                                    |
+| [外部评分数据源调研](./docs/external-ratings.md) | AniList / MAL 等                                |
+| [需求文档（历史）](./docs/requirements.md)       | 早期设想，部分已过时                            |
 
 ## 许可证
 

@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router";
-import { ChevronDown, Home, Leaf, Menu, MessageSquareText, X } from "lucide-react";
+import { ChevronDown, Leaf, Menu } from "lucide-react";
 import { SearchForm } from "~/components/search-form";
-import { cn } from "~/lib/utils";
-import { BGM_MENUS } from "~/lib/bangumi/menus";
-import { SUBJECT_TYPE, SUBJECT_TYPE_ALL } from "~/lib/bangumi/types";
+import { ThemeSelect } from "~/components/theme-select";
+import { Button } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -14,15 +21,14 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "~/components/ui/navigation-menu";
+import { cn } from "~/lib/utils";
+import { BGM_MENUS } from "~/lib/bangumi/menus";
+import { SUBJECT_TYPE_ALL } from "~/lib/bangumi/types";
 
-type SiteNavProps = {
-  activeType?: string;
-  searchType?: string;
-};
+type SiteNavProps = { activeType?: string; searchType?: string };
 
 export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavProps) {
   const location = useLocation();
-  // 受控菜单值：路由变化后自动收起下拉（base-ui 在 SPA 跳转后不会自动关闭）
   const [menuValue, setMenuValue] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -32,87 +38,74 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
   }, [location.pathname, location.search]);
 
   return (
-    <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/70 bg-white/60 backdrop-blur-xl">
-        <div className="relative flex h-16 w-full items-center gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              aria-label="打开导航菜单"
-              className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-rose-100 bg-white/70 text-rose-700 shadow-sm transition-colors hover:bg-white lg:hidden"
-            >
-              <Menu className="size-5" />
-            </button>
-
-            <Link to="/" prefetch="intent" className="flex shrink-0 items-center gap-3">
-              <span className="flex size-10 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-inner">
-                <Leaf className="size-5" />
-              </span>
-              <span className="hidden sm:block">
-                <span className="block bg-gradient-to-r from-rose-800 to-sky-600 bg-clip-text font-serif text-lg font-black tracking-wider text-transparent">
-                  亚域空间
-                </span>
-                <span className="-mt-1 block font-mono text-[10px] font-semibold uppercase tracking-widest text-rose-600">
-                  Celadon Portal
-                </span>
-              </span>
-            </Link>
-
-            <Link
-              to="/"
-              prefetch="intent"
-              className={cn(
-                "hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-colors sm:inline-flex",
-                location.pathname === "/"
-                  ? "bg-white/80 text-rose-800 shadow-sm"
-                  : "text-slate-600 hover:bg-white/70 hover:text-rose-700",
-              )}
-            >
-              <Home className="size-4" />
-              主页
-            </Link>
-
-            <Link
-              to="/anime/blog"
-              prefetch="intent"
-              className={cn(
-                "hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-colors sm:inline-flex",
-                /^\/(anime|book|music|game|real)\/blog/.test(location.pathname)
-                  ? "bg-white/80 text-rose-800 shadow-sm"
-                  : "text-slate-600 hover:bg-white/70 hover:text-rose-700",
-              )}
-            >
-              <MessageSquareText className="size-4" />
-              日志
-            </Link>
+    <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
+          <DialogTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-lg"
+                className="xl:hidden"
+                aria-label="打开导航菜单"
+              />
+            }
+          >
+            <Menu className="size-5" />
+          </DialogTrigger>
+          <Link
+            to="/"
+            prefetch="intent"
+            aria-label="亚域空间首页"
+            className="flex shrink-0 items-center gap-2.5"
+          >
+            <Leaf className="size-6 text-primary" aria-hidden />
+            <span className="hidden font-serif text-lg font-semibold tracking-wide sm:block">
+              亚域空间
+            </span>
+          </Link>
+          <div className="hidden items-center gap-1 md:flex">
+            {[
+              { to: "/", label: "首页", active: location.pathname === "/" },
+              {
+                to: "/anime/blog",
+                label: "社区日志",
+                active: /^\/(anime|book|music|game|real)\/blog/.test(location.pathname),
+              },
+            ].map(({ to, label, active }) => (
+              <Button
+                key={to}
+                variant="ghost"
+                render={<Link to={to} prefetch="intent" />}
+                nativeButton={false}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "text-muted-foreground transition-colors hover:text-foreground",
+                  active &&
+                    "border border-primary/25 bg-primary/15 font-bold text-primary shadow-2xs",
+                )}
+              >
+                {label}
+              </Button>
+            ))}
           </div>
-
-          <nav className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-1 lg:flex">
+          <nav aria-label="作品分类" className="hidden flex-1 justify-center xl:flex">
             <NavigationMenu align="center" value={menuValue} onValueChange={setMenuValue}>
               <NavigationMenuList className="gap-1">
-                {BGM_MENUS.map((m) => (
-                  <NavigationMenuItem key={m.type} value={m.type}>
+                {BGM_MENUS.map((menu) => (
+                  <NavigationMenuItem key={menu.type} value={menu.type}>
                     <NavigationMenuTrigger
                       className={cn(
-                        "h-10 rounded-lg px-3 font-serif text-sm text-slate-600 hover:bg-white/70 hover:text-rose-700 data-open:bg-white/70",
-                        activeType === m.type && "bg-white/85 text-rose-800 shadow-sm",
+                        "h-9 text-muted-foreground transition-colors hover:text-foreground",
+                        activeType === menu.type &&
+                          "border border-primary/25 bg-primary/15 font-bold text-primary shadow-2xs",
                       )}
                     >
-                      {m.label}
+                      {menu.label}
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <ul
-                        className={cn(
-                          "grid max-h-[min(70vh,480px)] gap-1 overflow-y-auto p-2",
-                          m.type === SUBJECT_TYPE.anime || m.type === SUBJECT_TYPE.game
-                            ? "w-[320px]"
-                            : m.type === SUBJECT_TYPE.book || m.type === SUBJECT_TYPE.real
-                              ? "w-[280px]"
-                              : "w-[240px]",
-                        )}
-                      >
-                        {m.links.map(({ to, title, desc, icon: Icon }) => (
+                      <ul className="grid max-h-[min(70vh,480px)] w-72 gap-1 overflow-y-auto p-2">
+                        {menu.links.map(({ to, title, desc, icon: Icon }) => (
                           <li key={to}>
                             <NavigationMenuLink
                               render={
@@ -125,7 +118,7 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
                               className="flex-col items-start gap-0.5"
                             >
                               <span className="flex items-center gap-2 text-sm font-medium">
-                                <Icon className="size-4 shrink-0 text-rose-600" />
+                                <Icon className="size-4 text-primary" />
                                 {title}
                               </span>
                               {desc ? (
@@ -141,138 +134,67 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
               </NavigationMenuList>
             </NavigationMenu>
           </nav>
-
           <SearchForm variant="nav" defaultType={searchType} className="ml-auto max-w-sm flex-1" />
+          <ThemeSelect />
         </div>
-
-        <MobileNav open={mobileOpen} activeType={activeType} onClose={() => setMobileOpen(false)} />
       </header>
       <div className="h-16 shrink-0" aria-hidden="true" />
-    </>
-  );
-}
-
-/* ───────── 移动端导航抽屉 ───────── */
-function MobileNav({
-  open,
-  activeType,
-  onClose,
-}: {
-  open: boolean;
-  activeType?: string;
-  onClose: () => void;
-}) {
-  // 手风琴：默认仅展开当前所在分类，其余收起
-  const [openGroups, setOpenGroups] = useState<Set<string>>(
-    () => new Set(activeType ? [activeType] : []),
-  );
-  const toggleGroup = (type: string) =>
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      next.has(type) ? next.delete(type) : next.add(type);
-      return next;
-    });
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 lg:hidden">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute inset-y-0 left-0 flex w-[82%] max-w-sm flex-col bg-white/95 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-rose-100 px-4 py-4">
-          <span className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700">
-              <Leaf className="size-4" />
-            </span>
-            <span className="bg-gradient-to-r from-rose-800 to-sky-600 bg-clip-text font-serif text-base font-black tracking-wider text-transparent">
-              亚域空间
-            </span>
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="关闭"
-            className="rounded-lg border border-rose-100 bg-white/70 p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-rose-700"
+      <DialogContent className="inset-y-0 left-0 top-0 flex h-dvh w-[min(90vw,24rem)] max-w-sm translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
+        <DialogHeader className="border-b border-border px-5 py-5 pr-12">
+          <DialogTitle className="flex items-center gap-2 font-serif text-lg">
+            <Leaf className="size-5 text-primary" />
+            亚域空间
+          </DialogTitle>
+          <DialogDescription>浏览作品分类与社区日志</DialogDescription>
+        </DialogHeader>
+        <nav aria-label="移动导航" className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
+          <Button
+            variant="ghost"
+            className="h-10 w-full justify-start"
+            render={<Link to="/" onClick={() => setMobileOpen(false)} />}
+            nativeButton={false}
           >
-            <X className="size-4" />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto px-3 py-3">
-          <Link
-            to="/"
-            prefetch="intent"
-            onClick={onClose}
-            className="mb-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-rose-50 hover:text-rose-700"
+            首页
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-10 w-full justify-start"
+            render={<Link to="/anime/blog" onClick={() => setMobileOpen(false)} />}
+            nativeButton={false}
           >
-            <Home className="size-4 text-rose-600" />
-            主页
-          </Link>
-
-          {BGM_MENUS.map((m) => {
-            const isOpen = openGroups.has(m.type);
-            return (
-              <div key={m.type} className="mb-0.5">
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(m.type)}
-                  aria-expanded={isOpen}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-3 py-2.5 font-serif text-sm font-bold transition-colors hover:bg-rose-50",
-                    activeType === m.type ? "text-rose-700" : "text-slate-600",
-                  )}
-                >
-                  {m.label}
-                  <ChevronDown
-                    className={cn(
-                      "size-4 text-slate-400 transition-transform duration-200",
-                      isOpen && "rotate-180",
-                    )}
-                  />
-                </button>
-                {isOpen ? (
-                  <ul className="mt-0.5 mb-1 border-l border-rose-100 pl-2">
-                    {m.links.map(({ to, title, desc, icon: Icon }) => (
-                      <li key={to}>
-                        <Link
-                          to={to}
-                          prefetch="intent"
-                          onClick={onClose}
-                          className="flex items-start gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-rose-50"
-                        >
-                          <Icon className="mt-0.5 size-4 shrink-0 text-rose-600" />
-                          <span className="min-w-0">
-                            <span className="block text-sm font-medium text-slate-700">
-                              {title}
-                            </span>
-                            {desc ? (
-                              <span className="block text-xs text-slate-400">{desc}</span>
-                            ) : null}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            );
-          })}
+            社区日志
+          </Button>
+          {BGM_MENUS.map((menu) => (
+            <Collapsible key={menu.type} defaultOpen={activeType === menu.type}>
+              <CollapsibleTrigger
+                render={<Button variant="ghost" className="group h-11 w-full justify-between" />}
+              >
+                {menu.label}
+                <ChevronDown className="size-4 transition-transform group-aria-expanded:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ul className="ml-3 space-y-1 border-l border-border py-1 pl-3">
+                  {menu.links.map(({ to, title, desc }) => (
+                    <li key={to}>
+                      <Link
+                        to={to}
+                        prefetch="intent"
+                        onClick={() => setMobileOpen(false)}
+                        className="block rounded-md px-3 py-2 hover:bg-muted"
+                      >
+                        <span className="block text-sm">{title}</span>
+                        {desc ? (
+                          <span className="mt-0.5 block text-xs text-muted-foreground">{desc}</span>
+                        ) : null}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
         </nav>
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   );
 }

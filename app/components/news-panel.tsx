@@ -1,3 +1,4 @@
+import { Button } from "~/components/ui/button";
 import { ExternalLink, Newspaper } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { NewsFeed } from "~/lib/news";
@@ -13,24 +14,27 @@ type NewsPanelProps = {
 export function NewsPanelSkeleton({ className }: { className?: string }) {
   return (
     <section
-      className={cn("celadon-glass rounded-lg p-5", className)}
+      className={cn(
+        "rounded-xl border border-border/70 bg-card/60 p-5 shadow-xs backdrop-blur-xs",
+        className,
+      )}
       aria-busy="true"
       aria-label="资讯加载中"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <Skeleton className="h-3 w-24 bg-rose-100/80" />
-          <Skeleton className="h-6 w-40 bg-rose-100/70" />
-          <Skeleton className="h-3 w-64 max-w-full bg-slate-100" />
+          <Skeleton className="h-3 w-24 bg-muted" />
+          <Skeleton className="h-6 w-40 bg-muted" />
+          <Skeleton className="h-3 w-64 max-w-full bg-muted" />
         </div>
-        <Skeleton className="size-5 shrink-0 rounded bg-rose-100/80" />
+        <Skeleton className="size-5 shrink-0 rounded bg-muted" />
       </div>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         {[0, 1].map((col) => (
           <div key={col} className="space-y-2">
-            <Skeleton className="mb-2 h-4 w-20 bg-rose-100/70" />
+            <Skeleton className="mb-2 h-4 w-20 bg-muted" />
             {Array.from({ length: 4 }, (_, i) => (
-              <Skeleton key={i} className="h-[4.5rem] w-full rounded-lg bg-white/70" />
+              <Skeleton key={i} className="h-[4.5rem] w-full rounded-lg bg-muted" />
             ))}
           </div>
         ))}
@@ -47,17 +51,19 @@ export function NewsPanelError({
   message?: string;
 }) {
   return (
-    <section className={cn("celadon-glass rounded-lg p-5", className)}>
+    <section
+      className={cn(
+        "rounded-xl border border-border/70 bg-card/60 p-5 shadow-xs backdrop-blur-xs",
+        className,
+      )}
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
-            ACG Chronicle
-          </span>
-          <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日亚文化资讯</h2>
+          <h2 className="mt-1 font-serif text-xl font-bold text-foreground">资讯与社区动态</h2>
         </div>
-        <Newspaper className="size-5 shrink-0 text-rose-600" />
+        <Newspaper className="size-5 shrink-0 text-primary" />
       </div>
-      <p className="mt-5 rounded-lg border border-rose-100 bg-white/60 px-4 py-6 text-center text-sm text-slate-500">
+      <p className="mt-5 rounded-lg border border-primary/25 bg-card px-4 py-6 text-center text-sm text-muted-foreground">
         {message}
       </p>
     </section>
@@ -104,47 +110,52 @@ export function NewsPanel({ feed, className }: NewsPanelProps) {
   const failedSources = feed.sources.filter((s) => !s.ok);
 
   return (
-    <section className={cn("celadon-glass rounded-lg p-5", className)}>
+    <section
+      className={cn(
+        "rounded-xl border border-border/70 bg-card/60 p-5 shadow-xs backdrop-blur-xs",
+        className,
+      )}
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
-            ACG Chronicle
-          </span>
-          <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日亚文化资讯</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            中文：Bangumi 动画日志 · Google 新闻 · 垂直源（需自建 RSSHub）· 国际：AniNews
+          <h2 className="mt-1 font-serif text-xl font-bold text-foreground">资讯与社区动态</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            作品消息、社区讨论与国际快讯，按来源筛选。
           </p>
         </div>
-        <Newspaper className="size-5 shrink-0 text-rose-600" />
+        <Newspaper className="size-5 shrink-0 text-primary" />
       </div>
 
       {sourceStats.length > 0 ? (
         <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-medium text-slate-400">来源（点击筛选）</span>
+          <span className="mr-1 text-[10px] font-medium text-muted-foreground">
+            来源（点击筛选）
+          </span>
           {sourceStats.map((s) => {
             const off = hidden.has(s.label);
             return (
-              <button
+              <Button
+                variant="ghost"
                 key={s.label}
                 type="button"
                 onClick={() => toggleSource(s.label)}
                 aria-pressed={!off}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] transition-colors",
+                  "h-7 rounded-lg border px-2.5 font-mono text-[11px] font-medium transition-all",
                   off
-                    ? "border-slate-200 bg-slate-50 text-slate-400 line-through"
-                    : "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300",
+                    ? "border-border/60 bg-muted/50 text-muted-foreground line-through opacity-70"
+                    : "border-primary/25 bg-primary/10 text-primary hover:border-primary/40",
                 )}
               >
                 {s.label} {s.count}
-              </button>
+              </Button>
             );
           })}
         </div>
       ) : null}
 
       {feed.items.length === 0 ? (
-        <p className="mt-5 rounded-lg border border-rose-100 bg-white/60 px-4 py-6 text-center text-sm text-slate-500">
+        <p className="mt-5 rounded-lg border border-primary/25 bg-card px-4 py-6 text-center text-sm text-muted-foreground">
           暂时无法拉取资讯，请稍后刷新。
         </p>
       ) : (
@@ -155,12 +166,12 @@ export function NewsPanel({ feed, className }: NewsPanelProps) {
       )}
 
       {failedSources.length > 0 ? (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-rose-100/80 pt-3 text-[10px] text-slate-400">
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-primary/25 pt-3 text-[10px] text-muted-foreground">
           {failedSources.map((s) => (
             <span
               key={s.id}
-              title={s.error}
-              className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-700"
+              title="该来源暂时不可用"
+              className="rounded-full border border-warning/25 bg-warning/10 px-2 py-0.5 text-rating"
             >
               {s.label} 离线
             </span>
@@ -182,37 +193,35 @@ function NewsColumn({
 }) {
   return (
     <div>
-      <h3 className="mb-2 font-serif text-sm font-bold text-rose-800">{title}</h3>
+      <h3 className="mb-2 font-serif text-sm font-bold text-primary">{title}</h3>
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-rose-100 bg-white/50 px-3 py-4 text-xs text-slate-500">
+        <p className="rounded-lg border border-dashed border-primary/25 bg-card px-3 py-4 text-xs text-muted-foreground">
           {emptyHint}
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-border">
           {items.slice(0, 8).map((item) => (
             <li key={item.id}>
               <a
                 href={item.link}
                 target="_blank"
                 rel="noreferrer"
-                className="group block rounded-lg border border-rose-100/80 bg-white/65 px-3 py-2.5 transition-colors hover:border-rose-300 hover:bg-white"
+                className="group block rounded-lg px-2.5 py-2.5 transition-all hover:bg-muted/40"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="line-clamp-2 text-sm font-medium leading-snug text-slate-800 group-hover:text-rose-800">
+                  <span className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">
                     {item.title}
                   </span>
-                  <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
-                  <span className="rounded bg-rose-50 px-1.5 py-px font-medium text-rose-700">
-                    {item.source}
-                  </span>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                  <span className="font-medium text-muted-foreground">{item.source}</span>
                   {item.publishedAt ? (
                     <time dateTime={item.publishedAt}>{formatWhen(item.publishedAt)}</time>
                   ) : null}
                 </div>
                 {item.excerpt ? (
-                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                     {item.excerpt}
                   </p>
                 ) : null}

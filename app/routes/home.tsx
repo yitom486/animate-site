@@ -1,192 +1,317 @@
 import { Link } from "react-router";
 import {
+  ArrowRight,
   BookOpen,
+  CalendarCheck,
   CalendarDays,
-  Clock,
-  Compass,
   Gamepad2,
   Music,
   Sparkles,
   Tv,
+  Video,
 } from "lucide-react";
-import { HeroBackdrop } from "~/components/hero-backdrop";
-import { HeroParticles } from "~/components/hero-particles";
+import type { Route } from "./+types/home";
 import { SiteNav } from "~/components/site-nav";
 import { SearchForm } from "~/components/search-form";
 import { HomeNewsPanel } from "~/components/home-news-panel";
-import { buildListHref } from "~/lib/bangumi/params";
+import { AnimeCard } from "~/components/anime-card";
+import { Button } from "~/components/ui/button";
+import { buildDetailUrl, buildListHref } from "~/lib/bangumi/params";
 import { SUBJECT_TYPE } from "~/lib/bangumi/types";
+import { fetchCalendarSchedule } from "~/lib/bangumi/server/calendar.server";
+import { upstreamFromRequest } from "~/lib/upstream";
+import { getBangumiWeekdayId } from "~/lib/bangumi/calendar-utils";
 
 export function meta() {
   return [
-    { title: "亚域空间 - 亚文化平行传送门" },
+    { title: "亚域空间 · 作品索引与每日放送" },
     {
       name: "description",
-      content: "聚合番剧放送、评分数据、字幕下载，以及游戏与幻想世界入口。",
+      content:
+        "搜索动画、书籍、音乐、游戏与三次元作品，查看每日放送、Bangumi 评分、播放平台与社区日志。",
     },
   ];
 }
 
-export default function Home() {
-  const chronicleLinks = [
-    {
-      label: "放送",
-      desc: "每日新番时间表",
-      to: buildListHref({ type: SUBJECT_TYPE.anime, view: "calendar" }),
-    },
-    {
-      label: "评分",
-      desc: "Bangumi 口碑排序",
-      to: buildListHref({ type: SUBJECT_TYPE.anime, sort: "rank" }),
-    },
-    {
-      label: "外链",
-      desc: "选择番剧后查看资源链接",
-      to: buildListHref({ type: SUBJECT_TYPE.anime, view: "links" }),
-    },
-  ];
+export async function loader({ request }: Route.LoaderArgs) {
+  try {
+    const upstream = upstreamFromRequest(request);
+    const { schedule, total } = await fetchCalendarSchedule(upstream);
+    const todayId = getBangumiWeekdayId(new Date());
+    const todayGroup = schedule.find((d) => d.weekday.id === todayId);
+    const todayItems = todayGroup?.items.slice(0, 12) ?? [];
 
-  const categories = [
-    {
-      type: SUBJECT_TYPE.anime,
-      label: "动画",
-      desc: "每日放送 & 新番推介",
-      icon: Tv,
-      color: "border-rose-200/80 bg-rose-50/70 text-rose-700",
-    },
-    {
-      type: SUBJECT_TYPE.game,
-      label: "游戏",
-      desc: "星象平台 & 游艺纪事",
-      icon: Gamepad2,
-      color: "border-sky-200/80 bg-sky-50/70 text-sky-700",
-    },
-    {
-      type: SUBJECT_TYPE.book,
-      label: "书籍",
-      desc: "轻小漫本 & 墨香记录",
-      icon: BookOpen,
-      color: "border-amber-200/80 bg-amber-50/70 text-amber-700",
-    },
-    {
-      type: SUBJECT_TYPE.music,
-      label: "音乐",
-      desc: "原声旋律 & 乐之幻音",
-      icon: Music,
-      color: "border-rose-200/80 bg-rose-50/70 text-rose-700",
-    },
-  ];
+    // 从全周提取当季高分瞩目新作（去重并按评分降序取前 6 部）
+    const allItems = schedule.flatMap((d) => d.items);
+    const uniqueMap = new Map();
+    for (const item of allItems) {
+      if (!uniqueMap.has(item.id)) {
+        uniqueMap.set(item.id, item);
+      }
+    }
+    const hotItems = Array.from(uniqueMap.values())
+      .filter((item) => (item.rating?.score ?? 0) > 0)
+      .sort((a, b) => (b.rating?.score ?? 0) - (a.rating?.score ?? 0))
+      .slice(0, 6);
+
+    return {
+      todayItems,
+      hotItems,
+      todayCn: todayGroup?.weekday.cn.replace("星期", "周") ?? "今日",
+      totalSchedule: total,
+    };
+  } catch (err) {
+    console.error("[home-loader]", err);
+    return {
+      todayItems: [],
+      hotItems: [],
+      todayCn: "今日",
+      totalSchedule: 0,
+    };
+  }
+}
+
+export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
+  return serverLoader();
+}
+clientLoader.hydrate = true;
+
+const CATEGORIES = [
+  { type: SUBJECT_TYPE.anime, label: "动画", desc: "番剧、剧场版与短片", icon: Tv },
+  { type: SUBJECT_TYPE.book, label: "书籍", desc: "小说、漫画与画集", icon: BookOpen },
+  { type: SUBJECT_TYPE.music, label: "音乐", desc: "原声、专辑与单曲", icon: Music },
+  { type: SUBJECT_TYPE.game, label: "游戏", desc: "主机、PC 与独立作品", icon: Gamepad2 },
+  { type: SUBJECT_TYPE.real, label: "三次元", desc: "电影、剧集与演出", icon: Video },
+];
+
+export default function Home({ loaderData }: Route.ComponentProps) {
+  const { todayItems, hotItems, todayCn, totalSchedule } = loaderData;
+  const emptyListParams = new URLSearchParams();
 
   return (
-    <div className="celadon-page relative min-h-screen text-slate-800 selection:bg-rose-500/20 selection:text-rose-900">
+    <div className="min-h-screen bg-background text-foreground">
       <SiteNav />
+      <main className="relative mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8">
+        {/* 顶部柔和粉调弥散光晕，增强二次元视觉氛围感 */}
+        <div
+          className="pointer-events-none absolute -top-20 left-1/2 -z-10 h-80 w-[640px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
 
-      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <section className="hero-panel relative min-h-[560px] overflow-hidden rounded-xl">
-          <HeroBackdrop className="z-0" />
-          <HeroParticles className="absolute inset-0 z-[1]" />
-          <div className="hero-panel__fade absolute inset-x-0 bottom-0 z-[1]" />
-
-          <div className="relative z-[2] flex min-h-[560px] flex-col justify-center px-5 py-12 sm:px-10 lg:max-w-3xl lg:px-14">
-            <div className="hero-badge mb-5 inline-flex w-fit items-center gap-2 px-3.5 py-1.5 font-serif text-xs font-bold tracking-wider">
-              <Sparkles className="size-3.5 text-fuchsia-500" />
-              平行次元的亚文化传送门
+        <section
+          className="grid gap-10 border-b border-border/70 py-12 sm:py-16 lg:grid-cols-[1.45fr_1fr] lg:gap-14"
+          aria-labelledby="home-title"
+        >
+          <div>
+            <div className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-wider text-primary">
+              <span className="h-px w-6 bg-primary" aria-hidden />
+              作品索引 · 每日放送 · 社区交流
             </div>
-
-            <h1 className="font-serif text-4xl font-black leading-tight tracking-tight text-slate-800 sm:text-5xl lg:text-6xl">
-              青羽凝辉，
-              <span className="hero-title-accent mt-1 block bg-gradient-to-r from-rose-500 via-fuchsia-500 to-sky-400 bg-clip-text text-transparent">
-                开启次元穿梭
-              </span>
+            <h1
+              id="home-title"
+              className="font-serif text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+            >
+              下一部想看的，
+              <br className="hidden sm:block" />
+              从这里找。
             </h1>
-
-            <p className="mt-5 max-w-2xl font-serif text-sm leading-7 text-slate-600 sm:text-base">
-              聚合番剧放送、评分数据、字幕下载与幻想世界入口，以青瓷般的轻盈界面整理你的第二空间。
+            <p className="mt-4 max-w-lg text-sm leading-7 text-muted-foreground">
+              探索口碑新番、查看每日排期、直达正版播放与资源索引。动画、书籍、音乐、游戏，陪伴每个二次元爱好者的追番时光。
             </p>
+            <SearchForm variant="hero" className="mt-7" />
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+              <span className="font-mono text-[11px]">Bangumi 开放数据直连</span>
+              <span className="text-border">·</span>
+              <Link
+                to={buildListHref({ type: SUBJECT_TYPE.anime, sort: "rank" })}
+                className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+              >
+                探索高分神作榜
+                <ArrowRight className="size-3" />
+              </Link>
+            </div>
+          </div>
 
-            <SearchForm variant="hero" className="mt-8" />
+          <aside className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card/85 p-6 shadow-xs backdrop-blur-xs transition-all hover:border-primary/40 hover:shadow-md hover:shadow-primary/10 sm:p-7">
+            <div className="pointer-events-none absolute -right-6 -bottom-6 text-primary/5">
+              <CalendarDays className="size-36" aria-hidden />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-primary">
+                  <CalendarDays className="size-4" />
+                  <span>新番放送手边页</span>
+                </div>
+                <span className="flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-primary">
+                  <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                  今日 {todayItems.length} 部放送
+                </span>
+              </div>
+              <h2 className="mt-4 font-serif text-2xl font-bold tracking-tight text-foreground">
+                今天，有什么更新？
+              </h2>
+              <p className="mt-3 text-xs leading-6 text-muted-foreground">
+                周一至周日实时排期，自动聚合 Bangumi 口碑评分与全网播放直达通道。
+              </p>
+            </div>
+            <div className="mt-6 flex flex-col gap-3">
+              <Button
+                render={
+                  <Link
+                    to={buildListHref({ type: SUBJECT_TYPE.anime, view: "calendar" })}
+                    prefetch="intent"
+                  />
+                }
+                nativeButton={false}
+                className="h-10 w-full justify-center px-4 font-bold shadow-xs shadow-primary/20"
+              >
+                进入每日放送周历
+                <ArrowRight className="size-4" />
+              </Button>
+              <Link
+                to="/anime/blog"
+                prefetch="intent"
+                className="inline-flex items-center justify-center text-xs font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
+              >
+                或者，浏览社区日志
+              </Link>
+            </div>
+          </aside>
+        </section>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+        {/* 今日放送速递板块（封面第一动线） */}
+        {todayItems.length > 0 ? (
+          <section className="border-b border-border/70 py-10" aria-labelledby="today-title">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="flex size-7 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+                    <CalendarCheck className="size-4" />
+                  </div>
+                  <h2
+                    id="today-title"
+                    className="font-serif text-xl font-bold tracking-tight text-foreground"
+                  >
+                    今日放送 · {todayCn}更新
+                  </h2>
+                  <span className="flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-primary">
+                    <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                    LIVE
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  今天共有 {todayItems.length} 部新番更新，点击海报直达详情与播放源
+                </p>
+              </div>
               <Link
                 to={buildListHref({ type: SUBJECT_TYPE.anime, view: "calendar" })}
                 prefetch="intent"
-                className="hero-cta-primary inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-bold transition-transform hover:scale-[1.02]"
+                className="inline-flex items-center gap-1 text-xs font-bold text-primary underline-offset-4 hover:underline"
               >
-                <CalendarDays className="size-4" />
-                查看日历新番
-              </Link>
-              <Link
-                to="/anime"
-                prefetch="intent"
-                className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white/78 px-5 py-3 text-sm font-bold text-rose-800 shadow-sm transition-colors hover:bg-white"
-              >
-                <Compass className="size-4" />
-                进入番剧索引
+                查看完整周历 ({totalSchedule} 部)
+                <ArrowRight className="size-3.5" />
               </Link>
             </div>
-          </div>
-        </section>
 
-        <section className="grid gap-4 lg:grid-cols-12">
-          <div className="celadon-glass rounded-lg p-5 lg:col-span-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <span className="font-mono text-xs font-semibold uppercase tracking-widest text-rose-600">
-                  Today Chronicle
-                </span>
-                <h2 className="mt-1 font-serif text-xl font-bold text-slate-800">今日星历速览</h2>
-              </div>
-              <Clock className="size-5 text-rose-600" />
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              {chronicleLinks.map(({ label, desc, to }) => (
-                <Link
-                  key={label}
-                  to={to}
-                  prefetch="intent"
-                  className="rounded-lg border border-rose-100/80 bg-white/65 p-4 transition-colors hover:border-rose-300 hover:bg-white/90"
-                >
-                  <span className="font-serif text-base font-bold text-rose-800">{label}</span>
-                  <p className="mt-1 text-xs text-slate-500">{desc}</p>
-                </Link>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {todayItems.slice(0, 6).map((item, idx) => (
+                <AnimeCard
+                  key={item.id}
+                  item={item}
+                  to={buildDetailUrl(item.id, emptyListParams)}
+                  priority={idx < 3}
+                />
               ))}
             </div>
-          </div>
+          </section>
+        ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:col-span-7">
-            {categories.map((c) => {
-              const Icon = c.icon;
-              return (
-                <Link
-                  key={c.type}
-                  to={buildListHref({ type: c.type })}
-                  prefetch="intent"
-                  className={`group flex items-center gap-4 rounded-lg border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/90 ${c.color}`}
-                >
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-white/76 shadow-inner">
-                    <Icon className="size-5 transition-transform duration-300 group-hover:scale-110" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block font-serif text-base font-bold text-slate-800">
-                      {c.label}
+        {/* 当季高分瞩目板块 */}
+        {hotItems.length > 0 ? (
+          <section className="border-b border-border/70 py-10" aria-labelledby="hot-title">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="flex size-7 items-center justify-center rounded-lg border border-warning/30 bg-warning/10 text-rating">
+                    <Sparkles className="size-4" />
+                  </div>
+                  <h2
+                    id="hot-title"
+                    className="font-serif text-xl font-bold tracking-tight text-foreground"
+                  >
+                    当季瞩目 · 口碑精选
+                  </h2>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  正在热播的本季高分新番，随社区口碑追番不踩雷
+                </p>
+              </div>
+              <Link
+                to={buildListHref({ type: SUBJECT_TYPE.anime, sort: "rank" })}
+                prefetch="intent"
+                className="inline-flex items-center gap-1 text-xs font-bold text-primary underline-offset-4 hover:underline"
+              >
+                查看全站高分榜
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {hotItems.map((item, idx) => (
+                <AnimeCard
+                  key={item.id}
+                  item={item}
+                  to={buildDetailUrl(item.id, emptyListParams)}
+                  rank={idx + 1}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* 按类型探索 */}
+        <section className="py-10" aria-labelledby="browse-title">
+          <div className="mb-5 flex items-baseline justify-between gap-3">
+            <div>
+              <h2 id="browse-title" className="font-serif text-base font-bold text-foreground">
+                按类型探索
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">从喜欢的主题开启漫游</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {CATEGORIES.map(({ type, label, desc, icon: Icon }) => (
+              <Link
+                key={type}
+                to={buildListHref({ type })}
+                prefetch="intent"
+                className="group flex flex-col justify-between rounded-xl border border-border/70 bg-card/60 p-4 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-card hover:shadow-md hover:shadow-primary/5"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                    <Icon className="size-4.5" aria-hidden />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block font-serif text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                      {label}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs text-slate-500">{c.desc}</span>
-                  </span>
-                </Link>
-              );
-            })}
+                    <span className="mt-0.5 block truncate font-mono text-[11px] text-muted-foreground">
+                      {desc}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
 
         <HomeNewsPanel />
       </main>
 
-      <footer className="relative z-10 border-t border-white/70 bg-white/42 py-6 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 text-center text-xs text-slate-500 sm:px-6 lg:flex-row lg:px-8">
-          <span className="font-serif font-bold tracking-wider text-slate-700">
-            亚域空间 · Celadon Portal
-          </span>
-          <span className="font-mono">© 2026 Built with React Router v7</span>
+      <footer className="border-t border-border/70">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-6 text-xs text-muted-foreground sm:flex-row sm:justify-between sm:px-8">
+          <span className="font-mono text-[11px]">亚域空间 · 记录与发现</span>
+          <span>作品资料来自 Bangumi，播放与资源链接由第三方提供。</span>
         </div>
       </footer>
     </div>

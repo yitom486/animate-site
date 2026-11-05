@@ -6,20 +6,34 @@ import {
   Scripts,
   ScrollRestoration,
   useNavigation,
+  useRouteLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import { HamsterLoader } from "./components/hamster-loader";
+import { ThemeProvider, themeFromCookie, themeInitScript } from "./lib/theme";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
 
+export function loader({ request }: Route.LoaderArgs) {
+  return { theme: themeFromCookie(request.headers.get("Cookie")) };
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  const theme = useRouteLoaderData<typeof loader>("root")?.theme ?? "system";
   return (
-    <html lang="zh-CN">
+    <html
+      lang="zh-CN"
+      className={theme === "dark" ? "dark" : undefined}
+      data-theme={theme}
+      suppressHydrationWarning
+    >
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript(theme) }} />
         <Meta />
         <Links />
       </head>
@@ -32,15 +46,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
 
   return (
-    <>
+    <ThemeProvider initialTheme={loaderData.theme}>
       <Outlet />
       <HamsterLoader show={isLoading} />
-    </>
+    </ThemeProvider>
   );
 }
 

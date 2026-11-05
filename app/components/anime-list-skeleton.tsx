@@ -4,22 +4,30 @@ const PLACEHOLDERS = Array.from({ length: 24 }, (_, i) => i);
 
 export function AnimeListSkeleton() {
   return (
-    <div className="celadon-glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg">
-      <div className="flex shrink-0 items-baseline gap-2 border-b border-rose-100/80 px-4 py-4">
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="h-4 w-20" />
+    <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card/60 backdrop-blur-xs">
+      <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-5 py-4">
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="h-6 w-28 rounded-md" />
+          <Skeleton className="h-4 w-16 rounded-md" />
+        </div>
+        <Skeleton className="h-7 w-20 rounded-lg" />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
           {PLACEHOLDERS.map((i) => (
             <div
               key={i}
-              className="overflow-hidden rounded-lg border border-white/75 bg-white/62 shadow-sm"
+              className="flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs"
             >
-              <Skeleton className="aspect-[2/3] w-full rounded-none" />
-              <div className="space-y-1 px-2 py-1.5">
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-2.5 w-2/3" />
+              <div className="relative aspect-[2/3] w-full overflow-hidden bg-muted">
+                <Skeleton className="size-full rounded-none" />
+                <div className="absolute top-2 left-2">
+                  <Skeleton className="h-4 w-7 rounded-md" />
+                </div>
+              </div>
+              <div className="space-y-2 p-3">
+                <Skeleton className="h-3.5 w-full rounded-md" />
+                <Skeleton className="h-2.5 w-3/5 rounded-md" />
               </div>
             </div>
           ))}

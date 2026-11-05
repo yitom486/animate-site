@@ -1,3 +1,4 @@
+import { Button } from "~/components/ui/button";
 import { AnimeCard } from "~/components/anime-card";
 import { cn } from "~/lib/utils";
 import { buildDetailUrl } from "~/lib/bangumi/params";
@@ -37,33 +38,41 @@ export function AnimeWeekOverview({
             <section
               key={day.weekday.id}
               className={cn(
-                "overflow-hidden rounded-lg border bg-white/52 shadow-sm",
-                isSelected ? "border-rose-300 ring-2 ring-rose-500/15" : "border-white/80",
+                "overflow-hidden rounded-xl border bg-card shadow-xs transition-all duration-300",
+                isSelected
+                  ? "border-primary/50 shadow-md shadow-primary/10 ring-2 ring-primary/40"
+                  : "border-border/70",
               )}
             >
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={() => onSelectDay(day.weekday.id)}
                 className={cn(
-                  "flex w-full items-center justify-between border-b px-4 py-3 text-left transition-colors",
+                  "flex w-full items-center justify-between border-b px-5 py-3.5 text-left transition-colors",
                   isSelected
-                    ? "border-rose-300 bg-gradient-to-r from-rose-300 to-sky-300 text-slate-700"
-                    : "border-rose-100 bg-white/70 text-slate-700 hover:bg-rose-50 hover:text-rose-800",
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border/70 bg-card text-foreground hover:bg-muted/40 hover:text-primary",
                 )}
               >
                 <div>
-                  <div className="font-serif text-base font-bold">
-                    {day.weekday.cn.replace("星期", "周")}
+                  <div className="flex items-center gap-1.5 font-serif text-base font-bold">
+                    <span>{day.weekday.cn.replace("星期", "周")}</span>
                     {isToday ? (
-                      <span className="ml-1 font-mono text-[10px] opacity-85">今天</span>
+                      <span className="flex items-center gap-1 rounded-md border border-primary/25 bg-primary/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary">
+                        <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                        今天
+                      </span>
                     ) : null}
                   </div>
-                  <div className="mt-0.5 font-mono text-[10px] opacity-80">{day.weekday.en}</div>
+                  <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                    {day.weekday.en}
+                  </div>
                 </div>
-                <div className="rounded-lg border border-white/50 bg-white/20 px-3 py-1.5 font-mono text-xs font-bold">
+                <div className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-xs font-bold text-primary">
                   {day.items.length} 部
                 </div>
-              </button>
+              </Button>
 
               <div className="p-4">
                 {day.items.length ? (
@@ -79,7 +88,7 @@ export function AnimeWeekOverview({
                     ))}
                   </div>
                 ) : (
-                  <p className="py-8 text-center text-[11px] text-slate-400">暂无</p>
+                  <p className="py-8 text-center text-[11px] text-muted-foreground">暂无</p>
                 )}
               </div>
             </section>

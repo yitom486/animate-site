@@ -56,8 +56,8 @@ export function SearchForm({
         className={cn(
           "flex min-w-0 items-center gap-1.5 sm:gap-2",
           isHero
-            ? "celadon-glass-strong h-14 rounded-lg px-2"
-            : "h-10 rounded-lg border border-rose-100 bg-white/70 pl-1 pr-1",
+            ? "h-14 rounded-lg border border-border bg-card px-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
+            : "h-10 rounded-lg border border-border bg-card px-1 focus-within:border-ring",
         )}
       >
         <label className="sr-only" htmlFor={isHero ? "hero-search-q" : "nav-search-q"}>
@@ -68,7 +68,7 @@ export function SearchForm({
             size={isHero ? "default" : "sm"}
             aria-label="搜索类型"
             className={cn(
-              "shrink-0 border-0 bg-rose-50/80 text-rose-800 shadow-none hover:bg-rose-50 focus-visible:ring-rose-500/20",
+              "shrink-0 border-0 bg-muted text-foreground shadow-none hover:bg-accent",
               isHero
                 ? "h-10 min-w-24 px-3"
                 : "h-8 min-w-[4.5rem] px-1.5 text-[11px] sm:min-w-20 sm:px-2 sm:text-xs",
@@ -85,7 +85,7 @@ export function SearchForm({
           </SelectContent>
         </Select>
 
-        {!isHero ? null : <Search className="size-5 shrink-0 text-rose-600" aria-hidden />}
+        {!isHero ? null : <Search className="size-5 shrink-0 text-primary" aria-hidden />}
         <Input
           id={isHero ? "hero-search-q" : "nav-search-q"}
           name="q"
@@ -98,15 +98,12 @@ export function SearchForm({
           className={cn(
             "min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent",
             isHero
-              ? "h-10 text-sm text-slate-800 placeholder:text-slate-400"
-              : "h-8 text-sm text-slate-800 placeholder:text-slate-400",
+              ? "h-10 text-sm text-foreground placeholder:text-muted-foreground"
+              : "h-8 text-sm text-foreground placeholder:text-muted-foreground",
           )}
         />
         {isHero ? (
-          <Button
-            type="submit"
-            className="h-9 gap-1.5 rounded-lg bg-gradient-to-r from-rose-300 to-sky-300 px-4 text-xs font-bold text-slate-700 shadow-md shadow-rose-900/5 hover:from-rose-200 hover:to-sky-200"
-          >
+          <Button type="submit" className="h-10 gap-1.5 px-4 text-sm">
             搜索
             <ArrowRight className="size-3.5" />
           </Button>
@@ -116,7 +113,7 @@ export function SearchForm({
             size="icon-sm"
             variant="ghost"
             aria-label="搜索"
-            className="size-8 shrink-0 rounded-lg text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+            className="size-8 shrink-0 rounded-lg text-primary hover:bg-accent hover:text-primary"
           >
             <Search className="size-4" />
           </Button>
