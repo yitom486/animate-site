@@ -210,28 +210,29 @@ export async function newsArticleUpsertStatements(
       article.publishedAt,
       now,
       now,
+      article.version ?? null,
     ]),
   );
-  // 每条 SQL 最多 100 个参数；11 列时按 8 篇合写（88 参数）。
+  // 每条 SQL 最多 100 个参数；12 列时按 8 篇合写（96 参数）。
   const statements = [];
   for (let offset = 0; offset < values.length; offset += 8) {
     const chunk = values.slice(offset, offset + 8);
     statements.push(
       db
-        .prepare(`INSERT INTO news_articles (id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at)
-          VALUES ${chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",")}
+        .prepare(`INSERT INTO news_articles (id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at, push_version)
+          VALUES ${chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",")}
           ON CONFLICT(guid) DO UPDATE SET
             channel=CASE
-              WHEN excluded.published_at < news_articles.published_at THEN news_articles.channel
+              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.channel
               ELSE excluded.channel END,
             title=CASE
-              WHEN excluded.published_at < news_articles.published_at THEN news_articles.title
+              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.title
               ELSE excluded.title END,
             source_url=CASE
-              WHEN excluded.published_at < news_articles.published_at THEN news_articles.source_url
+              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.source_url
               ELSE excluded.source_url END,
             content_html=CASE
-              WHEN excluded.published_at < news_articles.published_at THEN news_articles.content_html
+              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.content_html
               WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
               THEN excluded.content_html
               WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
@@ -239,7 +240,7 @@ export async function newsArticleUpsertStatements(
               WHEN length(excluded.content_html) >= length(news_articles.content_html)
               THEN excluded.content_html ELSE news_articles.content_html END,
             excerpt=CASE
-              WHEN excluded.published_at < news_articles.published_at THEN news_articles.excerpt
+              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.excerpt
               WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
               THEN excluded.excerpt
               WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
@@ -247,13 +248,18 @@ export async function newsArticleUpsertStatements(
               WHEN length(excluded.excerpt) >= length(news_articles.excerpt)
               THEN excluded.excerpt ELSE news_articles.excerpt END,
             image_url=CASE
-              WHEN excluded.published_at < news_articles.published_at
+              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version))
               THEN COALESCE(news_articles.image_url, excluded.image_url)
               ELSE COALESCE(excluded.image_url, news_articles.image_url) END,
             published_at=MAX(excluded.published_at, news_articles.published_at),
             updated_at=CASE
-              WHEN excluded.published_at < news_articles.published_at THEN news_articles.updated_at
-              ELSE excluded.updated_at END`)
+              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.updated_at
+              ELSE excluded.updated_at END,
+            push_version=CASE
+              WHEN excluded.push_version IS NULL THEN news_articles.push_version
+              WHEN news_articles.push_version IS NULL THEN excluded.push_version
+              WHEN excluded.push_version < news_articles.push_version THEN news_articles.push_version
+              ELSE excluded.push_version END`)
         .bind(...chunk.flat()),
     );
   }

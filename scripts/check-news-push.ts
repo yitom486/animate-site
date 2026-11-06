@@ -33,6 +33,11 @@ for (const coverUrl of [null, undefined, ""]) {
   });
   assert.equal(withMissingCover.articles.length, 1);
 }
+assert.equal(parseNewsPush({ items: [{ ...item, version: 2 }] }).articles[0]!.version, 2);
+assert.equal(parseNewsPush({ items: [{ ...item, version: "7" }] }).articles[0]!.version, 7);
+assert.throws(() => parseNewsPush({ items: [{ ...item, version: -1 }] }));
+assert.throws(() => parseNewsPush({ items: [{ ...item, version: 1.5 }] }));
+assert.throws(() => parseNewsPush({ items: [{ ...item, version: "x" }] }));
 const env = { NEWS_PUSH_TOKEN: "test-token" } as Parameters<typeof handleNewsPush>[1];
 assert.equal(
   (await handleNewsPush(new Request("https://example.com/feeds/push", { method: "POST" }), env))
@@ -53,5 +58,5 @@ assert.equal(
   422,
 );
 console.log(
-  "News push checks passed: validation, HTML sanitization, Markdown, retention, deduplication, auth.",
+  "News push checks passed: validation, HTML sanitization, Markdown, retention, deduplication, version, auth.",
 );

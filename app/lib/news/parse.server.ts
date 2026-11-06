@@ -14,6 +14,8 @@ export type ParsedArticle = {
   excerpt: string;
   imageUrl?: string;
   publishedAt: number;
+  /** Finished-push revision; higher wins when publishedAt is unchanged. */
+  version?: number;
 };
 
 function isHttpsUrl(value: string) {

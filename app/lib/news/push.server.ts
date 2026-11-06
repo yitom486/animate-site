@@ -50,6 +50,19 @@ export function parseNewsPush(value: unknown, now = Date.now()) {
         : Date.parse(field(row, "publishedAt", 100, true));
     if (!Number.isFinite(publishedAt) || publishedAt < 0 || publishedAt > now + 86400000)
       throw new Error("Invalid publishedAt");
+    // Optional monotonic revision (integer or numeric string). Same publishedAt + lower version must not clobber.
+    let version: number | undefined;
+    if (row.version !== undefined && row.version !== null && row.version !== "") {
+      const raw =
+        typeof row.version === "number"
+          ? row.version
+          : typeof row.version === "string"
+            ? Number(row.version.trim())
+            : NaN;
+      if (!Number.isInteger(raw) || raw < 0 || raw > Number.MAX_SAFE_INTEGER)
+        throw new Error("Invalid version");
+      version = raw;
+    }
     const html = field(row, "contentHtml", MAX_BYTES);
     const markdown = field(row, "contentMarkdown", MAX_BYTES);
     const excerpt = field(row, "excerpt", 2000);
@@ -71,6 +84,7 @@ export function parseNewsPush(value: unknown, now = Date.now()) {
       contentHtml,
       excerpt: makeExcerpt(excerpt ? sanitizeNewsHtml(excerpt) : contentHtml),
       imageUrl,
+      ...(version !== undefined ? { version } : {}),
     });
   }
   return { articles, received: body.items.length, ...(batchId ? { batchId } : {}) };
@@ -111,16 +125,23 @@ async function readJson(request: Request) {
   }
 }
 
-/** Skip payloads older than the stored publishedAt for the same guid (old version must not clobber new). */
+/** Skip older publishedAt, or same/newer clock with a lower push revision. */
 async function dropStalePushArticles(db: D1Database, articles: ParsedArticle[]) {
   if (!articles.length) return articles;
   const kept: ParsedArticle[] = [];
   for (const article of articles) {
     const row = await db
-      .prepare("SELECT published_at FROM news_articles WHERE guid = ?")
+      .prepare("SELECT published_at, push_version FROM news_articles WHERE guid = ?")
       .bind(article.guid)
-      .first<{ published_at: number }>();
+      .first<{ published_at: number; push_version: number | null }>();
     if (row && article.publishedAt < row.published_at) continue;
+    if (
+      row &&
+      article.version !== undefined &&
+      row.push_version != null &&
+      article.version < row.push_version
+    )
+      continue;
     kept.push(article);
   }
   return kept;

@@ -135,23 +135,25 @@ Authentication: `Authorization: Bearer <NEWS_PUSH_TOKEN>`. Set the new Worker se
 `bunx wrangler secret put NEWS_PUSH_TOKEN --config workers/news-sync/wrangler.toml`.
 Keep the value in private sender configuration, never in Git, URLs, or chat.
 
-JSON body: `{ "batchId": "optional-reference", "items": [{ "channel": "anime", "guid": "stable-id", "title": "Title", "sourceUrl": "https://example.com/article", "publishedAt": "2026-11-06T10:00:00Z", "contentMarkdown": "Finished article" }] }`.
+JSON body: `{ "batchId": "optional-reference", "items": [{ "channel": "anime", "guid": "stable-id", "title": "Title", "sourceUrl": "https://example.com/article", "publishedAt": "2026-11-06T10:00:00Z", "version": 3, "contentMarkdown": "Finished article" }] }`.
 Each request contains 1–50 items and at most 2 MiB. `channel` is `anime` or `events`;
-`publishedAt` is an ISO date string or Unix milliseconds. Optional fields: `coverUrl`
-(HTTPS only), `contentHtml`, `contentMarkdown`, `excerpt`. At least one nonempty content
-field is required. HTML is sanitized; Markdown rendered by existing news helpers.
-All items are validated before writes. Invalid auth returns 401; invalid payload 422;
-success 200 with `{ok,received,upserted,skipped,batchId?}`; storage failure 503 (retry).
-Expired articles and duplicate GUIDs within a batch are skipped. Existing GUIDs use
-exactly the RSS upsert logic (including richer-content preservation); repeated requests
-are safe by GUID. `batchId` is a correlation echo, not a separate deduplication ledger.
-The original RSS cron remains enabled as reconciliation/fallback. This endpoint writes
-to the existing production `NEWS_DB`; no Pages rebuild is required.
+`publishedAt` is an ISO date string or Unix milliseconds. Optional `version` is a
+non-negative integer (or numeric string) revision for the same guid; higher wins when
+`publishedAt` is unchanged so an older retry cannot overwrite a newer edit. Optional
+fields: `coverUrl` (HTTPS only), `contentHtml`, `contentMarkdown`, `excerpt`. At least
+one nonempty content field is required. HTML is sanitized; Markdown rendered by existing
+news helpers. All items are validated before writes. Invalid auth returns 401; invalid
+payload 422; success 200 with `{ok,received,upserted,skipped,staleSkipped,batchId?}`;
+storage failure 503 (retry). Expired articles and duplicate GUIDs within a batch are
+skipped. Existing GUIDs use the RSS upsert path plus `publishedAt` / `version` guards;
+repeated requests are safe by GUID. `batchId` is a correlation echo, not a separate
+deduplication ledger. The original RSS cron remains enabled as reconciliation/fallback.
+This endpoint writes to the existing production `NEWS_DB`.
 
 ## 下游成品推送契约（网站端）
 
 1. **可靠接收**：`POST /feeds/push` 仅在 D1 写入成功后返回 200；失败 503。
-2. **去重更新**：按稳定 `guid` 幂等；同 guid 若推送的 `publishedAt` 早于库内版本则跳过，避免旧稿盖新稿。
+2. **去重更新**：按稳定 `guid` 幂等；同 guid 若 `publishedAt` 更早，或 `publishedAt` 不更早但 `version` 低于库内 `push_version`，则跳过，避免旧稿/旧修订盖新。
 3. **完整展示**：无封面稿可入库展示；`coverUrl` 可为 null/省略。
 4. **及时刷新**：资讯 API CDN `s-maxage` 约 60 秒；可选配置 `CF_ZONE_ID` + `CF_CACHE_PURGE_TOKEN` 在推送成功后按前缀清 ` /api/news` 与 `/news`。
 5. **RSS 兜底**：`celadon-news-sync` 仍每 15 分钟拉 RSS，与 push 共用 GUID upsert / source_url 合并。
