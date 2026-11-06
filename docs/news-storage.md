@@ -21,12 +21,20 @@
 
 同步时去重 URL，按源独立保存 ETag（`news_feeds.id` 为 `anime`/`events`，或多源时为 `anime:<hash>` / `events:<hash>`）。文章按规范化 `source_url` 跨源合并，保留封面与更长正文。共享配置、Git 和浏览器产物不包含真实值。动漫每 15 分钟、漫展每小时。网站请求只读 D1，不需要这些 Secrets。预览数据库以首次导入的数据验证，不运行生产定时任务。
 
+## 上游流水线（采集 / 润色分工）
+
+- **润色成品（主源）**：接收端发布的 `https://tomy.wutsuu0577.sbs/feeds/{anime,events,all}.xml`（资讯摘要 + 背景与解读 HTML）。
+- **采集端**：`celadon-news-feed/rss-pipeline` 只爬原文并 `POST /feeds/ingest`；不写 D1、不生成摘要。令牌仅配置在采集机 `ANIME_INGEST_TOKEN`（与接收端 `upstream-auth.env` 对齐）。
+- **Bot 撰稿 Pages feed**（`yitom486.github.io/celadon-news-feed/*.xml`）为可选第二源 / 兜底，不是主改写路径。
+
 推荐双订示例（旧聚合地址勿写入仓库，仅放 Secrets）：
 
 ```text
-NEWS_ANIME_RSS_URLS=https://yitom486.github.io/celadon-news-feed/anime.xml,<OLD_ANIME_HTTPS>
-NEWS_EVENTS_RSS_URLS=https://yitom486.github.io/celadon-news-feed/events.xml,<OLD_EVENTS_HTTPS>
+NEWS_ANIME_RSS_URLS=<TOMY_ANIME_HTTPS>,https://yitom486.github.io/celadon-news-feed/anime.xml
+NEWS_EVENTS_RSS_URLS=<TOMY_EVENTS_HTTPS>,https://yitom486.github.io/celadon-news-feed/events.xml
 ```
+
+（`TOMY_*` 为接收端成品 RSS，仅放 Secrets；Pages 源可选。）
 
 ## 数据与失败处理
 
