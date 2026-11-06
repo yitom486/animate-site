@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { buildBilibiliEmbedUrl, parseBilibiliMediaId } from "../app/lib/bilibili/player";
 import { matchBilibiliBangumi, resolveBilibiliMedia } from "../app/lib/bilibili/search";
+import { loader as playbackLoader } from "../app/routes/api/anime.bilibili.$id";
 
 const embed = new URL(buildBilibiliEmbedUrl({ episodeId: 68540, seasonId: 1565 }));
 assert.equal(embed.origin, "https://player.bilibili.com");
@@ -34,6 +35,20 @@ globalThis.fetch = (async (input: string | URL | Request) => {
 }) as typeof fetch;
 
 try {
+  // Cloudflare 出口完全不可用时，已发布的分集资料仍可经真实 loader 返回。
+  respond = () => {
+    throw new Error("upstream blocked");
+  };
+  const saved = await playbackLoader({
+    params: { id: "326" },
+    request: new Request("https://example.com/api/anime/bilibili/326?mediaId=1565"),
+    context: {},
+  } as Parameters<typeof playbackLoader>[0]);
+  assert.equal(saved.status, "matched");
+  assert.equal(saved.match?.seasonId, 1565);
+  assert.equal(saved.match?.episodes.length, 26);
+  assert.equal(requests.length, 0, "已同步的目录不能继续依赖上游 API");
+
   // mediaId 和 seasonId 不相等；只有 episodeId 也能生成番剧 iframe。
   respond = (url) =>
     url.pathname === "/pgc/review/user"
