@@ -23,6 +23,7 @@ export function readBilibiliCatalog(mediaId: number): BilibiliMatch | null {
   return {
     seasonId: entry.seasonId,
     title: entry.title,
+    updatedAt: entry.updatedAt,
     seasonUrl: buildBilibiliBangumiUrl(entry.seasonId),
     pageUrl: episodes[0].pageUrl,
     episodes,

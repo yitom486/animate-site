@@ -39,11 +39,12 @@ try {
   respond = () => {
     throw new Error("upstream blocked");
   };
-  const saved = await playbackLoader({
+  const savedResponse = await playbackLoader({
     params: { id: "326" },
     request: new Request("https://example.com/api/anime/bilibili/326?mediaId=1565"),
     context: {},
   } as Parameters<typeof playbackLoader>[0]);
+  const saved = savedResponse instanceof Response ? await savedResponse.json() : savedResponse;
   assert.equal(saved.status, "matched");
   assert.equal(saved.match?.seasonId, 1565);
   assert.equal(saved.match?.episodes.length, 26);

@@ -20,11 +20,14 @@ export type BilibiliMatch = {
   /** 默认打开的分集页 */
   pageUrl: string;
   episodes: BilibiliEpisode[];
+  updatedAt?: string;
+  stale?: boolean;
 };
 
-export type BilibiliMatchStatus = "matched" | "empty" | "blocked" | "unavailable";
+export type BilibiliMatchStatus = "matched" | "empty" | "blocked" | "unavailable" | "rate_limited";
 
 export type BilibiliMatchResponse = {
   match: BilibiliMatch | null;
   status: BilibiliMatchStatus;
+  retryAfterSeconds?: number;
 };

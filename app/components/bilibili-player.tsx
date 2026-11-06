@@ -33,6 +33,7 @@ const HINT: Record<Exclude<BilibiliMatchStatus, "matched">, string> = {
   empty: "暂未找到对应的 B 站番剧资料。可用下方搜索页手动查找。",
   blocked: "B 站资料接口当前被风控拦截，暂时无法加载分集。可前往 B 站官方页面观看，或稍后重试。",
   unavailable: "暂时无法获取 B 站分集资料。可前往 B 站观看，或稍后重试。",
+  rate_limited: "请求较频繁，请稍后重试。也可以直接前往 B 站观看。",
 };
 
 function episodeTooltip(ep: BilibiliEpisode): string {
@@ -66,6 +67,12 @@ function MatchedPanel({ match }: { match: BilibiliMatch }) {
         已匹配：{match.title}
         <span className="text-muted-foreground"> · 换集后播放器会重新加载</span>
       </p>
+
+      {match.stale ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          当前展示历史缓存资料。
+        </p>
+      ) : null}
 
       {selected?.embedUrl ? (
         <div className="overflow-hidden rounded-lg border border-border bg-player">
@@ -146,11 +153,13 @@ function SearchFallback({
   hint,
   onRetry,
   retryLabel,
+  retryDisabled,
 }: {
   keyword: string;
   hint: string;
   onRetry?: () => void;
   retryLabel: string;
+  retryDisabled?: boolean;
 }) {
   const searchUrl = THIRD_PARTY_SEARCH.online.build(keyword);
   return (
@@ -170,6 +179,7 @@ function SearchFallback({
             variant="ghost"
             type="button"
             onClick={onRetry}
+            disabled={retryDisabled}
             className="text-xs font-bold text-muted-foreground hover:text-primary hover:underline"
           >
             {retryLabel}
@@ -185,6 +195,13 @@ export function BilibiliPlayer({ id, fallbackKeyword, mediaId: rawMediaId }: Bil
   const cacheKey = `${id}:${mediaId ?? "search"}`;
   const [state, setState] = useState<PanelState>({ kind: "loading" });
   const [nonce, setNonce] = useState(0);
+  const [retryUntil, setRetryUntil] = useState(0);
+
+  useEffect(() => {
+    if (!retryUntil) return;
+    const timer = window.setTimeout(() => setRetryUntil(0), Math.max(0, retryUntil - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [retryUntil]);
 
   useEffect(() => {
     const cached = nonce === 0 ? clientCache.get(cacheKey) : undefined;
@@ -201,11 +218,12 @@ export function BilibiliPlayer({ id, fallbackKeyword, mediaId: rawMediaId }: Bil
     const query = mediaId ? `?${new URLSearchParams({ mediaId: String(mediaId) })}` : "";
     fetch(`/api/anime/bilibili/${id}${query}`, { signal: ac.signal })
       .then((res) => {
-        if (!res.ok) throw new Error(String(res.status));
+        // API 的 404/429/503 仍带规范状态，不能全都折叠成网络故障。
         return res.json() as Promise<BilibiliMatchResponse>;
       })
       .then((data) => {
         if (ac.signal.aborted) return;
+        setRetryUntil(data.retryAfterSeconds ? Date.now() + data.retryAfterSeconds * 1000 : 0);
         if (data.status === "matched" || data.status === "empty") clientCache.set(cacheKey, data);
         if (data.match) setState({ kind: "matched", match: data.match });
         else setState({ kind: "idle", status: data.status === "matched" ? "empty" : data.status });
@@ -219,6 +237,7 @@ export function BilibiliPlayer({ id, fallbackKeyword, mediaId: rawMediaId }: Bil
   }, [id, mediaId, cacheKey, nonce]);
 
   const retry = () => {
+    if (Date.now() < retryUntil) return;
     clientCache.delete(cacheKey);
     setNonce((n) => n + 1);
   };
@@ -237,6 +256,7 @@ export function BilibiliPlayer({ id, fallbackKeyword, mediaId: rawMediaId }: Bil
               keyword={fallbackKeyword}
               hint={HINT[state.status]}
               retryLabel={mediaId ? "重试加载分集" : "重试自动匹配"}
+              retryDisabled={retryUntil > Date.now()}
               onRetry={state.status === "empty" ? undefined : retry}
             />
           )}
