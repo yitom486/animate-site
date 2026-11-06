@@ -83,6 +83,28 @@ export function shouldRevalidate({
   return currentParams.id !== nextParams.id;
 }
 
+export function HydrateFallback() {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-end gap-2 border-b border-border/70 p-3">
+        <div className="h-8 w-8 animate-pulse rounded-lg bg-muted" />
+      </div>
+      <div className="flex-1 space-y-4 p-4 animate-pulse">
+        <div className="flex gap-4">
+          <div className="h-44 w-32 shrink-0 rounded-xl bg-muted" />
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="h-6 w-3/4 rounded-md bg-muted" />
+            <div className="h-4 w-1/2 rounded-md bg-muted" />
+            <div className="h-4 w-40 rounded-md bg-muted" />
+            <div className="h-4 w-32 rounded-md bg-muted" />
+          </div>
+        </div>
+        <div className="h-28 w-full rounded-xl bg-muted" />
+      </div>
+    </div>
+  );
+}
+
 export default function AnimeDetailRoute({ loaderData }: Route.ComponentProps) {
   const { subject, staff, episodes } = loaderData;
   const { isMobile, expanded, setExpanded } = useOutletContext<AnimeOutletContext>();
@@ -126,11 +148,11 @@ export default function AnimeDetailRoute({ loaderData }: Route.ComponentProps) {
           >
             {expanded ? (
               <>
-                <Minimize2 className="size-3.5 text-primary" /> 收起
+                <Minimize2 className="size-3.5 text-primary" /> 退出全屏
               </>
             ) : (
               <>
-                <Maximize2 className="size-3.5 text-primary" /> 展开详情
+                <Maximize2 className="size-3.5 text-primary" /> 展开全屏
               </>
             )}
           </button>

@@ -27,9 +27,61 @@ function isHttpsUrl(value: string) {
   }
 }
 
+/** 社交分享按钮 / SNS 小图标 / 链接卡片缩略图，不是报道配图。 */
+const SHARE_IMAGE_HINT =
+  /facebook|twitter|x\.com|line\.me|hatena|googleplus|google\+?plus|linkedin|pinterest|reddit|whatsapp|telegram|weibo|weixin|share[_-]?button|sharer|bookmark|sns[_/-]|\/share\/|\/social\/|icon[_-]?share/i;
+
+const PLACEHOLDER_IMAGE_HINT =
+  /(?:^|[\\/_-])(?:no[_-]?image|noimage|placeholder|spacer|blank|1x1|pixel)(?:[\\/_.-]|$)/i;
+
+function parsePositiveInt(value: string | undefined) {
+  if (!value) return undefined;
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+/** Drop share widgets, 1x1 trackers, and "no image" placeholders. */
+export function shouldDropNewsImage(attrs: {
+  src?: string;
+  width?: string;
+  height?: string;
+  alt?: string;
+}) {
+  const src = (attrs.src ?? "").trim();
+  if (!src) return true;
+  let pathname = src;
+  try {
+    pathname = new URL(src).pathname;
+  } catch {
+    // keep raw src for filename checks
+  }
+  const haystack = `${src} ${pathname} ${attrs.alt ?? ""}`;
+  if (SHARE_IMAGE_HINT.test(haystack) || PLACEHOLDER_IMAGE_HINT.test(haystack)) return true;
+  const width = parsePositiveInt(attrs.width);
+  const height = parsePositiveInt(attrs.height);
+  if ((width != null && width <= 48) || (height != null && height <= 48)) return true;
+  if (width != null && height != null && width <= 64 && height <= 64) return true;
+  return false;
+}
+
+/** Remove empty anchors / figures left after dropping share images. */
+function cleanupNewsHtmlArtifacts(html: string) {
+  let out = html;
+  let prev = "";
+  while (out !== prev) {
+    prev = out;
+    out = out
+      .replace(/<span(?:\s[^>]*)?>\s*<\/span>/gi, "")
+      .replace(/<a\b[^>]*>\s*<\/a>/gi, "")
+      .replace(/<figure\b[^>]*>\s*(?:<figcaption\b[^>]*>[\s\S]*?<\/figcaption>)?\s*<\/figure>/gi, "")
+      .replace(/<p\b[^>]*>\s*<\/p>/gi, "");
+  }
+  return out.replace(/(?:\s*<br\s*\/?>\s*){3,}/gi, "<br /><br />").trim();
+}
+
 /** 资讯正文消毒：镜像社区日志白名单，额外允许 figure / figcaption；图片仅 https。 */
 export function sanitizeNewsHtml(html: string) {
-  return sanitizeHtml(html, {
+  const sanitized = sanitizeHtml(html, {
     allowedTags: [
       "p",
       "br",
@@ -87,7 +139,9 @@ export function sanitizeNewsHtml(html: string) {
       },
       img: (_tag, attrs) => {
         const src = (attrs.src ?? "").trim();
-        if (!isHttpsUrl(src)) return { tagName: "span", attribs: {} };
+        if (!isHttpsUrl(src) || shouldDropNewsImage(attrs)) {
+          return { tagName: "span", attribs: {} };
+        }
         const next: Record<string, string> = {
           src,
           loading: "lazy",
@@ -120,7 +174,8 @@ export function sanitizeNewsHtml(html: string) {
         return { tagName: "source", attribs: next };
       },
     },
-  }).trim();
+  });
+  return cleanupNewsHtmlArtifacts(sanitized);
 }
 
 /** 纯 Markdown 或 HTML：Markdown 先渲染再消毒；HTML 直接消毒。 */

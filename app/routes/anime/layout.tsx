@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Link, useNavigation, useOutlet, useParams, useSearchParams } from "react-router";
+import { Link, useNavigate, useNavigation, useOutlet, useParams, useSearchParams } from "react-router";
 import { CalendarDays, MessageSquareText } from "lucide-react";
 import type { Route } from "./+types/layout";
 import { AnimeCard } from "~/components/anime-card";
@@ -14,7 +14,9 @@ import { cn } from "~/lib/utils";
 import {
   buildDetailUrl,
   buildListHref,
+  buildListUrl,
   LIST_REVALIDATE_KEYS,
+  listParamsFromSearch,
   mergeListParams,
 } from "~/lib/bangumi/params";
 import { readAnimeListCache, rememberAnimeList } from "~/lib/bangumi/list-client-cache";
@@ -59,11 +61,11 @@ export function shouldRevalidate({ currentUrl, nextUrl }: { currentUrl: URL; nex
 export type AnimeOutletContext = {
   expanded: boolean;
   setExpanded: (v: boolean) => void;
-  /** 小于 lg 时详情已全屏，无需再二次展开 */
+  /** 小于 lg 时详情已全屏覆盖，无需再二次展开 */
   isMobile: boolean;
 };
 
-/** 小于 lg(1024px) 视为移动端：详情应全屏覆盖列表，而非并排挤压 */
+/** 小于 lg(1024px) 视为移动端：详情全屏覆盖列表 */
 function useViewportLayout() {
   const [isMobile, setIsMobile] = useState(false);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -94,13 +96,6 @@ function hasListFilterParams(searchParams: URLSearchParams): boolean {
     searchParams.has("series") ||
     searchParams.has("platform")
   );
-}
-
-function gridCols(isMobile: boolean, hasDetail: boolean, expanded: boolean): string {
-  if (isMobile || !hasDetail || expanded) {
-    return "1fr";
-  }
-  return "1.6fr 1fr";
 }
 
 export function HydrateFallback() {
@@ -134,10 +129,10 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const routeHasDetail = Boolean(params.id);
 
-  // 1. 直链无筛选访问（如直接进入 /anime/25961）：默认完整大页；若用户收起则记录 split=1
-  // 2. 列表浏览（带有列表筛选参数如 ?type=2&sort=rank）：默认半屏并排；若用户展开则记录 full=1
-  // 这种状态由 URL 驱动，SSR 与客户端首帧完全一致（彻底解决水合闪屏）；
-  // 且用户浏览时点击新番剧卡片自动以半屏打开，不会被全局状态永久绑死。
+  // 1. 直链无筛选访问（如直接进入 /anime/25961）：默认全屏覆盖层；若用户收起则记录 split=1
+  // 2. 列表浏览（带有列表筛选参数如 ?type=2&sort=rank）：默认右侧覆盖抽屉；若用户展开则记录 full=1
+  // 列表网格始终保持全宽，详情以遮罩 + 覆盖层呈现，不再挤压分栏。
+  // 状态由 URL 驱动，SSR 与客户端首帧一致。
   const isDirectDetail = routeHasDetail && !hasListFilterParams(searchParams);
   const isFullParam = searchParams.get("full") === "1";
   const isSplitParam = searchParams.get("split") === "1";
@@ -145,8 +140,6 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
 
   const { isMobile } = useViewportLayout();
   const listScrollRef = useRef<HTMLDivElement>(null);
-  const listPanelRef = useRef<HTMLElement>(null);
-  const detailPanelRef = useRef<HTMLElement>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
@@ -204,12 +197,13 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
 
   const outletContext = { expanded, setExpanded, isMobile } satisfies AnimeOutletContext;
   const outlet = useOutlet(outletContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     listScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [page, viewLabel, typeLabel]);
 
-  const cols = gridCols(isMobile, routeHasDetail, expanded);
+  const listBackUrl = buildListUrl(listParamsFromSearch(searchParams));
 
   const isListLoading =
     navigation.state === "loading" &&
@@ -228,18 +222,11 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <SiteNav activeType={type === SUBJECT_TYPE_ALL ? undefined : type} />
 
-      <div
-        className={cn(
-          "grid min-h-0 flex-1 overflow-hidden p-3 transition-all duration-300 ease-out",
-          routeHasDetail && !expanded && "gap-x-3",
-        )}
-        style={{ gridTemplateColumns: cols }}
-      >
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden p-3">
         <section
-          ref={listPanelRef}
           className={cn(
             "flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-opacity duration-300",
-            (expanded || (isMobile && routeHasDetail)) && "hidden",
+            isMobile && routeHasDetail && "hidden",
           )}
         >
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
@@ -330,15 +317,31 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
           </div>
         </section>
 
-        {routeHasDetail ? (
+      </div>
+
+      {routeHasDetail ? (
+        <>
+          <button
+            type="button"
+            aria-label="关闭详情遮罩"
+            className="fixed inset-0 z-40 bg-overlay/40 backdrop-blur-xs duration-250 ease-out animate-in fade-in-0"
+            onClick={() => navigate(listBackUrl)}
+          />
           <section
-            ref={detailPanelRef}
-            className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs transition-opacity duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-label="作品详情"
+            className={cn(
+              "fixed z-50 flex flex-col overflow-hidden border border-border/70 bg-card shadow-2xl duration-250 ease-out",
+              expanded || isMobile
+                ? "inset-3 rounded-xl sm:inset-4 animate-in fade-in-0 zoom-in-95"
+                : "inset-y-0 right-0 h-full w-full max-w-2xl border-y-0 border-r-0 animate-in slide-in-from-right",
+            )}
           >
             {outlet}
           </section>
-        ) : null}
-      </div>
+        </>
+      ) : null}
     </div>
   );
 }

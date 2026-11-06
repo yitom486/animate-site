@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useState } from "react";
 import type { Route } from "./+types/detail";
 import { SiteNav } from "~/components/site-nav";
-import { SubjectSideLayout } from "~/components/subject-side-panel";
+import { SubjectDetailDrawer } from "~/components/subject-detail-drawer";
 import { fetchBgmBlogDetail } from "~/lib/bangumi/server/blog/detail.server";
 import {
   BLOG_SECTION_LABEL,
@@ -104,13 +104,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
     <div className="celadon-page flex min-h-screen flex-col text-foreground">
       <SiteNav activeType={blogSectionToSubjectType(section)} />
 
-      <SubjectSideLayout
-        side={side}
-        narrowMaxClass="max-w-3xl"
-        wideMaxClass="max-w-6xl"
-        openGridClass="lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]"
-        contentClassName="overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6"
-      >
+      <main className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
         <Link
           to={blogListPath(section)}
           prefetch="intent"
@@ -195,7 +189,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
                             </span>
                           ) : null}
                           <span className="mt-1 block text-[10px] font-medium text-primary">
-                            {active ? "已在右侧打开" : "在右侧打开详情"}
+                            {active ? "详情已打开" : "打开条目详情"}
                           </span>
                         </span>
                       </button>
@@ -226,7 +220,12 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
             </p>
           )}
         </article>
-      </SubjectSideLayout>
+      </main>
+
+      <SubjectDetailDrawer
+        id={side.isOpen ? Number(side.subjectId) : null}
+        onClose={side.close}
+      />
     </div>
   );
 }

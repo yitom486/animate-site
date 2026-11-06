@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/list";
 import { SiteNav } from "~/components/site-nav";
-import { SubjectSideLayout } from "~/components/subject-side-panel";
+import { SubjectDetailDrawer } from "~/components/subject-detail-drawer";
 import { fetchBlogListPage } from "~/lib/bangumi/server/blog/list.server";
 import type { BgmBlogItem, BgmBlogPage } from "~/lib/bangumi/types-blog";
 import { BGM_WEB_ROUTES_BLOG } from "~/lib/bangumi/web-urls";
@@ -154,7 +154,7 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
     <div className="celadon-page flex min-h-screen flex-col text-foreground">
       <SiteNav activeType={blogSectionToSubjectType(section)} />
 
-      <SubjectSideLayout side={side} contentClassName="overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
+      <main className="mx-auto w-full max-w-5xl overflow-x-hidden px-3 py-5 sm:px-6 sm:py-6">
         <header className="celadon-glass rounded-lg p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -232,7 +232,12 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
             <span>· 没有更多了 ·</span>
           )}
         </div>
-      </SubjectSideLayout>
+      </main>
+
+      <SubjectDetailDrawer
+        id={side.isOpen ? Number(side.subjectId) : null}
+        onClose={side.close}
+      />
     </div>
   );
 }

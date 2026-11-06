@@ -11,6 +11,7 @@ import {
   parseNewsRss,
   prepareNewsContent,
   sanitizeNewsHtml,
+  shouldDropNewsImage,
 } from "../app/lib/news/parse.server";
 import { looksLikeMarkdown } from "../app/lib/news/markdown.server";
 import { NEWS_RETENTION_MS } from "../app/lib/news/config";
@@ -96,6 +97,22 @@ try {
   assert.ok(!withImage.includes("http://insecure.example"));
   assert.ok(!withImage.includes("iframe"));
   assert.ok(!withImage.includes("onclick"));
+
+  assert.equal(
+    shouldDropNewsImage({ src: "https://cdn.example.com/share/facebook.png", width: "32", height: "32" }),
+    true,
+  );
+  assert.equal(
+    shouldDropNewsImage({ src: "https://cdn.example.com/photos/cover-large.jpg", width: "800", height: "450" }),
+    false,
+  );
+  const shareFiltered = sanitizeNewsHtml(
+    '<p>报道</p><a href="https://twitter.com/share"><img src="https://cdn.example.com/icons/twitter.png" width="20" height="20" alt="share"></a><figure><img src="https://cdn.example.com/noimage.gif" width="120" height="90" alt="no image"></figure><figure><img src="https://cdn.example.com/story.jpg" alt="现场" width="800" height="450"><figcaption>现场</figcaption></figure>',
+  );
+  assert.ok(shareFiltered.includes('src="https://cdn.example.com/story.jpg"'));
+  assert.ok(!shareFiltered.includes("twitter.png"));
+  assert.ok(!shareFiltered.includes("noimage.gif"));
+  assert.ok(!shareFiltered.includes("twitter.com/share"));
 
   const enclosureRss = rss(
     item(

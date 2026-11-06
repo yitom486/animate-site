@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { subjectDetailQuery } from "~/lib/subject-queries";
 import { Link } from "react-router";
-import { ExternalLink, Film, Layers, MessageSquare, Sparkles, Star, Users, X } from "lucide-react";
+import { ExternalLink, Film, Layers, Maximize2, MessageSquare, Minimize2, Sparkles, Star, Users, X } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -48,10 +48,12 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
   const error = query.isError && !data ? query.error.message : null;
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     setActiveTab("overview");
     setSummaryExpanded(false);
+    setFullscreen(false);
   }, [id]);
 
   const subject = data?.subject;
@@ -86,10 +88,11 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
         {/* 右侧滑出沉浸式抽屉容器（平滑滑入与滑出动画） */}
         <DialogPrimitive.Popup
           className={cn(
-            "fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-2xl flex-col border-l border-border/70 bg-card shadow-2xl outline-none",
+            "fixed z-50 flex flex-col border-border/70 bg-card shadow-2xl outline-none",
             "duration-250 ease-out",
-            "data-open:animate-in data-open:slide-in-from-right",
-            "data-closed:animate-out data-closed:slide-out-to-right",
+            fullscreen
+              ? "inset-3 sm:inset-4 max-w-none rounded-xl border data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+              : "inset-y-0 right-0 h-full w-full max-w-2xl border-l data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right",
           )}
         >
           {/* 无障碍隐藏描述 */}
@@ -116,6 +119,17 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                type="button"
+                onClick={() => setFullscreen((v) => !v)}
+                className="rounded-lg border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                aria-label={fullscreen ? "退出全屏" : "展开为全屏"}
+                title={fullscreen ? "退出全屏" : "展开为全屏"}
+              >
+                {fullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+              </Button>
               <DialogPrimitive.Close
                 render={
                   <Button
@@ -172,7 +186,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                 </Button>
               </div>
             ) : subject ? (
-              <div className="space-y-6">
+              <div className={cn("space-y-6", fullscreen && "mx-auto max-w-5xl")}>
                 {/* 海报与关键元数据 Hero 卡片 */}
                 <div className="flex flex-col gap-5 sm:flex-row">
                   <div className="relative aspect-[2/3] w-36 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-muted shadow-sm">
