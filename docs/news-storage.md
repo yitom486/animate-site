@@ -126,3 +126,24 @@ MCP OAuth 授权与 Wrangler 登录是两套凭据。部署时可以通过 MCP �
 - 详情页：仅在有 `image` 时保留中等宽度头图。
 - 同步 Worker：支持每频道多 RSS；同步后按 `source_url` 合并重复；打包产物见 `.wrangler/news-worker/`。
 - 旧私有 RSS 明文地址未从本地/API 恢复；需运维在 Secrets 中自行填入 `NEWS_*_RSS_URLS` 与 Bot feed 双订。
+
+## Finished-news push receiver
+
+`POST https://celadon-news-sync.yezhe1547.workers.dev/feeds/push`
+
+Authentication: `Authorization: Bearer <NEWS_PUSH_TOKEN>`. Set the new Worker secret with
+`bunx wrangler secret put NEWS_PUSH_TOKEN --config workers/news-sync/wrangler.toml`.
+Keep the value in private sender configuration, never in Git, URLs, or chat.
+
+JSON body: `{ "batchId": "optional-reference", "items": [{ "channel": "anime", "guid": "stable-id", "title": "Title", "sourceUrl": "https://example.com/article", "publishedAt": "2026-11-06T10:00:00Z", "contentMarkdown": "Finished article" }] }`.
+Each request contains 1–50 items and at most 2 MiB. `channel` is `anime` or `events`;
+`publishedAt` is an ISO date string or Unix milliseconds. Optional fields: `coverUrl`
+(HTTPS only), `contentHtml`, `contentMarkdown`, `excerpt`. At least one nonempty content
+field is required. HTML is sanitized; Markdown rendered by existing news helpers.
+All items are validated before writes. Invalid auth returns 401; invalid payload 422;
+success 200 with `{ok,received,upserted,skipped,batchId?}`; storage failure 503 (retry).
+Expired articles and duplicate GUIDs within a batch are skipped. Existing GUIDs use
+exactly the RSS upsert logic (including richer-content preservation); repeated requests
+are safe by GUID. `batchId` is a correlation echo, not a separate deduplication ledger.
+The original RSS cron remains enabled as reconciliation/fallback. This endpoint writes
+to the existing production `NEWS_DB`; no Pages rebuild is required.

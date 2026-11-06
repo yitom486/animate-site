@@ -1,7 +1,9 @@
 import type { NewsSyncEnv } from "../../app/lib/news/settings.server";
 import { syncNewsFeeds } from "../../app/lib/news/sync.server";
 
-type ForceEnv = NewsSyncEnv & { NEWS_SYNC_FORCE_TOKEN?: string };
+import { handleNewsPush } from "../../app/lib/news/push.server";
+
+type ForceEnv = NewsSyncEnv & { NEWS_SYNC_FORCE_TOKEN?: string; NEWS_PUSH_TOKEN?: string };
 
 export default {
   async scheduled(_event: unknown, env: NewsSyncEnv) {
@@ -12,6 +14,7 @@ export default {
   },
   async fetch(request: Request, env: ForceEnv) {
     const url = new URL(request.url);
+    if (url.pathname === "/feeds/push") return handleNewsPush(request, env);
     if (request.method === "POST" && url.pathname === "/__force-sync") {
       const token = request.headers.get("x-sync-token") || url.searchParams.get("token") || "";
       const expected = env.NEWS_SYNC_FORCE_TOKEN || "";

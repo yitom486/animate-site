@@ -1,0 +1,3 @@
+
+# Finished-news push receiver (Worker secret, never commit real value)
+NEWS_PUSH_TOKEN=

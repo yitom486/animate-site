@@ -1,7 +1,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { NEWS_FEEDS, NEWS_RETENTION_MS, type NewsChannel } from "./config";
 import type { FeedRow } from "./db.server";
-import { newsArticleId, parseNewsRss } from "./parse.server";
+import { newsArticleId, parseNewsRss, type ParsedArticle } from "./parse.server";
 import {
   newsFeedSourceId,
   newsSourceUrls,
@@ -191,6 +191,62 @@ export async function collapseDuplicateNewsArticles(db: D1Database, now = Date.n
   return { collapsed, groups: groups.size };
 }
 
+/** Shared atomic upsert path for RSS and authenticated finished-news pushes. */
+export async function newsArticleUpsertStatements(
+  db: D1Database,
+  articles: ParsedArticle[],
+  now = Date.now(),
+) {
+  const values = await Promise.all(
+    articles.map(async (article) => [
+      await newsArticleId(article.guid),
+      article.guid,
+      article.channel,
+      article.title,
+      article.sourceUrl,
+      article.contentHtml,
+      article.excerpt,
+      article.imageUrl ?? null,
+      article.publishedAt,
+      now,
+      now,
+    ]),
+  );
+  // 每条 SQL 最多 100 个参数；11 列时按 8 篇合写（88 参数）。
+  const statements = [];
+  for (let offset = 0; offset < values.length; offset += 8) {
+    const chunk = values.slice(offset, offset + 8);
+    statements.push(
+      db
+        .prepare(`INSERT INTO news_articles (id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at)
+          VALUES ${chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",")}
+          ON CONFLICT(guid) DO UPDATE SET
+            channel=excluded.channel,
+            title=excluded.title,
+            source_url=excluded.source_url,
+            content_html=CASE
+              WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
+              THEN excluded.content_html
+              WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
+              THEN news_articles.content_html
+              WHEN length(excluded.content_html) >= length(news_articles.content_html)
+              THEN excluded.content_html ELSE news_articles.content_html END,
+            excerpt=CASE
+              WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
+              THEN excluded.excerpt
+              WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
+              THEN news_articles.excerpt
+              WHEN length(excluded.excerpt) >= length(news_articles.excerpt)
+              THEN excluded.excerpt ELSE news_articles.excerpt END,
+            image_url=COALESCE(excluded.image_url, news_articles.image_url),
+            published_at=MIN(excluded.published_at, news_articles.published_at),
+            updated_at=excluded.updated_at`)
+        .bind(...chunk.flat()),
+    );
+  }
+  return statements;
+}
+
 async function syncOneFeedSource(
   db: D1Database,
   options: {
@@ -253,53 +309,7 @@ async function syncOneFeedSource(
         sourceUrl: normalizeSourceUrl(article.sourceUrl),
       }))
       .filter((article) => article.publishedAt >= now - NEWS_RETENTION_MS);
-    const values = await Promise.all(
-      articles.map(async (article) => [
-        await newsArticleId(article.guid),
-        article.guid,
-        article.channel,
-        article.title,
-        article.sourceUrl,
-        article.contentHtml,
-        article.excerpt,
-        article.imageUrl ?? null,
-        article.publishedAt,
-        now,
-        now,
-      ]),
-    );
-    // 每条 SQL 最多 100 个参数；11 列时按 8 篇合写（88 参数）。
-    const statements = [];
-    for (let offset = 0; offset < values.length; offset += 8) {
-      const chunk = values.slice(offset, offset + 8);
-      statements.push(
-        db
-          .prepare(`INSERT INTO news_articles (id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at)
-          VALUES ${chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",")}
-          ON CONFLICT(guid) DO UPDATE SET
-            channel=excluded.channel,
-            title=excluded.title,
-            source_url=excluded.source_url,
-            content_html=CASE
-              WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
-              THEN excluded.content_html
-              WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
-              THEN news_articles.content_html
-              WHEN length(excluded.content_html) >= length(news_articles.content_html)
-              THEN excluded.content_html ELSE news_articles.content_html END,
-            excerpt=CASE
-              WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
-              THEN excluded.excerpt
-              WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
-              THEN news_articles.excerpt
-              WHEN length(excluded.excerpt) >= length(news_articles.excerpt)
-              THEN excluded.excerpt ELSE news_articles.excerpt END,
-            image_url=COALESCE(excluded.image_url, news_articles.image_url),
-            published_at=MIN(excluded.published_at, news_articles.published_at),
-            updated_at=excluded.updated_at`)
-          .bind(...chunk.flat()),
-      );
-    }
+    const statements = await newsArticleUpsertStatements(db, articles, now);
     // 最后才推进 ETag；D1 batch 事务中任一写入失败，不丢掉下次重试机会。
     statements.push(
       db

@@ -80,3 +80,5 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 - 公开 API 按端点设置缓存策略，保留搜索词、页码、类型、条目 ID 等业务参数；不得全站忽略 query，也不得因 `/api/` 前缀一律绕过缓存。
 - HTML 和 root loader 含主题 Cookie，使用 private 缓存策略。Cloudflare CDN 命中率与应用 L1/L2 命中率分开观察；部分公开 API 的 `X-App-Cache` 提供 `L1_HIT` / `L2_HIT` / `MISS` / `COALESCED` 诊断，不能据此宣称 CDN 已命中。
 - Worker 里不要用 Node `fs` / jsdom；外网 `fetch` 必须带超时。
+
+- 成品推送入口：同步 Worker 的 `POST /feeds/push`，Bearer `NEWS_PUSH_TOKEN`；与 RSS 共用消毒和 GUID upsert，保留原 cron。协议见 docs/news-storage.md，密钥不得入 Git/聊天。

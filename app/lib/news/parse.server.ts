@@ -189,7 +189,7 @@ export function extractCoverImageUrl(html: string, row?: Record<string, unknown>
   return match?.[1];
 }
 
-function makeExcerpt(contentHtml: string) {
+export function makeExcerpt(contentHtml: string) {
   return decodeHTML(contentHtml.replace(/<[^>]+>/g, " "))
     .replace(/\s+/g, " ")
     .trim()

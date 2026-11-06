@@ -3,13 +3,16 @@ main = "index.ts"
 account_id = "352d75a6997451a14d7885be80d7281a"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
-workers_dev = false
+workers_dev = true
 preview_urls = false
 
 [triggers]
 crons = ["*/15 * * * *"]
 
 [observability]
+enabled = true
+
+[observability.traces]
 enabled = true
 
 [[d1_databases]]
