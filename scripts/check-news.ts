@@ -336,7 +336,7 @@ try {
         rss(
           item(
             "celadon:story-1",
-            "<p>加厚解读</p>",
+            '<p>加厚解读</p><p><img src="https://cdn.example.com/thick-cover.jpg" alt="" /></p>',
             multiDate,
             '<enclosure url="https://cdn.example.com/thick-cover.jpg" type="image/jpeg" />',
             "https://example.com/story/shared",
@@ -383,15 +383,50 @@ try {
   assert.equal(shared.results.length, 1, "同 source_url 跨 feed 合并为一条");
   assert.equal(shared.results[0]?.guid, "celadon:story-1");
   assert.equal(shared.results[0]?.image_url, "https://cdn.example.com/thick-cover.jpg");
-  assert.ok(shared.results[0]?.content_html.includes("更长的旧聚合正文"));
+  assert.ok(shared.results[0]?.content_html.includes("thick-cover.jpg"));
+  assert.ok(shared.results[0]?.content_html.includes("加厚解读"));
 
-  const merged = mergeNewsArticlePair(
+  // Prefer https <img> body over longer caption-only / stripped HTML.
+  const mergedImgs = mergeNewsArticlePair(
     {
       id: "a",
+      guid: "celadon:x",
+      channel: "anime",
+      title: "更长的标题给展示",
+      source_url: "https://example.com/x",
+      content_html: "原报道配图 · 来源：Anime! Anime!" + "<p>很长但没有图的旧消毒正文</p>".repeat(20),
+      excerpt: "很长但没有图",
+      image_url: "https://cdn.example.com/x.jpg",
+      published_at: 1,
+      first_seen_at: 1,
+      updated_at: 1,
+    },
+    {
+      id: "b",
       guid: "urn:sha256:x",
       channel: "anime",
       title: "短",
       source_url: "https://example.com/x",
+      content_html:
+        '<figure><img src="https://cdn.example.com/body.jpg" alt="" /><figcaption>原报道配图</figcaption></figure><p>短正文</p>',
+      excerpt: "短正文",
+      image_url: null,
+      published_at: 2,
+      first_seen_at: 2,
+      updated_at: 2,
+    },
+  );
+  assert.ok(mergedImgs.content_html.includes('<img src="https://cdn.example.com/body.jpg"'));
+  assert.equal(mergedImgs.image_url, "https://cdn.example.com/x.jpg");
+  assert.equal(mergedImgs.guid, "urn:sha256:x", "keeper follows richer body with images");
+
+  const merged = mergeNewsArticlePair(
+    {
+      id: "a",
+      guid: "urn:sha256:y",
+      channel: "anime",
+      title: "短",
+      source_url: "https://example.com/y",
       content_html: "<p>long body here</p>",
       excerpt: "long body here",
       image_url: null,
@@ -401,22 +436,21 @@ try {
     },
     {
       id: "b",
-      guid: "celadon:x",
+      guid: "celadon:y",
       channel: "anime",
       title: "更长的标题给展示",
-      source_url: "https://example.com/x",
+      source_url: "https://example.com/y",
       content_html: "<p>short</p>",
       excerpt: "short",
-      image_url: "https://cdn.example.com/x.jpg",
+      image_url: "https://cdn.example.com/y.jpg",
       published_at: 2,
       first_seen_at: 2,
       updated_at: 2,
     },
   );
-  assert.equal(merged.guid, "celadon:x");
-  assert.equal(merged.image_url, "https://cdn.example.com/x.jpg");
+  assert.equal(merged.guid, "urn:sha256:y", "no images: longer body keeps guid");
+  assert.equal(merged.image_url, "https://cdn.example.com/y.jpg");
   assert.ok(merged.content_html.includes("long body here"));
-  assert.equal(merged.title, "更长的标题给展示");
 
   // Prefer-image home ordering fills quota with covers first.
   const preferHome = await readHomeNews(db, multiNow);

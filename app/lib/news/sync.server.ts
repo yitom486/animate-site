@@ -61,32 +61,56 @@ function preferCeladonGuid(guid: string) {
   return guid.startsWith("celadon:");
 }
 
-/** Pick which row keeps id/guid; always merge image + longer body from the pair. */
+/** Count https <img> tags — used so stripped caption-only bodies lose to real figure markup. */
+export function countNewsHttpsImages(html: string) {
+  return (html.match(/<img\b[^>]*\bsrc=["']https:\/\//gi) ?? []).length;
+}
+
+export function preferNewsContentHtml(a: string, b: string) {
+  const ai = countNewsHttpsImages(a);
+  const bi = countNewsHttpsImages(b);
+  if (ai !== bi) return ai > bi ? a : b;
+  return a.length >= b.length ? a : b;
+}
+
+/**
+ * Pick which row keeps id/guid.
+ * Prefer more https images in body, then longer body, then celadon guid, then cover field.
+ */
 export function chooseNewsMergeKeeper(a: ArticleMergeRow, b: ArticleMergeRow): ArticleMergeRow {
+  const ai = countNewsHttpsImages(a.content_html);
+  const bi = countNewsHttpsImages(b.content_html);
+  if (ai !== bi) return ai > bi ? a : b;
+  if (a.content_html.length !== b.content_html.length) {
+    return a.content_html.length >= b.content_html.length ? a : b;
+  }
   const aCeladon = preferCeladonGuid(a.guid);
   const bCeladon = preferCeladonGuid(b.guid);
   if (aCeladon !== bCeladon) return aCeladon ? a : b;
   const aImage = Boolean(a.image_url);
   const bImage = Boolean(b.image_url);
   if (aImage !== bImage) return aImage ? a : b;
-  if (a.content_html.length !== b.content_html.length) {
-    return a.content_html.length >= b.content_html.length ? a : b;
-  }
   return a.first_seen_at <= b.first_seen_at ? a : b;
 }
 
 export function mergeNewsArticlePair(a: ArticleMergeRow, b: ArticleMergeRow): ArticleMergeRow {
   const keeper = chooseNewsMergeKeeper(a, b);
   const other = keeper.id === a.id ? b : a;
+  const contentHtml = preferNewsContentHtml(keeper.content_html, other.content_html);
+  const excerptSource =
+    contentHtml === keeper.content_html
+      ? keeper.excerpt.length >= other.excerpt.length
+        ? keeper.excerpt
+        : other.excerpt
+      : other.excerpt.length >= keeper.excerpt.length
+        ? other.excerpt
+        : keeper.excerpt;
   return {
     ...keeper,
     title: keeper.title.length >= other.title.length ? keeper.title : other.title,
     source_url: normalizeSourceUrl(keeper.source_url || other.source_url),
-    content_html:
-      keeper.content_html.length >= other.content_html.length
-        ? keeper.content_html
-        : other.content_html,
-    excerpt: keeper.excerpt.length >= other.excerpt.length ? keeper.excerpt : other.excerpt,
+    content_html: contentHtml,
+    excerpt: excerptSource,
     image_url: keeper.image_url || other.image_url,
     published_at: Math.min(keeper.published_at, other.published_at),
     first_seen_at: Math.min(keeper.first_seen_at, other.first_seen_at),
@@ -199,8 +223,11 @@ async function syncOneFeedSource(
       Accept: "application/rss+xml, application/xml",
       "User-Agent": "CeladonPortal/1.0 (+https://lowbculture.com)",
     });
-    if (state?.etag) headers.set("If-None-Match", state.etag);
-    if (state?.last_modified) headers.set("If-Modified-Since", state.last_modified);
+    // force 全量重拉时不带条件头，避免 304 跳过正文回填（例如旧稿 img 被消毒剥掉后要重写入）。
+    if (!force) {
+      if (state?.etag) headers.set("If-None-Match", state.etag);
+      if (state?.last_modified) headers.set("If-Modified-Since", state.last_modified);
+    }
     if (sources.NEWS_RSS_BEARER_TOKEN)
       headers.set("Authorization", `Bearer ${sources.NEWS_RSS_BEARER_TOKEN}`);
     const response = await fetcher(url, {
@@ -254,9 +281,17 @@ async function syncOneFeedSource(
             title=excluded.title,
             source_url=excluded.source_url,
             content_html=CASE
+              WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
+              THEN excluded.content_html
+              WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
+              THEN news_articles.content_html
               WHEN length(excluded.content_html) >= length(news_articles.content_html)
               THEN excluded.content_html ELSE news_articles.content_html END,
             excerpt=CASE
+              WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
+              THEN excluded.excerpt
+              WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
+              THEN news_articles.excerpt
               WHEN length(excluded.excerpt) >= length(news_articles.excerpt)
               THEN excluded.excerpt ELSE news_articles.excerpt END,
             image_url=COALESCE(excluded.image_url, news_articles.image_url),
