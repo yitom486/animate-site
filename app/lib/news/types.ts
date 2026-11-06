@@ -11,6 +11,7 @@ export type NewsItem = {
   publishedAt?: string;
   source: string;
   locale: NewsLocale;
+  /** 封面图 HTTPS URL；旧数据或无图条目可为 undefined */
   image?: string;
 };
 

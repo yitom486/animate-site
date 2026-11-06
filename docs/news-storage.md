@@ -17,8 +17,8 @@
 
 ## 数据与失败处理
 
-- `news_articles` 保存 GUID、GUID 的 SHA-256 站内 ID、频道、标题、原文链接、净化后的 HTML、摘要及发布/首次导入/更新时间。GUID 唯一；原文 URL 相同的新 GUID 仍作为新文章。
-- 优先 `content:encoded`，没有才使用 `description`，不重复拼接。保留来源、AI 说明和活动核实提示；过滤脚本、事件、内联样式、iframe 和危险协议。
+- `news_articles` 保存 GUID、GUID 的 SHA-256 站内 ID、频道、标题、原文链接、净化后的 HTML、摘要、可选 `image_url` 封面及发布/首次导入/更新时间。GUID 唯一；原文 URL 相同的新 GUID 仍作为新文章。`0002_news_image_url.sql` 为可空列迁移。
+- 优先 `content:encoded`，没有才使用 `description`，不重复拼接。正文若更像 Markdown 则先用 `marked` 渲染再消毒。封面优先取 enclosure / `media:content` / 正文首张 https 图。允许安全 `img`/`figure`/`table`/`video`（仅 https）；YouTube/Bilibili 外链加样式标记，不嵌入 iframe。过滤脚本、事件、内联样式、iframe 和危险协议。
 - 发布日期决定 30 天展示窗口；首次导入和同步时间不延长保留期限。未来发布的文章先保存，发布时间到后才展示，避免 ETag 不变造成永久漏项。
 - `news_feeds` 保存 ETag、Last-Modified、成功/检查时间、错误和下次检查时间。304 更新检查状态，保留文章；解析或写入失败不推进 ETag。
 - 每个源独立处理；同步失败保留旧文章，5 分钟后允许重试，实际由下一次 15 分钟定时任务执行。120 秒租约避免同源同时写入。
@@ -46,7 +46,7 @@ bun run dev
 
 本地命令只写本地 D1。`bun run check:news` 使用临时、隔离的真实 D1 运行时与固定 RSS，不访问线上数据库或真实源。`bun run news:worker:build` 仅打包，不部署。
 
-验证覆盖 GUID、完整内容优先级、HTML 过滤、304、两个刷新周期、分页、失败保留、并发租约、事务回滚、30 天清理、首页频道配额和未来发布时间。
+验证覆盖 GUID、封面/enclosure、图片白名单、Markdown 渲染、完整内容优先级、HTML 过滤、304、两个刷新周期、分页、失败保留、并发租约、事务回滚、30 天清理、首页频道配额和未来发布时间。
 
 额外验证缺失/无效 Secrets、可选鉴权请求头、拒绝重定向，以及网络错误不泄露私有地址或令牌。
 
@@ -92,3 +92,9 @@ MCP OAuth 授权与 Wrangler 登录是两套凭据。部署时可以通过 MCP �
 - 修正 Workers 不支持的 `redirect: "error"` 后，真实本地 workerd scheduled 对实际源成功导入动漫 25 条、漫展 16 条，状态均无错误。
 - 2026-11-06 01:30:01（北京时间）生产定时任务实际执行成功：公开 API 的两个来源均为 `ok: true`，`lastSuccessAt` 均更新为 `2026-11-05T17:30:01.775Z`，原错误已清除，生产资讯总数为 41。Cloudflare 管理 API 当次查询超时，执行结果由站点直接读取 D1 的资讯 API 交叉确认。
 - 为 GitHub 准备本地分支 `publish/private-rss`：从已存在的远程安全基线创建单个发布提交，保留当前源码树，不包含原工作分支中曾写入真实地址的提交；原工作分支不改写。发布时仅推送该分支，再合入 `master`。
+
+## 发布记录：资讯卡片与封面（待 Pages 构建）
+
+- 迁移：`migrations/0002_news_image_url.sql`（`ALTER TABLE news_articles ADD COLUMN image_url TEXT`），生产/预览需各自 apply。
+- 列表与详情展示封面；详情正文支持图片与直链 video；Markdown 源在服务端经 marked → sanitize。
+- Secrets 切换到 Bot feed 由运维侧处理，本提交不改 Cloudflare Secrets。

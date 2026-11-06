@@ -41,6 +41,9 @@ export function parseNewsItemMeta(item: NewsItem): ParsedNewsMeta {
     if (!clean) {
       clean = excerpt
         .replace(/资讯内容\s*[·•]\s*中文摘要\s*/g, "")
+        .replace(/资讯归纳\s*/g, "")
+        .replace(/背景补充\s*/g, "")
+        .replace(/解读\s*/g, "")
         .replace(/第三方活动聚合线索[，,]待主办方核实[。.]?\s*/g, "")
         .replace(/时间为本服务收录时间[，,]不代表主办方刚刚官宣[。.]?\s*/g, "")
         .replace(/具体安排以主办方最新公告为准[。.]?\s*/g, "")
@@ -65,11 +68,15 @@ export function parseNewsItemMeta(item: NewsItem): ParsedNewsMeta {
     };
   }
 
-  // 日本动漫资讯：去除样板引言
+  // 日本动漫资讯：去除样板引言与栏目标题，保留 2–3 行可读摘要
   let clean = excerpt
     .replace(/^资讯内容\s*[·•]\s*中文翻译与摘要\s*/g, "")
     .replace(/^仅据来源摘要编译[，,]?\s*/g, "")
     .replace(/^据[A-Za-z0-9\u4e00-\u9fa5]+(?:动画频道|报道|网)?[，,]?\s*/g, "")
+    .replace(/资讯归纳\s*/g, "")
+    .replace(/背景补充\s*/g, "")
+    .replace(/解读\s*/g, "")
+    .replace(/参考链接\s*/g, "")
     .trim();
 
   return { cleanExcerpt: clean || excerpt };

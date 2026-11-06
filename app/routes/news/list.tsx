@@ -39,7 +39,7 @@ export default function NewsListPage({ loaderData: { feed, channel } }: Route.Co
             动漫与漫展资讯
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            聚合日本新番情报、制作速报与全国漫展日历，提供 30 天精炼中文摘要与 AI 解读。
+            聚合日本新番情报、制作速报与全国漫展日历，提供 30 天中文归纳、背景补充与解读。
           </p>
 
           {/* 频道切换胶囊导航 */}

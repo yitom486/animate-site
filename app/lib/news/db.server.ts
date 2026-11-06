@@ -22,6 +22,7 @@ export type ArticleRow = {
   source_url: string;
   content_html: string;
   excerpt: string;
+  image_url: string | null;
   published_at: number;
 };
 export type FeedRow = {
@@ -43,6 +44,7 @@ function toItem(row: Omit<ArticleRow, "guid" | "content_html">): NewsItem {
     publishedAt: new Date(row.published_at).toISOString(),
     source: NEWS_FEEDS.find((feed) => feed.id === row.channel)!.label,
     locale: "zh",
+    image: row.image_url || undefined,
   };
 }
 
@@ -58,7 +60,7 @@ export async function readNewsFeed(
   const [rows, count, states] = await db.batch([
     db
       .prepare(
-        `SELECT id, channel, title, source_url, excerpt, published_at FROM news_articles WHERE ${where} ORDER BY published_at DESC, id DESC LIMIT ? OFFSET ?`,
+        `SELECT id, channel, title, source_url, excerpt, image_url, published_at FROM news_articles WHERE ${where} ORDER BY published_at DESC, id DESC LIMIT ? OFFSET ?`,
       )
       .bind(...bindings, limit, (page - 1) * limit),
     db.prepare(`SELECT COUNT(*) AS total FROM news_articles WHERE ${where}`).bind(...bindings),

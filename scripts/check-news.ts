@@ -1,11 +1,18 @@
 import assert from "node:assert/strict";
-import { readFile, mkdtemp, rm } from "node:fs/promises";
+import { readFile, readdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getPlatformProxy } from "wrangler";
 import type { NewsEnv } from "../app/lib/news/db.server";
 import { readHomeNews, readNewsArticle, readNewsFeed } from "../app/lib/news/db.server";
-import { newsArticleId, parseNewsRss, sanitizeNewsHtml } from "../app/lib/news/parse.server";
+import {
+  extractCoverImageUrl,
+  newsArticleId,
+  parseNewsRss,
+  prepareNewsContent,
+  sanitizeNewsHtml,
+} from "../app/lib/news/parse.server";
+import { looksLikeMarkdown } from "../app/lib/news/markdown.server";
 import { NEWS_RETENTION_MS } from "../app/lib/news/config";
 import { syncNewsFeeds } from "../app/lib/news/sync.server";
 
@@ -21,10 +28,10 @@ const sources = {
 };
 const now = Date.UTC(2026, 10, 6, 0);
 const date = new Date(now - 3600000).toUTCString();
-const item = (guid: string, content = "<p>正文 &amp; 来源</p>", pubDate = date) =>
-  `<item><guid isPermaLink="false">${guid}</guid><title>中文资讯</title><link>https://example.com/source</link><pubDate>${pubDate}</pubDate><description><![CDATA[<p>摘要回退</p>]]></description><content:encoded><![CDATA[${content}]]></content:encoded></item>`;
+const item = (guid: string, content = "<p>正文 &amp; 来源</p>", pubDate = date, extras = "") =>
+  `<item><guid isPermaLink="false">${guid}</guid><title>中文资讯</title><link>https://example.com/source</link><pubDate>${pubDate}</pubDate><description><![CDATA[<p>摘要回退</p>]]></description><content:encoded><![CDATA[${content}]]></content:encoded>${extras}</item>`;
 const rss = (items: string) =>
-  `<?xml version="1.0"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>test</title>${items}</channel></rss>`;
+  `<?xml version="1.0"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>test</title>${items}</channel></rss>`;
 let requests = 0;
 let handler: (url: string, init?: RequestInit) => Response = (url) =>
   new Response(rss(item(url.includes("anime") ? "anime-1" : "events-1")), {
@@ -36,14 +43,19 @@ const fetcher = (async (input: string | URL | Request, init?: RequestInit) => {
 }) as typeof fetch;
 
 try {
-  const schema = await readFile("migrations/0001_news.sql", "utf8");
-  await db.batch(
-    schema
-      .split(";")
-      .map((sql) => sql.trim())
-      .filter(Boolean)
-      .map((sql) => db.prepare(sql)),
-  );
+  const migrationFiles = (await readdir("migrations"))
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+  for (const file of migrationFiles) {
+    const schema = await readFile(`migrations/${file}`, "utf8");
+    await db.batch(
+      schema
+        .split(";")
+        .map((sql) => sql.trim())
+        .filter(Boolean)
+        .map((sql) => db.prepare(sql)),
+    );
+  }
 
   const parsed = parseNewsRss(rss(item("guid-1")), "anime");
   assert.equal(parsed[0].contentHtml, "<p>正文 &amp; 来源</p>");
@@ -56,12 +68,44 @@ try {
   );
   assert.throws(() => parseNewsRss(rss(item("", "<p>test</p>")), "anime"));
   const safe = sanitizeNewsHtml(
-    '<h2>AI 背景与解读</h2><script>alert(1)</script><p onclick="bad()" style="color:red">待主办方核实</p><a href="javascript:alert(1)">bad</a><a href="https://example.com">来源</a><iframe src="https://evil.example"></iframe>',
+    '<h2>背景与解读</h2><script>alert(1)</script><p onclick="bad()" style="color:red">待主办方核实</p><a href="javascript:alert(1)">bad</a><a href="https://example.com">来源</a><iframe src="https://evil.example"></iframe>',
   );
-  assert.ok(safe.includes("<h2>AI 背景与解读</h2>"));
+  assert.ok(safe.includes("<h2>背景与解读</h2>"));
   assert.ok(safe.includes("待主办方核实"));
   assert.ok(safe.includes('rel="noopener noreferrer nofollow"'));
   assert.ok(!/script|onclick|style=|javascript:|iframe/.test(safe));
+
+  const withImage = sanitizeNewsHtml(
+    '<p>图</p><img src="https://cdn.example.com/a.jpg" alt="封面" onclick="x"><img src="http://insecure.example/a.jpg"><iframe src="https://evil.example"></iframe>',
+  );
+  assert.ok(withImage.includes('src="https://cdn.example.com/a.jpg"'));
+  assert.ok(withImage.includes('loading="lazy"'));
+  assert.ok(!withImage.includes("http://insecure.example"));
+  assert.ok(!withImage.includes("iframe"));
+  assert.ok(!withImage.includes("onclick"));
+
+  const enclosureRss = rss(
+    item(
+      "cover-1",
+      "<p>有封面</p>",
+      date,
+      '<enclosure url="https://cdn.example.com/cover.jpg" type="image/jpeg" length="0" /><media:content url="https://cdn.example.com/cover.jpg" medium="image" />',
+    ),
+  );
+  const covered = parseNewsRss(enclosureRss, "anime");
+  assert.equal(covered[0].imageUrl, "https://cdn.example.com/cover.jpg");
+  assert.equal(
+    extractCoverImageUrl('<p><img src="https://cdn.example.com/from-body.jpg" alt="" /></p>'),
+    "https://cdn.example.com/from-body.jpg",
+  );
+
+  const md = "## 资讯归纳\n\n正文 **加粗**，看图 ![x](https://cdn.example.com/m.jpg)";
+  assert.equal(looksLikeMarkdown(md), true);
+  const mdHtml = prepareNewsContent(md);
+  assert.ok(mdHtml.includes("<h2>"));
+  assert.ok(mdHtml.includes("<strong>"));
+  assert.ok(mdHtml.includes('src="https://cdn.example.com/m.jpg"'));
+  assert.equal(looksLikeMarkdown("<p>已经是 HTML</p><h2>标题</h2>"), false);
 
   const first = await syncNewsFeeds(db, { sources, now, fetcher });
   assert.deepEqual(
@@ -71,6 +115,7 @@ try {
   const feed = await readNewsFeed(db, { now });
   assert.equal(feed.total, 2, "同一原文 URL、不同 GUID 仍分别保留");
   assert.ok(feed.sources.every((source) => source.ok));
+  assert.equal(feed.items[0].image, undefined);
   const id = await newsArticleId("anime-1");
   assert.ok((await readNewsArticle(db, id, now))?.contentHtml.includes("正文"));
   assert.equal(await readNewsArticle(db, "bad-id", now), null);
@@ -95,7 +140,14 @@ try {
   handler = (url) =>
     new Response(
       rss(
-        url.includes("anime") ? item("anime-1", "<p>更新后的解读</p>") + item("anime-update") : "",
+        url.includes("anime")
+          ? item(
+              "anime-1",
+              '<p>更新后的解读</p><img src="https://cdn.example.com/body.jpg" alt="" />',
+              date,
+              '<enclosure url="https://cdn.example.com/anime-cover.jpg" type="image/jpeg" />',
+            ) + item("anime-update")
+          : "",
       ),
       { headers: { ETag: '"v2"' } },
     );
@@ -105,7 +157,14 @@ try {
     3,
     "新 GUID 增量导入；源内消失的条目仍保留",
   );
-  assert.ok((await readNewsArticle(db, id, now))?.contentHtml.includes("更新后的解读"));
+  const updatedArticle = await readNewsArticle(db, id, now);
+  assert.ok(updatedArticle?.contentHtml.includes("更新后的解读"));
+  assert.ok(updatedArticle?.contentHtml.includes("https://cdn.example.com/body.jpg"));
+  assert.equal(updatedArticle?.image, "https://cdn.example.com/anime-cover.jpg");
+  assert.equal(
+    (await readNewsFeed(db, { channel: "anime", now })).items.find((row) => row.id === id)?.image,
+    "https://cdn.example.com/anime-cover.jpg",
+  );
 
   handler = () => new Response("invalid xml", { headers: { ETag: '"broken"' } });
   await syncNewsFeeds(db, { sources, now: now + 120 * 60000, force: true, fetcher });
@@ -145,7 +204,6 @@ try {
   });
   assert.equal(requests, beforeMissingConfig + 1, "不安全地址不发请求，另一频道继续独立处理");
 
-  // 模拟正在同步的任务：另一个任务不得覆盖其状态或重复请求。
   await db
     .prepare("UPDATE news_feeds SET lease_until=?")
     .bind(now + 86400000)
@@ -155,7 +213,6 @@ try {
   assert.equal(requests, beforeLease);
   await db.prepare("UPDATE news_feeds SET lease_until=0").run();
 
-  // 同一批次后面的语句失败时，前面的文章修改必须回滚。
   await assert.rejects(
     db.batch([
       db.prepare("UPDATE news_articles SET title='should rollback'"),
@@ -231,7 +288,7 @@ try {
     redirected.every((result) => result.status === "error" && result.error === "RSS HTTP 302"),
   );
   console.log(
-    "资讯检查通过：真实本地 D1、GUID、完整正文/过滤、ETag/304、频道周期、分页、失败保留、并发租约、事务回滚和 30 天清理。",
+    "资讯检查通过：真实本地 D1、GUID、封面/enclosure、图片白名单、Markdown、完整正文/过滤、ETag/304、频道周期、分页、失败保留、并发租约、事务回滚和 30 天清理。",
   );
 } finally {
   await proxy.dispose();

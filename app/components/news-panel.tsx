@@ -1,4 +1,13 @@
-import { ArrowRight, Building2, CalendarDays, Clock, MapPin, Sparkles, Tv } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  Clock,
+  ImageOff,
+  MapPin,
+  Sparkles,
+  Tv,
+} from "lucide-react";
 import { Link } from "react-router";
 import type { NewsFeed, NewsItem } from "~/lib/news/types";
 import { NEWS_FEEDS, formatNewsDate, newsListHref } from "~/lib/news/config";
@@ -19,21 +28,15 @@ export function NewsPanelSkeleton({ className }: { className?: string }) {
       </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {[0, 1, 2, 3].map((idx) => (
-          <div
-            key={idx}
-            className="flex flex-col justify-between rounded-xl border border-border/60 bg-muted/20 p-4"
-          >
-            <div className="space-y-3">
+          <div key={idx} className="overflow-hidden rounded-xl border border-border/60 bg-muted/20">
+            <Skeleton className="aspect-[16/9] w-full rounded-none" />
+            <div className="space-y-3 p-4">
               <div className="flex items-center gap-2">
                 <Skeleton className="h-5 w-20 rounded-md" />
                 <Skeleton className="h-4 w-28 rounded-md" />
               </div>
               <Skeleton className="h-6 w-4/5 rounded-md" />
               <Skeleton className="h-12 w-full rounded-md" />
-            </div>
-            <div className="mt-4 flex items-center justify-between pt-3">
-              <Skeleton className="h-4 w-24 rounded-md" />
-              <Skeleton className="h-4 w-16 rounded-md" />
             </div>
           </div>
         ))}
@@ -59,10 +62,39 @@ export function NewsPanelError({
   );
 }
 
+function NewsCover({ src, alt, className }: { src?: string; alt: string; className?: string }) {
+  if (src) {
+    return (
+      <div className={cn("relative overflow-hidden bg-muted/40", className)}>
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/35 via-transparent to-transparent" />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={cn(
+        "relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-muted/40",
+        className,
+      )}
+      aria-hidden
+    >
+      <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_20%_20%,oklch(0.8_0.12_350/.35),transparent_45%),radial-gradient(circle_at_80%_70%,oklch(0.75_0.1_20/.25),transparent_40%)]" />
+      <ImageOff className="relative size-7 text-primary/50" />
+    </div>
+  );
+}
+
 /**
  * 现代二次元资讯与漫展单卡：
- * 采用胶囊化元数据（地点/场馆/排期）、高响应微动效与柔粉阴影悬停，
- * 剔除冗长样板文字，实现高品质的 ACGN 媒体卡片。
+ * 封面 + 胶囊化元数据（地点/场馆/排期）+ 2–3 行摘要，柔粉阴影悬停。
  */
 export function NewsCard({ item }: { item: NewsItem }) {
   const meta = parseNewsItemMeta(item);
@@ -72,88 +104,91 @@ export function NewsCard({ item }: { item: NewsItem }) {
     <Link
       to={`/news/${item.id}`}
       prefetch="intent"
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-2 focus-visible:outline-ring sm:p-5"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-2 focus-visible:outline-ring"
     >
-      <div className="space-y-3">
-        {/* 顶部标签行 */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold",
-                isEvent
-                  ? "border border-primary/25 bg-primary/10 text-primary"
-                  : "border border-primary/30 bg-primary/15 text-primary",
-              )}
-            >
-              {isEvent ? (
-                <MapPin className="size-3 text-primary" />
-              ) : (
-                <Tv className="size-3 text-primary" />
-              )}
-              {isEvent ? "漫展情报" : "动画速报"}
-            </span>
+      <NewsCover
+        src={item.image}
+        alt=""
+        className="aspect-[16/9] w-full border-b border-border/50"
+      />
 
-            {meta.location ? (
-              <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
-                <MapPin className="size-3 text-muted-foreground" />
-                {meta.location}
+      <div className="flex flex-1 flex-col justify-between p-4 sm:p-4.5">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold",
+                  isEvent
+                    ? "border border-primary/25 bg-primary/10 text-primary"
+                    : "border border-primary/30 bg-primary/15 text-primary",
+                )}
+              >
+                {isEvent ? (
+                  <MapPin className="size-3 text-primary" />
+                ) : (
+                  <Tv className="size-3 text-primary" />
+                )}
+                {isEvent ? "漫展情报" : "动画速报"}
               </span>
-            ) : null}
 
-            {meta.eventDates ? (
-              <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
-                <CalendarDays className="size-3 text-muted-foreground" />
-                {meta.eventDates}
-              </span>
-            ) : null}
+              {meta.location ? (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
+                  <MapPin className="size-3 text-muted-foreground" />
+                  {meta.location}
+                </span>
+              ) : null}
 
-            {meta.status ? (
-              <span className="rounded-md border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                {meta.status}
+              {meta.eventDates ? (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 text-xs text-foreground">
+                  <CalendarDays className="size-3 text-muted-foreground" />
+                  {meta.eventDates}
+                </span>
+              ) : null}
+
+              {meta.status ? (
+                <span className="rounded-md border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                  {meta.status}
+                </span>
+              ) : null}
+            </div>
+
+            {item.publishedAt ? (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="size-3 text-muted-foreground/80" />
+                <time dateTime={item.publishedAt}>{formatNewsDate(item.publishedAt)}</time>
               </span>
             ) : null}
           </div>
 
-          {item.publishedAt ? (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="size-3 text-muted-foreground/80" />
-              <time dateTime={item.publishedAt}>{formatNewsDate(item.publishedAt)}</time>
-            </span>
+          <h3 className="font-serif text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary sm:text-lg">
+            {item.title}
+          </h3>
+
+          {meta.venue ? (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Building2 className="size-3.5 shrink-0 text-primary/70" />
+              <span className="truncate">{meta.venue}</span>
+            </div>
+          ) : null}
+
+          {meta.cleanExcerpt ? (
+            <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+              {meta.cleanExcerpt}
+            </p>
           ) : null}
         </div>
 
-        {/* 标题 */}
-        <h3 className="font-serif text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary sm:text-lg">
-          {item.title}
-        </h3>
-
-        {/* 场馆标签 */}
-        {meta.venue ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Building2 className="size-3.5 shrink-0 text-primary/70" />
-            <span className="truncate">{meta.venue}</span>
-          </div>
-        ) : null}
-
-        {/* 摘要正文 */}
-        {meta.cleanExcerpt ? (
-          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            {meta.cleanExcerpt}
-          </p>
-        ) : null}
-      </div>
-
-      {/* 底部信息条 */}
-      <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
-        <span className="text-muted-foreground">{item.source}</span>
-        <span className="inline-flex items-center gap-1 font-medium text-primary transition-transform group-hover:translate-x-0.5">
-          阅读解读
-          <ArrowRight
-            className="size-3.5 transition-transform group-hover:translate-x-1"
-            aria-hidden
-          />
-        </span>
+        <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+          <span className="text-muted-foreground">{item.source}</span>
+          <span className="inline-flex items-center gap-1 font-medium text-primary transition-transform group-hover:translate-x-0.5">
+            阅读全文
+            <ArrowRight
+              className="size-3.5 transition-transform group-hover:translate-x-1"
+              aria-hidden
+            />
+          </span>
+        </div>
       </div>
     </Link>
   );
@@ -216,7 +251,7 @@ export function NewsPanel({ feed, className }: { feed: NewsFeed; className?: str
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            站内阅读中文精炼摘要与 AI 解读，保留原文官方链接。
+            站内阅读中文归纳、背景补充与解读，保留原文官方链接。
           </p>
         </div>
         <Link

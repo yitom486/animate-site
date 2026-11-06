@@ -102,20 +102,21 @@ export async function syncNewsFeeds(
           article.sourceUrl,
           article.contentHtml,
           article.excerpt,
+          article.imageUrl ?? null,
           article.publishedAt,
           now,
           now,
         ]),
       );
-      // 每条 SQL 最多 100 个参数；十篇合写，降低 Worker 的 D1 查询次数。
+      // 每条 SQL 最多 100 个参数；11 列时按 8 篇合写（88 参数）。
       const statements = [];
-      for (let offset = 0; offset < values.length; offset += 10) {
-        const chunk = values.slice(offset, offset + 10);
+      for (let offset = 0; offset < values.length; offset += 8) {
+        const chunk = values.slice(offset, offset + 8);
         statements.push(
           db
-            .prepare(`INSERT INTO news_articles (id, guid, channel, title, source_url, content_html, excerpt, published_at, first_seen_at, updated_at)
-          VALUES ${chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",")}
-          ON CONFLICT(guid) DO UPDATE SET channel=excluded.channel, title=excluded.title, source_url=excluded.source_url, content_html=excluded.content_html, excerpt=excluded.excerpt, published_at=excluded.published_at, updated_at=excluded.updated_at`)
+            .prepare(`INSERT INTO news_articles (id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at)
+          VALUES ${chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",")}
+          ON CONFLICT(guid) DO UPDATE SET channel=excluded.channel, title=excluded.title, source_url=excluded.source_url, content_html=excluded.content_html, excerpt=excluded.excerpt, image_url=excluded.image_url, published_at=excluded.published_at, updated_at=excluded.updated_at`)
             .bind(...chunk.flat()),
         );
       }
