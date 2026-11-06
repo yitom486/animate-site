@@ -1,6 +1,6 @@
 import type { Route } from "./+types/anime.bilibili.$id";
 import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
-import { matchBilibiliBangumi } from "~/lib/bilibili";
+import { matchBilibiliBangumi, parseBilibiliMediaId, resolveBilibiliMedia } from "~/lib/bilibili";
 import type { BilibiliMatchResponse } from "~/lib/bilibili";
 import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 
@@ -11,6 +11,13 @@ export async function loader({
 }: Route.LoaderArgs): Promise<BilibiliMatchResponse> {
   const id = params.id;
   if (!id) throw new Response("缺少 id", { status: 400 });
+
+  const rawMediaId = new URL(request.url).searchParams.get("mediaId");
+  if (rawMediaId !== null) {
+    const mediaId = parseBilibiliMediaId(rawMediaId);
+    if (!mediaId) throw new Response("无效的 mediaId", { status: 400 });
+    return resolveBilibiliMedia(mediaId);
+  }
 
   try {
     const { subject } = await fetchCachedDetail(id, upstreamFromRequest(request));

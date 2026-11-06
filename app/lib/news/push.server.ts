@@ -10,6 +10,7 @@ import {
 import { renderNewsMarkdown } from "./markdown.server";
 import { newsArticleUpsertStatements } from "./sync.server";
 import { normalizeSourceUrl } from "./url";
+import { isStaleNewsRevision, parseNewsVersion } from "./revision";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 function record(value: unknown): Record<string, unknown> {
@@ -52,18 +53,7 @@ export function parseNewsPush(value: unknown, now = Date.now()) {
     if (!Number.isFinite(publishedAt) || publishedAt < 0 || publishedAt > now + 86400000)
       throw new Error("Invalid publishedAt");
     // Optional monotonic revision (integer or numeric string). Same publishedAt + lower version must not clobber.
-    let version: number | undefined;
-    if (row.version !== undefined && row.version !== null && row.version !== "") {
-      const raw =
-        typeof row.version === "number"
-          ? row.version
-          : typeof row.version === "string"
-            ? Number(row.version.trim())
-            : NaN;
-      if (!Number.isInteger(raw) || raw < 0 || raw > Number.MAX_SAFE_INTEGER)
-        throw new Error("Invalid version");
-      version = raw;
-    }
+    const version = parseNewsVersion(row.version);
     const html = field(row, "contentHtml", MAX_BYTES);
     const markdown = field(row, "contentMarkdown", MAX_BYTES);
     const excerpt = field(row, "excerpt", 2000);
@@ -135,14 +125,7 @@ async function dropStalePushArticles(db: D1Database, articles: ParsedArticle[]) 
       .prepare("SELECT published_at, push_version FROM news_articles WHERE guid = ?")
       .bind(article.guid)
       .first<{ published_at: number; push_version: number | null }>();
-    if (row && article.publishedAt < row.published_at) continue;
-    if (
-      row &&
-      article.version !== undefined &&
-      row.push_version != null &&
-      article.version < row.push_version
-    )
-      continue;
+    if (row && isStaleNewsRevision(article, row)) continue;
     kept.push(article);
   }
   return kept;

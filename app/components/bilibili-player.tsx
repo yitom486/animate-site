@@ -11,10 +11,12 @@ import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants"
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+import { parseBilibiliMediaId } from "~/lib/bilibili/player";
 
 type BilibiliPlayerProps = {
   id: string;
   fallbackKeyword: string;
+  mediaId?: string;
 };
 
 type PanelState =
@@ -28,9 +30,9 @@ const clientCache = createCache<BilibiliMatchResponse>({
 });
 
 const HINT: Record<Exclude<BilibiliMatchStatus, "matched">, string> = {
-  empty: "B 站番剧类目里没有自动匹配到对应条目。可用下方搜索页手动查找。",
-  blocked: "B 站搜索接口当前被风控拦截，自动匹配不可用。这不代表没有版权，请用搜索页打开。",
-  unavailable: "暂时连不上 B 站搜索接口。可用下方搜索页手动查找。",
+  empty: "暂未找到对应的 B 站番剧资料。可用下方搜索页手动查找。",
+  blocked: "B 站资料接口当前被风控拦截，暂时无法加载分集。可前往 B 站官方页面观看，或稍后重试。",
+  unavailable: "暂时无法获取 B 站分集资料。可前往 B 站观看，或稍后重试。",
 };
 
 function episodeTooltip(ep: BilibiliEpisode): string {
@@ -74,6 +76,7 @@ function MatchedPanel({ match }: { match: BilibiliMatch }) {
             className="aspect-video w-full border-0"
             allowFullScreen
             allow="fullscreen; encrypted-media"
+            referrerPolicy="strict-origin-when-cross-origin"
             loading="lazy"
           />
         </div>
@@ -142,10 +145,12 @@ function SearchFallback({
   keyword,
   hint,
   onRetry,
+  retryLabel,
 }: {
   keyword: string;
   hint: string;
   onRetry?: () => void;
+  retryLabel: string;
 }) {
   const searchUrl = THIRD_PARTY_SEARCH.online.build(keyword);
   return (
@@ -167,7 +172,7 @@ function SearchFallback({
             onClick={onRetry}
             className="text-xs font-bold text-muted-foreground hover:text-primary hover:underline"
           >
-            重试自动匹配
+            {retryLabel}
           </Button>
         ) : null}
       </div>
@@ -175,12 +180,14 @@ function SearchFallback({
   );
 }
 
-export function BilibiliPlayer({ id, fallbackKeyword }: BilibiliPlayerProps) {
+export function BilibiliPlayer({ id, fallbackKeyword, mediaId: rawMediaId }: BilibiliPlayerProps) {
+  const mediaId = parseBilibiliMediaId(rawMediaId);
+  const cacheKey = `${id}:${mediaId ?? "search"}`;
   const [state, setState] = useState<PanelState>({ kind: "loading" });
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
-    const cached = nonce === 0 ? clientCache.get(id) : undefined;
+    const cached = nonce === 0 ? clientCache.get(cacheKey) : undefined;
     if (cached) {
       if (cached.match) setState({ kind: "matched", match: cached.match });
       else
@@ -191,13 +198,15 @@ export function BilibiliPlayer({ id, fallbackKeyword }: BilibiliPlayerProps) {
     const ac = new AbortController();
     setState({ kind: "loading" });
 
-    fetch(`/api/anime/bilibili/${id}`, { signal: ac.signal })
+    const query = mediaId ? `?${new URLSearchParams({ mediaId: String(mediaId) })}` : "";
+    fetch(`/api/anime/bilibili/${id}${query}`, { signal: ac.signal })
       .then((res) => {
         if (!res.ok) throw new Error(String(res.status));
         return res.json() as Promise<BilibiliMatchResponse>;
       })
       .then((data) => {
-        clientCache.set(id, data);
+        if (ac.signal.aborted) return;
+        if (data.status === "matched" || data.status === "empty") clientCache.set(cacheKey, data);
         if (data.match) setState({ kind: "matched", match: data.match });
         else setState({ kind: "idle", status: data.status === "matched" ? "empty" : data.status });
       })
@@ -207,10 +216,10 @@ export function BilibiliPlayer({ id, fallbackKeyword }: BilibiliPlayerProps) {
       });
 
     return () => ac.abort();
-  }, [id, nonce]);
+  }, [id, mediaId, cacheKey, nonce]);
 
   const retry = () => {
-    clientCache.delete(id);
+    clientCache.delete(cacheKey);
     setNonce((n) => n + 1);
   };
 
@@ -227,6 +236,7 @@ export function BilibiliPlayer({ id, fallbackKeyword }: BilibiliPlayerProps) {
             <SearchFallback
               keyword={fallbackKeyword}
               hint={HINT[state.status]}
+              retryLabel={mediaId ? "重试加载分集" : "重试自动匹配"}
               onRetry={state.status === "empty" ? undefined : retry}
             />
           )}

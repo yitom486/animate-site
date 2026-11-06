@@ -5,11 +5,21 @@ import type {
   BilibiliMatchResponse,
   BilibiliMatchStatus,
 } from "./types";
+import { createCache, withCache } from "~/lib/cache";
 
 const BILI_WBI_TYPE = "https://api.bilibili.com/x/web-interface/wbi/search/type";
 const BILI_ALL_V2 = "https://api.bilibili.com/x/web-interface/search/all/v2";
 const BILI_LEGACY_TYPE = "https://api.bilibili.com/x/web-interface/search/type";
 const BILI_SEASON_VIEW = "https://api.bilibili.com/pgc/view/web/season";
+const BILI_MEDIA_VIEW = "https://api.bilibili.com/pgc/review/user";
+
+const mediaCache = createCache<BilibiliMatch>({ ttlMs: 60 * 60 * 1000, maxEntries: 256 });
+
+class PlaybackLookupError extends Error {
+  constructor(readonly status: Exclude<BilibiliMatchStatus, "matched">) {
+    super("Bilibili playback metadata unavailable");
+  }
+}
 
 const BILI_HEADERS = {
   "User-Agent":
@@ -45,9 +55,6 @@ type AllV2Response = {
 
 type SeasonViewEpisode = {
   id?: number;
-  aid?: number;
-  bvid?: string;
-  cid?: number;
   title?: string;
   long_title?: string;
   badge?: string;
@@ -62,13 +69,10 @@ type SeasonViewResponse = {
   };
 };
 
-function mapEpisode(ep: SeasonViewEpisode): BilibiliEpisode | null {
+function mapEpisode(ep: SeasonViewEpisode, seasonId: number): BilibiliEpisode | null {
   if (!ep.id) return null;
   const pageUrl = ep.share_url || ep.link || buildBilibiliEpisodeUrl(ep.id);
-  const embedUrl =
-    ep.aid && ep.bvid && ep.cid
-      ? buildBilibiliEmbedUrl({ aid: ep.aid, bvid: ep.bvid, cid: ep.cid })
-      : undefined;
+  const embedUrl = buildBilibiliEmbedUrl({ episodeId: ep.id, seasonId });
   return {
     epId: ep.id,
     indexLabel: ep.title?.trim() || String(ep.id),
@@ -79,29 +83,77 @@ function mapEpisode(ep: SeasonViewEpisode): BilibiliEpisode | null {
   };
 }
 
-async function enrichPlayback(match: BilibiliMatch): Promise<BilibiliMatch> {
+async function enrichPlayback(match: BilibiliMatch): Promise<BilibiliMatchResponse> {
   try {
     const url = new URL(BILI_SEASON_VIEW);
     url.searchParams.set("season_id", String(match.seasonId));
     const fetched = await fetchJson(url.toString(), AbortSignal.timeout(SEARCH_TIMEOUT_MS));
-    if (!("ok" in fetched)) return match;
+    if (!("ok" in fetched)) return { match: null, status: fetched.status };
 
     const json = fetched.body as SeasonViewResponse;
-    if (json.code !== 0) return match;
+    const classified = classifyApiCode(json.code ?? -1);
+    if (classified) return { match: null, status: classified };
 
     const episodes = (json.result?.episodes ?? [])
-      .map(mapEpisode)
+      .map((ep) => mapEpisode(ep, match.seasonId))
       .filter((ep): ep is BilibiliEpisode => ep !== null);
-    if (!episodes.length) return match;
+    if (!episodes.length) return { match, status: "matched" };
 
     const first = episodes[0];
     return {
-      ...match,
-      pageUrl: first.pageUrl,
-      episodes,
+      status: "matched",
+      match: { ...match, pageUrl: first.pageUrl, episodes },
     };
   } catch {
-    return match;
+    return { match: null, status: "unavailable" };
+  }
+}
+
+/** 已知正版平台 mediaId 时精确查询，不走搜索，也不将失败回退到相似番剧。 */
+export async function resolveBilibiliMedia(mediaId: number): Promise<BilibiliMatchResponse> {
+  if (!Number.isSafeInteger(mediaId) || mediaId <= 0) return { match: null, status: "empty" };
+  try {
+    const match = await withCache(
+      mediaCache,
+      `bilibili:media:v2:${mediaId}`,
+      async () => {
+        const url = new URL(BILI_MEDIA_VIEW);
+        url.searchParams.set("media_id", String(mediaId));
+        const fetched = await fetchJson(url.toString(), AbortSignal.timeout(SEARCH_TIMEOUT_MS));
+        if (!("ok" in fetched)) throw new PlaybackLookupError(fetched.status);
+        const json = fetched.body as {
+          code?: number;
+          result?: { media?: { season_id?: number; title?: string } };
+        };
+        const classified = classifyApiCode(json.code ?? -1);
+        if (classified) throw new PlaybackLookupError(classified);
+        const media = json.result?.media;
+        const seasonId = media?.season_id;
+        if (!seasonId) throw new PlaybackLookupError("empty");
+        const seasonUrl = buildBilibiliBangumiUrl(seasonId);
+        const result = await enrichPlayback({
+          seasonId,
+          title: stripHtml(media.title || "B 站番剧"),
+          seasonUrl,
+          pageUrl: seasonUrl,
+          episodes: [],
+        });
+        // 风控/网络失败不能当作成功缓存，也不能缓存没有分集的临时结果。
+        if (!result.match?.episodes.length) {
+          throw new PlaybackLookupError(
+            result.status === "matched" ? "unavailable" : result.status,
+          );
+        }
+        return result.match;
+      },
+      { useEdge: true },
+    );
+    return { match, status: "matched" };
+  } catch (error) {
+    return {
+      match: null,
+      status: error instanceof PlaybackLookupError ? error.status : "unavailable",
+    };
   }
 }
 
@@ -134,7 +186,16 @@ function pickHit(
   fallbackTitle: string,
 ): BilibiliMatch | null {
   if (!items?.length) return null;
+  const normalize = (value: string) =>
+    stripHtml(value)
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]/gu, "");
+  const expected = normalize(fallbackTitle);
+  if (!expected) return null;
   for (const item of items) {
+    if (![item.title, item.org_title].some((title) => title && normalize(title) === expected))
+      continue;
     const match = toMatch(item, fallbackTitle);
     if (match) return match;
   }
@@ -142,7 +203,7 @@ function pickHit(
 }
 
 function classifyHttp(res: Response): Exclude<BilibiliMatchStatus, "matched" | "empty"> {
-  if (res.status === 412) return "blocked";
+  if ([403, 412, 429].includes(res.status)) return "blocked";
   const contentType = res.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return "blocked";
   return "unavailable";
@@ -224,7 +285,7 @@ export async function searchBilibiliBangumi(keyword: string): Promise<BilibiliMa
     try {
       const result = await attempt();
       if (result.status === "matched" && result.match) {
-        return { ...result, match: await enrichPlayback(result.match) };
+        return enrichPlayback(result.match);
       }
       if (result.status === "empty") return result;
       if (result.status === "blocked") blocked = true;

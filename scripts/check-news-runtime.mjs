@@ -7,12 +7,16 @@ const mock = createFetchMock();
 mock.disableNetConnect();
 const date = new Date().toUTCString();
 for (const channel of ["anime", "events"]) {
+  const content =
+    channel === "anime"
+      ? '> 运行时摘要\n\n## 运行时 Markdown\n\n正文 **重点**。\n\n| 项目 | 内容 |\n| --- | --- |\n| 时间 | 今日 |\n\n<figure><img src="https://cdn.example.com/story.jpg"><figcaption>说明与版权</figcaption></figure>\n\n<iframe src="https://www.youtube-nocookie.com/embed/M7lc1UVf-VE" title="预告"></iframe>\n\n[到原平台观看](https://www.youtube.com/watch?v=M7lc1UVf-VE)\n\n<iframe src="https://player.bilibili.com/player.html?bvid=BV1B7411m7LV" title="B站预告"></iframe>\n\n[到B站观看](https://www.bilibili.com/video/BV1B7411m7LV)'
+      : "<p>运行时正文</p>";
   mock
     .get("https://feeds.example.test")
     .intercept({ path: `/${channel}.xml`, method: "GET" })
     .reply(
       200,
-      `<rss version="2.0"><channel><title>test</title><item><guid>${channel}-runtime</guid><title>运行时资讯</title><link>https://example.com/source</link><pubDate>${date}</pubDate><description><![CDATA[<p>运行时正文</p>]]></description></item></channel></rss>`,
+      `<rss version="2.0"><channel><title>test</title><item><guid>${channel}-runtime</guid><title>运行时资讯</title><link>https://example.com/source</link><pubDate>${date}</pubDate><description><![CDATA[${content}]]></description><news:version xmlns:news="urn:anime-rss:news:1">4</news:version></item></channel></rss>`,
       { headers: { ETag: '"runtime-v1"' } },
     );
 }
@@ -48,6 +52,19 @@ try {
   const result = await worker.scheduled({ cron: "*/15 * * * *", scheduledTime: new Date() });
   assert.equal(result.outcome, "ok");
   assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM news_articles").first()).total, 2);
+  const markdownArticle = await db
+    .prepare("SELECT content_html, push_version FROM news_articles WHERE channel = 'anime'")
+    .first();
+  assert.ok(markdownArticle.content_html.includes("<h2>运行时 Markdown</h2>"));
+  assert.ok(markdownArticle.content_html.includes("<strong>重点</strong>"));
+  assert.ok(markdownArticle.content_html.includes("<blockquote>"));
+  assert.ok(markdownArticle.content_html.includes("<table>"));
+  assert.ok(markdownArticle.content_html.includes("<figcaption>说明与版权</figcaption>"));
+  assert.equal((markdownArticle.content_html.match(/<iframe /g) ?? []).length, 2);
+  assert.ok(
+    markdownArticle.content_html.includes('referrerpolicy="strict-origin-when-cross-origin"'),
+  );
+  assert.equal(markdownArticle.push_version, 4);
   assert.equal(
     (await db.prepare("SELECT COUNT(*) AS total FROM news_feeds WHERE error IS NOT NULL").first())
       .total,

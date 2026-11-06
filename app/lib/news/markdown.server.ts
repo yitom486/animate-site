@@ -1,27 +1,17 @@
-import { marked } from "marked";
+import { Marked } from "marked";
 
-marked.setOptions({
+const markdown = new Marked({
   gfm: true,
   breaks: false,
 });
 
-/** 正文更像 Markdown 而不是 HTML 时走 marked；已消毒的 HTML 仍走原路径。 */
+/** 已有块级 HTML 保持原样；纯文本、裸 URL 与行内 HTML 混排交给 GFM。 */
 export function looksLikeMarkdown(raw: string) {
   const trimmed = raw.trim();
   if (!trimmed) return false;
-  const htmlTagCount = (trimmed.match(/<\/?[a-z][^>]*>/gi) ?? []).length;
-  if (htmlTagCount >= 2) return false;
-  return (
-    /^#{1,6}\s+\S/m.test(trimmed) ||
-    /^>\s+\S/m.test(trimmed) ||
-    /^[-*+]\s+\S/m.test(trimmed) ||
-    /^\d+\.\s+\S/m.test(trimmed) ||
-    /```[\s\S]*```/.test(trimmed) ||
-    /!\[[^\]]*]\(https?:\/\/[^)]+\)/.test(trimmed) ||
-    /\[[^\]]+]\(https?:\/\/[^)]+\)/.test(trimmed)
-  );
+  return markdown.lexer(trimmed).some((token) => token.type !== "html" && token.type !== "space");
 }
 
-export function renderNewsMarkdown(markdown: string) {
-  return marked.parse(markdown, { async: false }) as string;
+export function renderNewsMarkdown(source: string) {
+  return markdown.parse(source, { async: false }) as string;
 }

@@ -14,7 +14,7 @@ import { SiteNav } from "~/components/site-nav";
 import { Button } from "~/components/ui/button";
 import { newsDbFromContext, readNewsArticle } from "~/lib/news/db.server";
 import { formatNewsDate, newsListHref } from "~/lib/news/config";
-import { prepareNewsContent } from "~/lib/news/parse.server";
+import { renderNewsContent } from "~/lib/news/content.server";
 import { parseNewsItemMeta } from "~/lib/news/display";
 import { seedNewsDetailQuery } from "~/lib/news/queries";
 import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
@@ -34,7 +34,7 @@ const newsDetailClientCache = createRouteClientCache<NewsDetailData>({
 export async function loader({ params, context }: Route.LoaderArgs) {
   const article = await readNewsArticle(newsDbFromContext(context), params.id);
   if (!article) throw new Response("资讯不存在或已超过 30 天保留期", { status: 404 });
-  return { article: { ...article, contentHtml: prepareNewsContent(article.contentHtml) } };
+  return { article: { ...article, contentHtml: renderNewsContent(article.contentHtml) } };
 }
 
 export async function clientLoader({ params, serverLoader }: Route.ClientLoaderArgs) {
@@ -174,7 +174,7 @@ export default function NewsDetailPage({ loaderData: { article } }: Route.Compon
             </div>
 
             <div
-              className="blog-prose mt-8 space-y-4 break-words text-base leading-loose text-foreground [&_a]:text-primary [&_a]:underline [&_a.news-video-link]:inline-flex [&_a.news-video-link]:items-center [&_a.news-video-link]:rounded-lg [&_a.news-video-link]:border [&_a.news-video-link]:border-primary/25 [&_a.news-video-link]:bg-primary/10 [&_a.news-video-link]:px-2.5 [&_a.news-video-link]:py-1 [&_a.news-video-link]:no-underline [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:bg-muted/20 [&_blockquote]:p-3 [&_blockquote]:text-muted-foreground [&_figure]:my-4 [&_figure]:flex [&_figure]:flex-col [&_figure]:items-center [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-xs [&_figcaption]:text-muted-foreground [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-lg [&_h3]:font-semibold [&_img]:mx-auto [&_img]:my-3 [&_img]:block [&_img]:max-w-full [&_img]:rounded-xl [&_img]:border [&_img]:border-border/60 [&_li]:ml-5 [&_ol]:list-decimal [&_ul]:list-disc [&_video]:my-4 [&_video]:w-full [&_video]:rounded-xl"
+              className="blog-prose news-prose mt-8 space-y-4 break-words text-base leading-loose text-foreground [&_a]:text-primary [&_a]:underline [&_a.news-video-link]:inline-flex [&_a.news-video-link]:items-center [&_a.news-video-link]:rounded-lg [&_a.news-video-link]:border [&_a.news-video-link]:border-primary/25 [&_a.news-video-link]:bg-primary/10 [&_a.news-video-link]:px-2.5 [&_a.news-video-link]:py-1 [&_a.news-video-link]:no-underline [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:bg-muted/20 [&_blockquote]:p-3 [&_blockquote]:text-muted-foreground [&_figure]:my-4 [&_figure]:flex [&_figure]:flex-col [&_figure]:items-center [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-xs [&_figcaption]:text-muted-foreground [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-lg [&_h3]:font-semibold [&_img]:mx-auto [&_img]:my-3 [&_img]:block [&_img]:max-w-full [&_img]:rounded-xl [&_img]:border [&_img]:border-border/60 [&_li]:ml-5 [&_ol]:list-decimal [&_ul]:list-disc [&_video]:my-4 [&_video]:w-full [&_video]:rounded-xl"
               dangerouslySetInnerHTML={{ __html: article.contentHtml }}
             />
 

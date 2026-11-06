@@ -10,6 +10,7 @@ import {
   type NewsSourceSecrets,
 } from "./settings.server";
 import { normalizeSourceUrl } from "./url";
+import { STALE_NEWS_REVISION_SQL } from "./revision";
 
 const MAX_FEED_BYTES = 2 * 1024 * 1024;
 
@@ -25,6 +26,7 @@ type ArticleMergeRow = {
   published_at: number;
   first_seen_at: number;
   updated_at: number;
+  push_version?: number | null;
 };
 
 async function readFeedBody(response: Response) {
@@ -78,6 +80,12 @@ export function preferNewsContentHtml(a: string, b: string) {
  * Prefer more https images in body, then longer body, then celadon guid, then cover field.
  */
 export function chooseNewsMergeKeeper(a: ArticleMergeRow, b: ArticleMergeRow): ArticleMergeRow {
+  if (a.push_version != null || b.push_version != null) {
+    if (a.push_version == null) return b;
+    if (b.push_version == null) return a;
+    if (a.push_version !== b.push_version) return a.push_version > b.push_version ? a : b;
+    if (a.published_at !== b.published_at) return a.published_at > b.published_at ? a : b;
+  }
   const ai = countNewsHttpsImages(a.content_html);
   const bi = countNewsHttpsImages(b.content_html);
   if (ai !== bi) return ai > bi ? a : b;
@@ -96,6 +104,14 @@ export function chooseNewsMergeKeeper(a: ArticleMergeRow, b: ArticleMergeRow): A
 export function mergeNewsArticlePair(a: ArticleMergeRow, b: ArticleMergeRow): ArticleMergeRow {
   const keeper = chooseNewsMergeKeeper(a, b);
   const other = keeper.id === a.id ? b : a;
+  // 成品版本优先于篇幅/配图启发式，不混入另一篇旧正文的字段。
+  if (keeper.push_version != null)
+    return {
+      ...keeper,
+      source_url: normalizeSourceUrl(keeper.source_url),
+      image_url: keeper.image_url || other.image_url,
+      first_seen_at: Math.min(keeper.first_seen_at, other.first_seen_at),
+    };
   const contentHtml = preferNewsContentHtml(keeper.content_html, other.content_html);
   const excerptSource =
     contentHtml === keeper.content_html
@@ -123,7 +139,7 @@ export async function collapseDuplicateNewsArticles(db: D1Database, now = Date.n
   const rows = (
     await db
       .prepare(
-        `SELECT id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at
+        `SELECT id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at, push_version
          FROM news_articles`,
       )
       .all<ArticleMergeRow>()
@@ -166,7 +182,7 @@ export async function collapseDuplicateNewsArticles(db: D1Database, now = Date.n
         .prepare(
           `UPDATE news_articles
            SET guid = ?, title = ?, source_url = ?, content_html = ?, excerpt = ?, image_url = ?,
-               published_at = ?, first_seen_at = ?, updated_at = ?
+               published_at = ?, first_seen_at = ?, updated_at = ?, push_version = ?
            WHERE id = ?`,
         )
         .bind(
@@ -179,6 +195,7 @@ export async function collapseDuplicateNewsArticles(db: D1Database, now = Date.n
           merged.published_at,
           merged.first_seen_at,
           now,
+          merged.push_version ?? null,
           merged.id,
         ),
     );
@@ -222,17 +239,11 @@ export async function newsArticleUpsertStatements(
         .prepare(`INSERT INTO news_articles (id, guid, channel, title, source_url, content_html, excerpt, image_url, published_at, first_seen_at, updated_at, push_version)
           VALUES ${chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",")}
           ON CONFLICT(guid) DO UPDATE SET
-            channel=CASE
-              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.channel
-              ELSE excluded.channel END,
-            title=CASE
-              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.title
-              ELSE excluded.title END,
-            source_url=CASE
-              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.source_url
-              ELSE excluded.source_url END,
+            channel=excluded.channel,
+            title=excluded.title,
+            source_url=excluded.source_url,
             content_html=CASE
-              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.content_html
+              WHEN excluded.push_version IS NOT NULL THEN excluded.content_html
               WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
               THEN excluded.content_html
               WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
@@ -240,26 +251,18 @@ export async function newsArticleUpsertStatements(
               WHEN length(excluded.content_html) >= length(news_articles.content_html)
               THEN excluded.content_html ELSE news_articles.content_html END,
             excerpt=CASE
-              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.excerpt
+              WHEN excluded.push_version IS NOT NULL THEN excluded.excerpt
               WHEN excluded.content_html LIKE '%<img%' AND news_articles.content_html NOT LIKE '%<img%'
               THEN excluded.excerpt
               WHEN news_articles.content_html LIKE '%<img%' AND excluded.content_html NOT LIKE '%<img%'
               THEN news_articles.excerpt
               WHEN length(excluded.excerpt) >= length(news_articles.excerpt)
               THEN excluded.excerpt ELSE news_articles.excerpt END,
-            image_url=CASE
-              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version))
-              THEN COALESCE(news_articles.image_url, excluded.image_url)
-              ELSE COALESCE(excluded.image_url, news_articles.image_url) END,
-            published_at=MAX(excluded.published_at, news_articles.published_at),
-            updated_at=CASE
-              WHEN (excluded.published_at < news_articles.published_at OR (excluded.push_version IS NOT NULL AND news_articles.push_version IS NOT NULL AND excluded.push_version < news_articles.push_version)) THEN news_articles.updated_at
-              ELSE excluded.updated_at END,
-            push_version=CASE
-              WHEN excluded.push_version IS NULL THEN news_articles.push_version
-              WHEN news_articles.push_version IS NULL THEN excluded.push_version
-              WHEN excluded.push_version < news_articles.push_version THEN news_articles.push_version
-              ELSE excluded.push_version END`)
+            image_url=COALESCE(excluded.image_url, news_articles.image_url),
+            published_at=excluded.published_at,
+            updated_at=excluded.updated_at,
+            push_version=COALESCE(excluded.push_version, news_articles.push_version)
+          WHERE NOT (${STALE_NEWS_REVISION_SQL})`)
         .bind(...chunk.flat()),
     );
   }

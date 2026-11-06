@@ -18,11 +18,14 @@ import { NEWS_RETENTION_MS } from "../app/lib/news/config";
 import {
   collapseDuplicateNewsArticles,
   mergeNewsArticlePair,
+  newsArticleUpsertStatements,
   syncNewsFeeds,
 } from "../app/lib/news/sync.server";
 import { newsSourceUrls } from "../app/lib/news/settings.server";
 import { pickNewsShowcase } from "../app/lib/news/display";
 import { normalizeSourceUrl } from "../app/lib/news/url";
+import { handleNewsPush } from "../app/lib/news/push.server";
+import { isStaleNewsRevision } from "../app/lib/news/revision";
 
 const directory = await mkdtemp(join(tmpdir(), "celadon-news-check-"));
 const proxy = await getPlatformProxy<NewsEnv>({
@@ -489,8 +492,148 @@ try {
   const collapseAgain = await collapseDuplicateNewsArticles(db, multiNow);
   assert.equal(collapseAgain.collapsed, 0);
 
+  // 推送与 RSS 的最终 SQL guard 一致，保护成品版本、较短新正文和播放器。
+  const revisionTime = Math.floor((Date.now() - 3600000) / 1000) * 1000;
+  const revisionBase = {
+    channel: "anime" as const,
+    guid: "revision-contract",
+    title: "版本验收",
+    sourceUrl: "https://example.com/revision-contract",
+    publishedAt: revisionTime,
+  };
+  const pushRevision = async (overrides: Record<string, unknown>) => {
+    const response = await handleNewsPush(
+      new Request("https://example.com/feeds/push", {
+        method: "POST",
+        headers: { Authorization: "Bearer test-only-token" },
+        body: JSON.stringify({ items: [{ ...revisionBase, ...overrides }] }),
+      }),
+      { NEWS_DB: db, NEWS_PUSH_TOKEN: "test-only-token" },
+    );
+    assert.equal(response.status, 200);
+    return response.json() as Promise<{ staleSkipped: number }>;
+  };
+  const readRevision = () =>
+    db
+      .prepare("SELECT * FROM news_articles WHERE guid = ?")
+      .bind(revisionBase.guid)
+      .first<{ content_html: string; push_version: number; published_at: number }>();
+  await pushRevision({
+    version: 10,
+    contentHtml: '<img src="https://cdn.example.com/old.jpg"><p>' + "旧长正文".repeat(100) + "</p>",
+  });
+  const newHtml =
+    '<blockquote>成品导读</blockquote><iframe src="https://www.youtube-nocookie.com/embed/M7lc1UVf-VE" title="新预告"></iframe><p><a href="https://www.youtube.com/watch?v=M7lc1UVf-VE">到原平台观看</a></p>';
+  await pushRevision({ version: 11, contentHtml: newHtml });
+  const revision11 = (await readRevision())!;
+  assert.equal(revision11.push_version, 11);
+  assert.ok(revision11.content_html.includes("<iframe"), "短的新版本应替换图片多的旧长正文");
+  assert.ok(!revision11.content_html.includes("旧长正文"));
+
+  const writeRssRevision = async (version?: number, publishedAt = revisionTime) => {
+    const markup =
+      version === undefined
+        ? ""
+        : `<news:version xmlns:news="urn:anime-rss:news:1">${version}</news:version>`;
+    const entries = parseNewsRss(
+      rss(
+        item(
+          revisionBase.guid,
+          "<p>旧 RSS 正文</p>",
+          new Date(publishedAt).toUTCString(),
+          markup,
+          revisionBase.sourceUrl,
+        ),
+      ),
+      "anime",
+    );
+    const statements = await newsArticleUpsertStatements(db, entries);
+    if (statements.length) await db.batch(statements);
+  };
+  await writeRssRevision();
+  assert.deepEqual(await readRevision(), revision11, "无版本旧 RSS 不得更改任何已入库字段");
+  await writeRssRevision(10);
+  assert.deepEqual(await readRevision(), revision11, "较低版本 RSS 不回滚正文");
+  await writeRssRevision(10, revisionTime + 1000);
+  assert.deepEqual(await readRevision(), revision11, "低版本也不能提高发布时间，间接卡住后续推送");
+  await writeRssRevision(99, revisionTime - 1000);
+  assert.deepEqual(await readRevision(), revision11, "旧时间的新版本不能只修改 push_version");
+  assert.equal((await pushRevision({ contentHtml: "<p>无版本旧推送</p>" })).staleSkipped, 1);
+  assert.deepEqual(await readRevision(), revision11);
+
+  // 直接比较 JS 预检和 SQL 的接受/拒绝，防止并发时两套判断出现差异。
+  for (const clock of [revisionTime - 1000, revisionTime, revisionTime + 1000]) {
+    for (const version of [undefined, 0, 10, 11, 12]) {
+      const before = (await readRevision())!;
+      const candidate = {
+        ...revisionBase,
+        publishedAt: clock,
+        version,
+        contentHtml: "<p>候选正文</p>",
+        excerpt: "候选正文",
+      };
+      const stale = isStaleNewsRevision(candidate, before);
+      const statements = await newsArticleUpsertStatements(db, [candidate]);
+      await db.batch(statements);
+      if (stale) assert.deepEqual(await readRevision(), before);
+      else {
+        assert.equal((await readRevision())!.published_at, clock);
+        if (version !== undefined) assert.equal((await readRevision())!.push_version, version);
+      }
+    }
+  }
+  await pushRevision({ version: 20, publishedAt: revisionTime + 2000, contentHtml: newHtml });
+  const revision20 = (await readRevision())!;
+  const pending = await newsArticleUpsertStatements(db, [
+    {
+      ...revisionBase,
+      publishedAt: revisionTime + 2000,
+      version: 20,
+      contentHtml: "<p>并发旧内容</p>",
+      excerpt: "旧",
+    },
+  ]);
+  await pushRevision({
+    version: 21,
+    publishedAt: revisionTime + 2000,
+    contentHtml: newHtml.replace("新预告", "最新预告"),
+  });
+  const latest = (await readRevision())!;
+  await db.batch(pending);
+  assert.deepEqual(await readRevision(), latest, "预检之后更高版本到达，最终写入仍不能回滚");
+  assert.notEqual(latest.push_version, revision20.push_version);
+
+  const duplicate = {
+    ...revisionBase,
+    guid: "unversioned-duplicate",
+    publishedAt: revisionTime + 2000,
+    contentHtml: '<img src="https://cdn.example.com/old.jpg">' + "很长的旧正文".repeat(100),
+    excerpt: "旧正文",
+  };
+  await db.batch(await newsArticleUpsertStatements(db, [duplicate]));
+  await collapseDuplicateNewsArticles(db);
+  assert.equal(
+    (await readRevision())!.content_html,
+    latest.content_html,
+    "按 source_url 合并不能重新挑选旧长正文",
+  );
+  assert.equal((await readRevision())!.push_version, 21);
+  await pushRevision({
+    version: 21,
+    publishedAt: revisionTime + 2000,
+    contentHtml: latest.content_html,
+  });
+  assert.equal(
+    (await db
+      .prepare("SELECT COUNT(*) AS total FROM news_articles WHERE source_url = ?")
+      .bind(revisionBase.sourceUrl)
+      .first<{ total: number }>())!.total,
+    1,
+    "稳定 GUID 重复同步不增加文章",
+  );
+
   console.log(
-    "资讯检查通过：真实本地 D1、GUID、双源合并/source_url 去重、封面/enclosure、无占位优先封面、图片白名单、Markdown、完整正文/过滤、ETag/304、频道周期、分页、失败保留、并发租约、事务回滚和 30 天清理。",
+    "资讯检查通过：真实本地 D1、GUID、双源合并、图片/Markdown、ETag/304、失败保留、租约/事务/清理，以及 RSS/推送版本、短新正文、原子防回滚与版本化去重。",
   );
 } finally {
   await proxy.dispose();

@@ -127,7 +127,12 @@ export function StreamingPanel({ id, date, title }: StreamingPanelProps) {
                         ) : null}
 
                         {/* 嵌入原有的 BilibiliPlayer（带选集内嵌与平滑降级） */}
-                        <BilibiliPlayer id={id} fallbackKeyword={title} />
+                        <BilibiliPlayer
+                          key={`${id}:${activeTab}`}
+                          id={id}
+                          mediaId={currentSelectedSite?.id}
+                          fallbackKeyword={title}
+                        />
                       </div>
                     ) : currentSelectedSite ? (
                       /* 2. 其它平台（動畫瘋、Netflix、爱奇艺等） */

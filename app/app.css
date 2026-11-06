@@ -271,6 +271,37 @@
     vertical-align: -0.25em;
     border-radius: 0;
   }
+  .news-prose :where(h4, h5, h6) {
+    margin-top: 1.5rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .news-prose iframe.news-official-player {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--player);
+  }
+  .news-prose > blockquote:first-child {
+    border-inline-start: 3px solid var(--primary);
+    background: var(--accent);
+    color: var(--accent-foreground);
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+  }
+  .news-prose :where(figure, table) {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .news-prose :where(th, td) {
+    min-width: 8rem;
+    vertical-align: top;
+  }
 }
 
 /* 主题颜色只由 View Transitions API 过渡，不叠加逐元素颜色渐变。 */

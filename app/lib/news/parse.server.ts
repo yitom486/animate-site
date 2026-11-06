@@ -4,6 +4,8 @@ import { decodeHTML } from "entities";
 import type { NewsChannel } from "./config";
 import { looksLikeMarkdown, renderNewsMarkdown } from "./markdown.server";
 import { normalizeSourceUrl } from "./url";
+import { isNewsVideoLink, parseNewsIframeUrl } from "./video";
+import { parseNewsVersion } from "./revision";
 
 export type ParsedArticle = {
   guid: string;
@@ -93,10 +95,13 @@ export function sanitizeNewsHtml(html: string) {
       "h2",
       "h3",
       "h4",
+      "h5",
+      "h6",
       "strong",
       "b",
       "em",
       "i",
+      "del",
       "ul",
       "ol",
       "li",
@@ -116,18 +121,73 @@ export function sanitizeNewsHtml(html: string) {
       "td",
       "video",
       "source",
+      "iframe",
     ],
     allowedAttributes: {
       a: ["href", "title", "target", "rel", "class"],
+      code: ["class"],
       img: ["src", "alt", "loading", "decoding", "width", "height", "referrerpolicy"],
       video: ["src", "controls", "preload", "poster", "width", "height"],
       source: ["src", "type"],
+      iframe: [
+        "src",
+        "title",
+        "loading",
+        "allow",
+        "allowfullscreen",
+        "referrerpolicy",
+        "class",
+        "width",
+        "height",
+      ],
       th: ["colspan", "rowspan"],
       td: ["colspan", "rowspan"],
     },
+    allowedClasses: {
+      a: ["news-video-link"],
+      code: ["language-*"],
+      iframe: ["news-official-player"],
+    },
+    allowedIframeHostnames: ["www.youtube-nocookie.com", "player.bilibili.com"],
+    exclusiveFilter: (frame) =>
+      frame.tag === "iframe" && !parseNewsIframeUrl(frame.attribs.src ?? ""),
     allowedSchemes: ["https", "http"],
     allowProtocolRelative: false,
     transformTags: {
+      h1: "h2",
+      iframe: (_tag, attrs): sanitizeHtml.Tag => {
+        const player = parseNewsIframeUrl(attrs.src ?? "");
+        if (!player) return { tagName: "iframe", attribs: {} };
+        const features = new Set([
+          "accelerometer",
+          "autoplay",
+          "clipboard-write",
+          "encrypted-media",
+          "gyroscope",
+          "picture-in-picture",
+          "web-share",
+          "fullscreen",
+        ]);
+        const allow = (attrs.allow ?? "encrypted-media; picture-in-picture; fullscreen")
+          .split(";")
+          .map((feature) => feature.trim().split(/\s+/)[0])
+          .filter((feature) => features.has(feature))
+          .join("; ");
+        return {
+          tagName: "iframe",
+          attribs: {
+            src: player.src,
+            title: attrs.title?.trim() || `${player.platform} 视频播放器`,
+            loading: attrs.loading === "eager" ? "eager" : "lazy",
+            allow,
+            allowfullscreen: "",
+            referrerpolicy: "strict-origin-when-cross-origin",
+            class: "news-official-player",
+            width: "640",
+            height: "360",
+          },
+        };
+      },
       a: (_tag, attrs) => {
         const href = attrs.href ?? "";
         const next: Record<string, string> = {
@@ -135,9 +195,8 @@ export function sanitizeNewsHtml(html: string) {
           target: "_blank",
           rel: "noopener noreferrer nofollow",
         };
-        if (/youtube\.com|youtu\.be|bilibili\.com|b23\.tv/i.test(href)) {
-          next.class = [attrs.class, "news-video-link"].filter(Boolean).join(" ");
-        }
+        if (isNewsVideoLink(href)) next.class = "news-video-link";
+        else delete next.class;
         return { tagName: "a", attribs: next };
       },
       img: (_tag, attrs) => {
@@ -278,6 +337,22 @@ export function parseNewsRss(xml: string, channel: NewsChannel): ParsedArticle[]
   const seen = new Set<string>();
   return rows
     .map((row) => {
+      // XML 命名空间可声明在 version 本身、item、channel 或 rss 上。
+      let version: number | undefined;
+      for (const [name, value] of Object.entries(row)) {
+        const prefix = name.match(/^([^:]+):version$/)?.[1];
+        if (!prefix) continue;
+        const namespace =
+          attr(value, `xmlns:${prefix}`) ||
+          attr(row, `xmlns:${prefix}`) ||
+          attr(feed, `xmlns:${prefix}`) ||
+          attr(document.rss, `xmlns:${prefix}`);
+        if (namespace === "urn:anime-rss:news:1") {
+          const rawVersion = text(value);
+          if (!rawVersion) throw new Error("RSS 成品版本不能为空");
+          version = parseNewsVersion(rawVersion);
+        }
+      }
       const guid = text(row.guid);
       const title = text(row.title);
       const sourceUrl = text(row.link);
@@ -303,6 +378,7 @@ export function parseNewsRss(xml: string, channel: NewsChannel): ParsedArticle[]
         publishedAt,
         excerpt: makeExcerpt(contentHtml),
         imageUrl: extractCoverImageUrl(contentHtml, row),
+        ...(version !== undefined ? { version } : {}),
       };
     })
     .filter((row) => {

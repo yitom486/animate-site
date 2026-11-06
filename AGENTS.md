@@ -82,3 +82,4 @@ Zed 用户配置（Windows）在 `%APPDATA%/Zed/settings.json` 的 `languages` �
 - Worker 里不要用 Node `fs` / jsdom；外网 `fetch` 必须带超时。
 
 - 成品推送入口：同步 Worker 的 `POST /feeds/push`，Bearer `NEWS_PUSH_TOKEN`；与 RSS 共用消毒和 GUID upsert，保留原 cron。协议见 docs/news-storage.md，密钥不得入 Git/聊天。
+- 成品正文直接按 GFM/HTML 二选一展示，不调用模型再加工、不追加重复配图。仅放行 `https://www.youtube-nocookie.com/embed/<视频ID>` 与 `https://player.bilibili.com/player.html?...` 的合规 iframe，严格解析实际协议/主机/路径/标识，保留原平台链接；详见 `docs/news-markdown.md`。RSS `news:version`（`urn:anime-rss:news:1`）与推送共用版本保护；不得让同发布时间无版本的旧 RSS、低版本或按来源合并的旧长正文覆盖新成品。

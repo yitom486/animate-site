@@ -4,5 +4,10 @@ export type {
   BilibiliMatchResponse,
   BilibiliMatchStatus,
 } from "./types";
-export { buildBilibiliBangumiUrl, buildBilibiliEmbedUrl, buildBilibiliEpisodeUrl } from "./player";
-export { searchBilibiliBangumi, matchBilibiliBangumi } from "./search";
+export {
+  buildBilibiliBangumiUrl,
+  buildBilibiliEmbedUrl,
+  buildBilibiliEpisodeUrl,
+  parseBilibiliMediaId,
+} from "./player";
+export { searchBilibiliBangumi, matchBilibiliBangumi, resolveBilibiliMedia } from "./search";

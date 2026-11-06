@@ -39,7 +39,8 @@ NEWS_EVENTS_RSS_URLS=<TOMY_EVENTS_HTTPS>,https://yitom486.github.io/celadon-news
 ## 数据与失败处理
 
 - `news_articles` 保存 GUID、GUID 的 SHA-256 站内 ID、频道、标题、原文链接、净化后的 HTML、摘要、可选 `image_url` 封面及发布/首次导入/更新时间。GUID 唯一；同频道规范化 `source_url` 相同的多 GUID 在同步结束时合并为更丰富的一条。`0002_news_image_url.sql` 为可空封面列；`0003_news_multi_feed.sql` 放宽 `news_feeds` id 并索引 `source_url`。
-- 优先 `content:encoded`，没有才使用 `description`，不重复拼接。正文若更像 Markdown 则先用 `marked` 渲染再消毒。封面优先取 enclosure / `media:content` / 正文首张 https 图。允许安全 `img`/`figure`/`table`/`video`（仅 https）；YouTube/Bilibili 外链加样式标记，不嵌入 iframe。过滤脚本、事件、内联样式、iframe 和危险协议。
+- 优先 `content:encoded`，没有才使用 `description`，不重复拼接。纯文本与 Markdown 先用 `marked` 渲染再消毒，已有块级 HTML 保留原路径。封面优先取 enclosure / `media:content` / 正文首张 https 图。保留安全 `img`/`figure`/`figcaption`/`table`/`video`，以及精确校验协议、主机、路径和视频标识后的两个官方 iframe 来源；过滤其他 iframe、脚本、事件、内联样式及危险协议。网站直接展示上游成品，不改写正文、不自动将普通链接替换为播放器，不追加重复图片。格式见 [资讯 Markdown 协议](./news-markdown.md)。
+- RSS 解析命名空间 `urn:anime-rss:news:1` 下的 `news:version` 非负安全整数，与推送 `version` 共用比较规则并写入 `push_version`。较旧发布时间、较低版本，以及相同发布时间且缺版本的旧内容均不得覆盖已有成品；最终 SQL 原子检查，同来源合并也优先成品版本。有版本的合规新正文直接替换旧正文，不再按图片数或篇幅挑选。
 - 发布日期决定 30 天展示窗口；首次导入和同步时间不延长保留期限。未来发布的文章先保存，发布时间到后才展示，避免 ETag 不变造成永久漏项。
 - `news_feeds` 保存 ETag、Last-Modified、成功/检查时间、错误和下次检查时间。304 更新检查状态，保留文章；解析或写入失败不推进 ETag。
 - 每个源独立处理；同步失败保留旧文章，5 分钟后允许重试，实际由下一次 15 分钟定时任务执行。120 秒租约避免同源同时写入。
