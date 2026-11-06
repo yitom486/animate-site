@@ -13,11 +13,25 @@
 | 同步 Worker | `celadon-news-sync`，只绑定生产库，无公开写入接口               |
 | 定时器      | `*/15 * * * *`；根据每个源的 `next_check_at` 决定是否拉取       |
 
-频道名称和间隔集中在 `app/lib/news/config.ts`。真实订阅地址仅保存在同步 Worker 的 Cloudflare Secrets：`NEWS_ANIME_RSS_URL` 与 `NEWS_EVENTS_RSS_URL`；共享配置、Git 和浏览器产物不包含真实值。动漫每 15 分钟、漫展每小时；不叠加综合源。网站请求只读 D1，不需要这些 Secrets。预览数据库以首次导入的数据验证，不运行生产定时任务。
+频道名称和间隔集中在 `app/lib/news/config.ts`。真实订阅地址仅保存在同步 Worker 的 Cloudflare Secrets。每个频道可组合：
+
+- `NEWS_ANIME_RSS_URL` / `NEWS_EVENTS_RSS_URL`（主源）
+- `NEWS_ANIME_RSS_URL_SECONDARY` / `NEWS_EVENTS_RSS_URL_SECONDARY`（第二源）
+- `NEWS_ANIME_RSS_URLS` / `NEWS_EVENTS_RSS_URLS`（逗号或换行分隔的 HTTPS 列表）
+
+同步时去重 URL，按源独立保存 ETag（`news_feeds.id` 为 `anime`/`events`，或多源时为 `anime:<hash>` / `events:<hash>`）。文章按规范化 `source_url` 跨源合并，保留封面与更长正文。共享配置、Git 和浏览器产物不包含真实值。动漫每 15 分钟、漫展每小时。网站请求只读 D1，不需要这些 Secrets。预览数据库以首次导入的数据验证，不运行生产定时任务。
+
+推荐双订示例（旧聚合地址勿写入仓库，仅放 Secrets）：
+
+```text
+NEWS_ANIME_RSS_URLS=https://yitom486.github.io/celadon-news-feed/anime.xml,<OLD_ANIME_HTTPS>
+NEWS_EVENTS_RSS_URLS=https://yitom486.github.io/celadon-news-feed/events.xml,<OLD_EVENTS_HTTPS>
+```
+
 
 ## 数据与失败处理
 
-- `news_articles` 保存 GUID、GUID 的 SHA-256 站内 ID、频道、标题、原文链接、净化后的 HTML、摘要、可选 `image_url` 封面及发布/首次导入/更新时间。GUID 唯一；原文 URL 相同的新 GUID 仍作为新文章。`0002_news_image_url.sql` 为可空列迁移。
+- `news_articles` 保存 GUID、GUID 的 SHA-256 站内 ID、频道、标题、原文链接、净化后的 HTML、摘要、可选 `image_url` 封面及发布/首次导入/更新时间。GUID 唯一；同频道规范化 `source_url` 相同的多 GUID 在同步结束时合并为更丰富的一条。`0002_news_image_url.sql` 为可空封面列；`0003_news_multi_feed.sql` 放宽 `news_feeds` id 并索引 `source_url`。
 - 优先 `content:encoded`，没有才使用 `description`，不重复拼接。正文若更像 Markdown 则先用 `marked` 渲染再消毒。封面优先取 enclosure / `media:content` / 正文首张 https 图。允许安全 `img`/`figure`/`table`/`video`（仅 https）；YouTube/Bilibili 外链加样式标记，不嵌入 iframe。过滤脚本、事件、内联样式、iframe 和危险协议。
 - 发布日期决定 30 天展示窗口；首次导入和同步时间不延长保留期限。未来发布的文章先保存，发布时间到后才展示，避免 ETag 不变造成永久漏项。
 - `news_feeds` 保存 ETag、Last-Modified、成功/检查时间、错误和下次检查时间。304 更新检查状态，保留文章；解析或写入失败不推进 ETag。
@@ -29,7 +43,7 @@
 ## 页面与缓存
 
 - `/news`：频道筛选与 URL 分页；`/news/:id`：站内阅读，原文作为“查看来源”入口。
-- `/api/news?view=home`：每频道独立取 12 条，避免动漫高频更新挤掉漫展。首页每栏展示 6 条并提供完整列表入口。
+- `/api/news?view=home`：每频道独立取 12 条（优先带封面），避免动漫高频更新挤掉漫展。首页每栏展示最多 6 条（同样优先封面）；列表卡仅在有封面时显示右侧小缩略图，无封面不留占位。
 - `/api/news?channel=anime&page=1&limit=20`：公开列表，浏览器缓存 60 秒、共享缓存 600 秒；保留 channel/page/limit/view 参数。
 - 首页使用 TanStack Query，5 分钟新鲜期；站内列表和详情用服务端 loader。HTML 包含主题偏好，继续使用 private 策略。
 - D1 是持久化数据源，Query、HTTP 缓存各自管理新鲜期；查询缓存不等同于持久化或 CDN HIT。
@@ -98,3 +112,11 @@ MCP OAuth 授权与 Wrangler 登录是两套凭据。部署时可以通过 MCP �
 - 迁移：`migrations/0002_news_image_url.sql`（`ALTER TABLE news_articles ADD COLUMN image_url TEXT`），生产/预览需各自 apply。
 - 列表与详情展示封面；详情正文支持图片与直链 video；Markdown 源在服务端经 marked → sanitize。
 - Secrets 切换到 Bot feed 由运维侧处理，本提交不改 Cloudflare Secrets。
+
+## 发布记录：双源合并与卡片缩略图（2026-11-06，北京时间）
+
+- 列表/首页资讯卡：有封面 → 右侧约 96–112px 缩略图；无封面 → 不渲染封面区域（去掉 ImageOff 大占位）。
+- 详情页：仅在有 `image` 时保留中等宽度头图。
+- 同步 Worker：支持每频道多 RSS；同步后按 `source_url` 合并重复；打包产物见 `.wrangler/news-worker/`。
+- 旧私有 RSS 明文地址未从本地/API 恢复；需运维在 Secrets 中自行填入 `NEWS_*_RSS_URLS` 与 Bot feed 双订。
+

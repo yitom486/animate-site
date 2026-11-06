@@ -30,14 +30,20 @@ const runtime = new Miniflare({
 });
 try {
   const db = await runtime.getD1Database("NEWS_DB");
-  const schema = await readFile("migrations/0001_news.sql", "utf8");
-  await db.batch(
-    schema
-      .split(";")
-      .map((sql) => sql.trim())
-      .filter(Boolean)
-      .map((sql) => db.prepare(sql)),
-  );
+  const { readdir } = await import("node:fs/promises");
+  const migrationFiles = (await readdir("migrations"))
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+  for (const file of migrationFiles) {
+    const schema = await readFile(`migrations/${file}`, "utf8");
+    await db.batch(
+      schema
+        .split(";")
+        .map((sql) => sql.trim())
+        .filter(Boolean)
+        .map((sql) => db.prepare(sql)),
+    );
+  }
   const worker = await runtime.getWorker();
   const result = await worker.scheduled({ cron: "*/15 * * * *", scheduledTime: new Date() });
   assert.equal(result.outcome, "ok");

@@ -16,7 +16,7 @@
     "check:news-runtime": "bun run news:worker:build && node scripts/check-news-runtime.mjs",
     "news:migrate:local": "wrangler d1 migrations apply NEWS_DB --local",
     "news:sync:local": "bun run scripts/sync-news-local.ts",
-    "news:worker:build": "wrangler deploy --dry-run --minify --config workers/news-sync/wrangler.toml --outdir ../../.wrangler/news-worker",
+    "news:worker:build": "wrangler deploy --dry-run --minify --config workers/news-sync/wrangler.toml --outdir .wrangler/news-worker",
     "data:bangumi": "bun run scripts/update-bangumi-data.ts"
   },
   "dependencies": {

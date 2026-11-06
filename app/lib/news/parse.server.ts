@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 import { decodeHTML } from "entities";
 import type { NewsChannel } from "./config";
 import { looksLikeMarkdown, renderNewsMarkdown } from "./markdown.server";
+import { normalizeSourceUrl } from "./url";
 
 export type ParsedArticle = {
   guid: string;
@@ -237,7 +238,7 @@ export function parseNewsRss(xml: string, channel: NewsChannel): ParsedArticle[]
         guid,
         channel,
         title,
-        sourceUrl: url.href,
+        sourceUrl: normalizeSourceUrl(url.href),
         contentHtml,
         publishedAt,
         excerpt: makeExcerpt(contentHtml),

@@ -3,7 +3,6 @@ import {
   Building2,
   CalendarDays,
   Clock,
-  ImageOff,
   MapPin,
   Sparkles,
   Tv,
@@ -11,9 +10,11 @@ import {
 import { Link } from "react-router";
 import type { NewsFeed, NewsItem } from "~/lib/news/types";
 import { NEWS_FEEDS, formatNewsDate, newsListHref } from "~/lib/news/config";
-import { parseNewsItemMeta } from "~/lib/news/display";
+import { pickNewsShowcase, parseNewsItemMeta } from "~/lib/news/display";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+
+const HOME_SHOWCASE_LIMIT = 6;
 
 export function NewsPanelSkeleton({ className }: { className?: string }) {
   return (
@@ -28,9 +29,11 @@ export function NewsPanelSkeleton({ className }: { className?: string }) {
       </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {[0, 1, 2, 3].map((idx) => (
-          <div key={idx} className="overflow-hidden rounded-xl border border-border/60 bg-muted/20">
-            <Skeleton className="aspect-[16/9] w-full rounded-none" />
-            <div className="space-y-3 p-4">
+          <div
+            key={idx}
+            className="flex gap-3 overflow-hidden rounded-xl border border-border/60 bg-muted/20 p-3"
+          >
+            <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-center gap-2">
                 <Skeleton className="h-5 w-20 rounded-md" />
                 <Skeleton className="h-4 w-28 rounded-md" />
@@ -38,6 +41,7 @@ export function NewsPanelSkeleton({ className }: { className?: string }) {
               <Skeleton className="h-6 w-4/5 rounded-md" />
               <Skeleton className="h-12 w-full rounded-md" />
             </div>
+            <Skeleton className="size-24 shrink-0 rounded-xl sm:size-28" />
           </div>
         ))}
       </div>
@@ -62,39 +66,23 @@ export function NewsPanelError({
   );
 }
 
-function NewsCover({ src, alt, className }: { src?: string; alt: string; className?: string }) {
-  if (src) {
-    return (
-      <div className={cn("relative overflow-hidden bg-muted/40", className)}>
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-        />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/35 via-transparent to-transparent" />
-      </div>
-    );
-  }
+function NewsThumb({ src, alt }: { src: string; alt: string }) {
   return (
-    <div
-      className={cn(
-        "relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-muted/40",
-        className,
-      )}
-      aria-hidden
-    >
-      <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_20%_20%,oklch(0.8_0.12_350/.35),transparent_45%),radial-gradient(circle_at_80%_70%,oklch(0.75_0.1_20/.25),transparent_40%)]" />
-      <ImageOff className="relative size-7 text-primary/50" />
+    <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-border/50 bg-muted/40 sm:size-28">
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+      />
     </div>
   );
 }
 
 /**
- * 现代二次元资讯与漫展单卡：
- * 封面 + 胶囊化元数据（地点/场馆/排期）+ 2–3 行摘要，柔粉阴影悬停。
+ * 资讯卡：有封面时右侧小缩略图；无封面不留占位，避免割裂。
  */
 export function NewsCard({ item }: { item: NewsItem }) {
   const meta = parseNewsItemMeta(item);
@@ -104,16 +92,10 @@ export function NewsCard({ item }: { item: NewsItem }) {
     <Link
       to={`/news/${item.id}`}
       prefetch="intent"
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-2 focus-visible:outline-ring"
+      className="group relative flex gap-3 overflow-hidden rounded-2xl border border-border/70 bg-card p-3 shadow-xs transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-2 focus-visible:outline-ring sm:gap-4 sm:p-4"
     >
-      <NewsCover
-        src={item.image}
-        alt=""
-        className="aspect-[16/9] w-full border-b border-border/50"
-      />
-
-      <div className="flex flex-1 flex-col justify-between p-4 sm:p-4.5">
-        <div className="space-y-3">
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
+        <div className="space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               <span
@@ -173,15 +155,15 @@ export function NewsCard({ item }: { item: NewsItem }) {
           ) : null}
 
           {meta.cleanExcerpt ? (
-            <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:line-clamp-3 sm:text-sm">
               {meta.cleanExcerpt}
             </p>
           ) : null}
         </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
-          <span className="text-muted-foreground">{item.source}</span>
-          <span className="inline-flex items-center gap-1 font-medium text-primary transition-transform group-hover:translate-x-0.5">
+        <div className="flex items-center justify-between border-t border-border/60 pt-2.5 text-xs">
+          <span className="truncate text-muted-foreground">{item.source}</span>
+          <span className="inline-flex shrink-0 items-center gap-1 font-medium text-primary transition-transform group-hover:translate-x-0.5">
             阅读全文
             <ArrowRight
               className="size-3.5 transition-transform group-hover:translate-x-1"
@@ -190,6 +172,8 @@ export function NewsCard({ item }: { item: NewsItem }) {
           </span>
         </div>
       </div>
+
+      {item.image ? <NewsThumb src={item.image} alt="" /> : null}
     </Link>
   );
 }
@@ -265,7 +249,8 @@ export function NewsPanel({ feed, className }: { feed: NewsFeed; className?: str
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {NEWS_FEEDS.map((channel) => {
-          const items = feed.items.filter((item) => item.channel === channel.id).slice(0, 4);
+          const channelItems = feed.items.filter((item) => item.channel === channel.id);
+          const items = pickNewsShowcase(channelItems, HOME_SHOWCASE_LIMIT);
           const isEvent = channel.id === "events";
 
           return (

@@ -14,7 +14,14 @@ import {
 } from "../app/lib/news/parse.server";
 import { looksLikeMarkdown } from "../app/lib/news/markdown.server";
 import { NEWS_RETENTION_MS } from "../app/lib/news/config";
-import { syncNewsFeeds } from "../app/lib/news/sync.server";
+import {
+  collapseDuplicateNewsArticles,
+  mergeNewsArticlePair,
+  syncNewsFeeds,
+} from "../app/lib/news/sync.server";
+import { newsSourceUrls } from "../app/lib/news/settings.server";
+import { pickNewsShowcase } from "../app/lib/news/display";
+import { normalizeSourceUrl } from "../app/lib/news/url";
 
 const directory = await mkdtemp(join(tmpdir(), "celadon-news-check-"));
 const proxy = await getPlatformProxy<NewsEnv>({
@@ -28,8 +35,14 @@ const sources = {
 };
 const now = Date.UTC(2026, 10, 6, 0);
 const date = new Date(now - 3600000).toUTCString();
-const item = (guid: string, content = "<p>正文 &amp; 来源</p>", pubDate = date, extras = "") =>
-  `<item><guid isPermaLink="false">${guid}</guid><title>中文资讯</title><link>https://example.com/source</link><pubDate>${pubDate}</pubDate><description><![CDATA[<p>摘要回退</p>]]></description><content:encoded><![CDATA[${content}]]></content:encoded>${extras}</item>`;
+const item = (
+  guid: string,
+  content = "<p>正文 &amp; 来源</p>",
+  pubDate = date,
+  extras = "",
+  link = `https://example.com/source/${guid}`,
+) =>
+  `<item><guid isPermaLink="false">${guid}</guid><title>中文资讯</title><link>${link}</link><pubDate>${pubDate}</pubDate><description><![CDATA[<p>摘要回退</p>]]></description><content:encoded><![CDATA[${content}]]></content:encoded>${extras}</item>`;
 const rss = (items: string) =>
   `<?xml version="1.0"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>test</title>${items}</channel></rss>`;
 let requests = 0;
@@ -113,9 +126,36 @@ try {
     ["updated", "updated"],
   );
   const feed = await readNewsFeed(db, { now });
-  assert.equal(feed.total, 2, "同一原文 URL、不同 GUID 仍分别保留");
+  assert.equal(feed.total, 2, "不同频道可共享相同原文 URL");
   assert.ok(feed.sources.every((source) => source.ok));
   assert.equal(feed.items[0].image, undefined);
+  assert.equal(
+    normalizeSourceUrl("https://CDN.Example.com/path/"),
+    "https://cdn.example.com/path",
+  );
+  assert.deepEqual(
+    newsSourceUrls("anime", {
+      NEWS_ANIME_RSS_URL: "https://feeds.example.test/anime.xml",
+      NEWS_ANIME_RSS_URL_SECONDARY: "https://feeds.example.test/anime-b.xml",
+      NEWS_ANIME_RSS_URLS: "https://feeds.example.test/anime.xml\nhttps://feeds.example.test/anime-c.xml",
+    }),
+    [
+      "https://feeds.example.test/anime.xml",
+      "https://feeds.example.test/anime-b.xml",
+      "https://feeds.example.test/anime-c.xml",
+    ],
+  );
+  assert.deepEqual(
+    pickNewsShowcase(
+      [
+        { id: "1", image: undefined },
+        { id: "2", image: "https://cdn.example.com/a.jpg" },
+        { id: "3", image: undefined },
+      ],
+      2,
+    ).map((row) => row.id),
+    ["2", "1"],
+  );
   const id = await newsArticleId("anime-1");
   assert.ok((await readNewsArticle(db, id, now))?.contentHtml.includes("正文"));
   assert.equal(await readNewsArticle(db, "bad-id", now), null);
@@ -287,8 +327,107 @@ try {
   assert.ok(
     redirected.every((result) => result.status === "error" && result.error === "RSS HTTP 302"),
   );
+  // Dual-feed merge: two anime URLs, overlapping source_url with richer Bot-style row.
+  const multiNow = expiredNow + 180000;
+  const multiDate = new Date(multiNow - 3600000).toUTCString();
+  handler = (url) => {
+    if (url.includes("anime-thick")) {
+      return new Response(
+        rss(
+          item(
+            "celadon:story-1",
+            "<p>加厚解读</p>",
+            multiDate,
+            '<enclosure url="https://cdn.example.com/thick-cover.jpg" type="image/jpeg" />',
+            "https://example.com/story/shared",
+          ),
+        ),
+        { headers: { ETag: '"thick"' } },
+      );
+    }
+    if (url.includes("anime-thin")) {
+      return new Response(
+        rss(
+          item(
+            "urn:sha256:story-1",
+            "<p>更长的旧聚合正文，用来补充背景细节与原文摘录。</p>",
+            multiDate,
+            "",
+            "https://example.com/story/shared",
+          ),
+        ),
+        { headers: { ETag: '"thin"' } },
+      );
+    }
+    return new Response(rss(""), { headers: { ETag: '"empty-events"' } });
+  };
+  const multi = await syncNewsFeeds(db, {
+    sources: {
+      NEWS_ANIME_RSS_URL: "https://feeds.example.test/anime-thick.xml",
+      NEWS_ANIME_RSS_URL_SECONDARY: "https://feeds.example.test/anime-thin.xml",
+      NEWS_EVENTS_RSS_URL: "https://feeds.example.test/events.xml",
+    },
+    now: multiNow,
+    force: true,
+    fetcher,
+  });
+  assert.equal(multi.filter((row) => row.status === "updated").length, 3);
+  const multiIds = multi.map((row) => row.id);
+  assert.equal(multiIds.filter((id) => id.startsWith("anime:")).length, 2, "多源动漫使用 hash feed id");
+  assert.ok(multiIds.includes("events"), "单源漫展仍使用频道 id");
+  assert.ok(!multiIds.includes("anime"), "本轮多源同步不再写入裸 anime id");
+  const shared = await db
+    .prepare("SELECT guid, image_url, content_html FROM news_articles WHERE source_url = ?")
+    .bind("https://example.com/story/shared")
+    .all<{ guid: string; image_url: string | null; content_html: string }>();
+  assert.equal(shared.results.length, 1, "同 source_url 跨 feed 合并为一条");
+  assert.equal(shared.results[0]?.guid, "celadon:story-1");
+  assert.equal(shared.results[0]?.image_url, "https://cdn.example.com/thick-cover.jpg");
+  assert.ok(shared.results[0]?.content_html.includes("更长的旧聚合正文"));
+
+  const merged = mergeNewsArticlePair(
+    {
+      id: "a",
+      guid: "urn:sha256:x",
+      channel: "anime",
+      title: "短",
+      source_url: "https://example.com/x",
+      content_html: "<p>long body here</p>",
+      excerpt: "long body here",
+      image_url: null,
+      published_at: 1,
+      first_seen_at: 1,
+      updated_at: 1,
+    },
+    {
+      id: "b",
+      guid: "celadon:x",
+      channel: "anime",
+      title: "更长的标题给展示",
+      source_url: "https://example.com/x",
+      content_html: "<p>short</p>",
+      excerpt: "short",
+      image_url: "https://cdn.example.com/x.jpg",
+      published_at: 2,
+      first_seen_at: 2,
+      updated_at: 2,
+    },
+  );
+  assert.equal(merged.guid, "celadon:x");
+  assert.equal(merged.image_url, "https://cdn.example.com/x.jpg");
+  assert.ok(merged.content_html.includes("long body here"));
+  assert.equal(merged.title, "更长的标题给展示");
+
+  // Prefer-image home ordering fills quota with covers first.
+  const preferHome = await readHomeNews(db, multiNow);
+  const animeHome = preferHome.items.filter((row) => row.channel === "anime");
+  assert.ok(animeHome.some((row) => row.image));
+
+  const collapseAgain = await collapseDuplicateNewsArticles(db, multiNow);
+  assert.equal(collapseAgain.collapsed, 0);
+
   console.log(
-    "资讯检查通过：真实本地 D1、GUID、封面/enclosure、图片白名单、Markdown、完整正文/过滤、ETag/304、频道周期、分页、失败保留、并发租约、事务回滚和 30 天清理。",
+    "资讯检查通过：真实本地 D1、GUID、双源合并/source_url 去重、封面/enclosure、无占位优先封面、图片白名单、Markdown、完整正文/过滤、ETag/304、频道周期、分页、失败保留、并发租约、事务回滚和 30 天清理。",
   );
 } finally {
   await proxy.dispose();

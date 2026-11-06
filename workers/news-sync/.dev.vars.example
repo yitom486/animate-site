@@ -1,5 +1,16 @@
-# 复制为同目录 .dev.vars 并在本地填入真实地址；真实文件禁止提交。
+# Primary single-URL secrets (still supported).
 NEWS_ANIME_RSS_URL=""
 NEWS_EVENTS_RSS_URL=""
-# 仅当 RSS 服务端已配置 Bearer 鉴权时填写。
+
+# Optional second source per channel.
+NEWS_ANIME_RSS_URL_SECONDARY=""
+NEWS_EVENTS_RSS_URL_SECONDARY=""
+
+# Optional comma/newline-separated HTTPS URL lists (merged with primary/secondary).
+# Example:
+# NEWS_ANIME_RSS_URLS="https://yitom486.github.io/celadon-news-feed/anime.xml,https://OLD_FEED/anime.xml"
+NEWS_ANIME_RSS_URLS=""
+NEWS_EVENTS_RSS_URLS=""
+
+# Optional Bearer token if an upstream feed requires auth.
 NEWS_RSS_BEARER_TOKEN=""
