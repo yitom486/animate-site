@@ -55,11 +55,15 @@ export function SearchForm({
       className={cn(isHero ? "w-full max-w-xl" : "min-w-0 w-full", className)}
     >
       <input type="hidden" name="view" value="search" />
+      {!isHero ? (
+        // 移动端顶栏隐藏 Select 以腾出输入空间，保留 hidden input 确保表单提交 type 参数
+        <input type="hidden" name="type" value={typeValue} className="sm:hidden" />
+      ) : null}
       <div
         className={cn(
           "flex min-w-0 items-center gap-1.5 sm:gap-2",
           isHero
-            ? "h-14 rounded-lg border border-border bg-card px-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
+            ? "h-12 sm:h-14 rounded-xl border border-border bg-card px-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20 shadow-xs"
             : "h-10 rounded-lg border border-border bg-card px-1 focus-within:border-ring",
         )}
       >
@@ -73,8 +77,8 @@ export function SearchForm({
             className={cn(
               "shrink-0 border-0 bg-muted text-foreground shadow-none hover:bg-accent",
               isHero
-                ? "h-10 min-w-24 px-3"
-                : "h-8 min-w-[4.5rem] px-1.5 text-[11px] sm:min-w-20 sm:px-2 sm:text-xs",
+                ? "h-9 min-w-20 px-2 text-xs sm:h-10 sm:min-w-24 sm:px-3 sm:text-sm"
+                : "hidden h-8 min-w-[4.5rem] px-1.5 text-[11px] sm:inline-flex sm:min-w-20 sm:px-2 sm:text-xs",
             )}
           >
             <SelectValue />
@@ -88,7 +92,9 @@ export function SearchForm({
           </SelectContent>
         </Select>
 
-        {!isHero ? null : <Search className="size-5 shrink-0 text-primary" aria-hidden />}
+        {!isHero ? null : (
+          <Search className="hidden sm:block size-5 shrink-0 text-primary" aria-hidden />
+        )}
         <Input
           id={isHero ? "hero-search-q" : "nav-search-q"}
           name="q"
@@ -96,17 +102,20 @@ export function SearchForm({
           required
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={isHero ? "搜索番剧、游戏、书籍或作品名" : "搜索…"}
+          placeholder={isHero ? "搜索番剧、游戏、书籍…" : "搜索…"}
           enterKeyHint="search"
           className={cn(
-            "min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent",
+            "min-w-0 flex-1 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0 dark:bg-transparent",
             isHero
-              ? "h-10 text-sm text-foreground placeholder:text-muted-foreground"
-              : "h-8 text-sm text-foreground placeholder:text-muted-foreground",
+              ? "h-9 text-xs sm:h-10 sm:text-sm text-foreground placeholder:text-muted-foreground placeholder:truncate"
+              : "h-8 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground placeholder:truncate",
           )}
         />
         {isHero ? (
-          <Button type="submit" className="h-10 gap-1.5 px-4 text-sm">
+          <Button
+            type="submit"
+            className="h-9 shrink-0 gap-1 px-3 text-xs sm:h-10 sm:gap-1.5 sm:px-4 sm:text-sm font-bold shadow-xs shadow-primary/20"
+          >
             搜索
             <ArrowRight className="size-3.5" />
           </Button>

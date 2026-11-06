@@ -73,7 +73,10 @@ function cleanupNewsHtmlArtifacts(html: string) {
     out = out
       .replace(/<span(?:\s[^>]*)?>\s*<\/span>/gi, "")
       .replace(/<a\b[^>]*>\s*<\/a>/gi, "")
-      .replace(/<figure\b[^>]*>\s*(?:<figcaption\b[^>]*>[\s\S]*?<\/figcaption>)?\s*<\/figure>/gi, "")
+      .replace(
+        /<figure\b[^>]*>\s*(?:<figcaption\b[^>]*>[\s\S]*?<\/figcaption>)?\s*<\/figure>/gi,
+        "",
+      )
       .replace(/<p\b[^>]*>\s*<\/p>/gi, "");
   }
   return out.replace(/(?:\s*<br\s*\/?>\s*){3,}/gi, "<br /><br />").trim();

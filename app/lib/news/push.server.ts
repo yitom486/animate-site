@@ -1,3 +1,4 @@
+import type { D1Database } from "@cloudflare/workers-types";
 import type { NewsSyncEnv } from "./settings.server";
 import { NEWS_RETENTION_MS } from "./config";
 import {

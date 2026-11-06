@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { isRouteErrorResponse, Link, useOutletContext, useSearchParams } from "react-router";
-import { Maximize2, Minimize2, X } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, X } from "lucide-react";
 import type { Route } from "./+types/detail";
 import type { AnimeOutletContext } from "./layout";
 import { Badge } from "~/components/ui/badge";
@@ -133,14 +133,18 @@ export default function AnimeDetailRoute({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* 操作条：桌面可展开/收起；移动端仅返回列表 */}
-      <div
-        className={
-          "flex items-center gap-2 border-b border-primary/25 bg-card p-3 " +
-          (isMobile ? "justify-end" : "justify-between")
-        }
-      >
-        {!isMobile ? (
+      {/* 操作条：桌面可展开/收起；移动端提供返回列表、条目标题与关闭 */}
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-card/85 px-4 backdrop-blur-md">
+        {isMobile ? (
+          <Link
+            to={listBackUrl}
+            viewTransition
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-card px-2.5 py-1.5 text-xs font-bold text-foreground shadow-2xs transition-colors hover:border-primary/40 hover:text-primary"
+          >
+            <ArrowLeft className="size-3.5 text-primary" />
+            <span>返回列表</span>
+          </Link>
+        ) : (
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
@@ -156,7 +160,14 @@ export default function AnimeDetailRoute({ loaderData }: Route.ComponentProps) {
               </>
             )}
           </button>
+        )}
+
+        {isMobile ? (
+          <span className="mx-2 truncate font-serif text-sm font-bold text-foreground">
+            {title}
+          </span>
         ) : null}
+
         <Link
           to={listBackUrl}
           viewTransition
@@ -230,12 +241,8 @@ function DetailOverview({
   const staffRows = Object.entries(staff).filter(([, v]) => Boolean(v));
 
   return (
-    <section
-      className={
-        "rounded-xl border border-border/70 bg-card shadow-xs " + (expanded ? "p-5" : "p-3.5")
-      }
-    >
-      <div className={expanded ? "flex flex-col gap-6 md:flex-row" : "flex gap-3.5"}>
+    <section className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 shadow-xs">
+      <div className="flex flex-row gap-3.5 sm:gap-6">
         {subject.images?.large || subject.images?.common ? (
           <button
             type="button"
@@ -245,9 +252,8 @@ function DetailOverview({
             aria-label={expanded ? undefined : "展开完整详情"}
             className={cn(
               "group relative shrink-0 self-start overflow-hidden rounded-xl border border-border/60 shadow-xs transition-all duration-300 disabled:cursor-default",
-              expanded
-                ? "h-72 w-52 shadow-md"
-                : "h-44 w-32 hover:scale-[1.03] hover:border-primary/40",
+              "aspect-[2/3] w-28 sm:w-44 md:w-52",
+              expanded ? "shadow-md" : "hover:scale-[1.03] hover:border-primary/40",
             )}
           >
             <AnimeCover
@@ -259,10 +265,11 @@ function DetailOverview({
             />
           </button>
         ) : null}
-        <div className={expanded ? "min-w-0 flex-1 space-y-3" : "min-w-0 flex-1 space-y-2"}>
+        <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
           <h1
             className={
-              "font-serif font-bold text-foreground " + (expanded ? "text-2xl" : "text-base")
+              "font-serif font-bold text-foreground leading-tight " +
+              (expanded ? "text-lg sm:text-2xl" : "text-base")
             }
           >
             {title}
@@ -270,62 +277,69 @@ function DetailOverview({
           {subject.name_cn && subject.name !== subject.name_cn ? (
             <p
               className={
-                expanded
-                  ? "font-mono text-sm text-muted-foreground"
-                  : "font-mono text-xs text-muted-foreground"
+                "truncate font-mono " +
+                (expanded
+                  ? "text-xs sm:text-sm text-muted-foreground"
+                  : "text-xs text-muted-foreground")
               }
             >
               {subject.name}
             </p>
           ) : null}
           {subject.rating?.score ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <Stars score={subject.rating.score} />
               <span
                 className={
-                  expanded
-                    ? "font-mono text-3xl font-bold text-rating"
-                    : "font-mono text-2xl font-bold text-rating"
+                  "font-mono font-bold text-rating " +
+                  (expanded ? "text-xl sm:text-3xl" : "text-xl")
                 }
               >
                 {subject.rating.score}
               </span>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-[11px] sm:text-xs text-muted-foreground">
                 #{subject.rating.rank} · {subject.rating.total} 人评分
               </span>
             </div>
           ) : null}
-          <dl
-            className={
-              expanded
-                ? "grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2"
-                : "space-y-1.5 text-xs"
-            }
-          >
-            <Row k="中文名" v={subject.name_cn} />
-            <Row k="原名" v={subject.name} />
-            {countValue ? <Row k={countLabel} v={String(countValue)} /> : null}
-            <Row k={dateLabel} v={subject.date} />
-            {staffRows.map(([k, v]) => (
-              <Row key={k} k={k} v={v} />
-            ))}
-            <Row k="平台" v={subject.platform} />
-          </dl>
-          {tags.length ? (
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((t) => (
-                <Badge
-                  key={t.name}
-                  variant="secondary"
-                  className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-primary shadow-2xs"
-                >
-                  {t.name}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
+          <div className="text-xs text-muted-foreground sm:text-sm">
+            {subject.date ? (
+              <span>
+                {dateLabel}: {subject.date}
+              </span>
+            ) : null}
+            {countValue ? (
+              <span className="ml-3">
+                {countLabel}: {countValue} 话
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
+
+      <dl className="mt-4 grid grid-cols-1 gap-y-1.5 border-t border-border/70 pt-3 text-xs sm:grid-cols-2 sm:gap-x-6 sm:text-sm">
+        <Row k="中文名" v={subject.name_cn} />
+        <Row k="原名" v={subject.name} />
+        {countValue ? <Row k={countLabel} v={String(countValue)} /> : null}
+        <Row k={dateLabel} v={subject.date} />
+        {staffRows.map(([k, v]) => (
+          <Row key={k} k={k} v={v} />
+        ))}
+        <Row k="平台" v={subject.platform} />
+      </dl>
+      {tags.length ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {tags.map((t) => (
+            <Badge
+              key={t.name}
+              variant="secondary"
+              className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-primary shadow-2xs"
+            >
+              {t.name}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
 
       {/* 剧情简介（常驻展示，折叠态提供展开按钮） */}
       {subject.summary ? (

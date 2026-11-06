@@ -222,10 +222,7 @@ export default function BlogDetailPage({ loaderData }: Route.ComponentProps) {
         </article>
       </main>
 
-      <SubjectDetailDrawer
-        id={side.isOpen ? Number(side.subjectId) : null}
-        onClose={side.close}
-      />
+      <SubjectDetailDrawer id={side.isOpen ? Number(side.subjectId) : null} onClose={side.close} />
     </div>
   );
 }

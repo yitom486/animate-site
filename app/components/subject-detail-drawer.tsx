@@ -3,7 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { subjectDetailQuery } from "~/lib/subject-queries";
 import { Link } from "react-router";
-import { ExternalLink, Film, Layers, Maximize2, MessageSquare, Minimize2, Sparkles, Star, Users, X } from "lucide-react";
+import {
+  ExternalLink,
+  Film,
+  Layers,
+  Maximize2,
+  MessageSquare,
+  Minimize2,
+  Sparkles,
+  Star,
+  Users,
+  X,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -85,14 +96,13 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
           )}
         />
 
-        {/* 右侧滑出沉浸式抽屉容器（平滑滑入与滑出动画） */}
+        {/* 右侧滑出沉浸式抽屉容器（移动端全屏，桌面端抽屉/全屏弹层） */}
         <DialogPrimitive.Popup
           className={cn(
-            "fixed z-50 flex flex-col border-border/70 bg-card shadow-2xl outline-none",
-            "duration-250 ease-out",
+            "fixed z-50 flex flex-col bg-card shadow-2xl outline-none duration-250 ease-out",
             fullscreen
-              ? "inset-3 sm:inset-4 max-w-none rounded-xl border data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
-              : "inset-y-0 right-0 h-full w-full max-w-2xl border-l data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right",
+              ? "inset-0 sm:inset-4 max-w-none sm:rounded-xl border-0 sm:border sm:border-border/70 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+              : "inset-0 sm:inset-y-0 sm:right-0 sm:h-full sm:w-full sm:max-w-2xl border-0 sm:border-l sm:border-border/70 data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right",
           )}
         >
           {/* 无障碍隐藏描述 */}
@@ -101,17 +111,17 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
           </DialogPrimitive.Description>
 
           {/* 顶部固定标题与操作栏 */}
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-card/85 px-6 backdrop-blur-md">
+          <header className="flex h-14 sm:h-16 shrink-0 items-center justify-between border-b border-border/70 bg-card/85 px-4 sm:px-6 backdrop-blur-md">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+              <span className="flex size-7 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary shrink-0">
                 <Sparkles className="size-4" />
               </span>
               <div className="min-w-0">
-                <DialogPrimitive.Title className="truncate font-serif text-base font-bold text-foreground">
+                <DialogPrimitive.Title className="truncate font-serif text-sm sm:text-base font-bold text-foreground">
                   {title}
                 </DialogPrimitive.Title>
                 {subject?.name && subject.name !== subject.name_cn ? (
-                  <p className="truncate font-mono text-[11px] text-muted-foreground">
+                  <p className="truncate font-mono text-[10px] sm:text-[11px] text-muted-foreground">
                     {subject.name}
                   </p>
                 ) : null}
@@ -124,7 +134,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                 size="icon-sm"
                 type="button"
                 onClick={() => setFullscreen((v) => !v)}
-                className="rounded-lg border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                className="hidden sm:inline-flex rounded-lg border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
                 aria-label={fullscreen ? "退出全屏" : "展开为全屏"}
                 title={fullscreen ? "退出全屏" : "展开为全屏"}
               >
@@ -146,15 +156,15 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
           </header>
 
           {/* 抽屉滚动内容体 */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             {loading ? (
               <div className="space-y-6 animate-pulse">
-                <div className="flex flex-col gap-5 sm:flex-row">
-                  <Skeleton className="aspect-[2/3] w-36 shrink-0 rounded-xl" />
+                <div className="flex flex-row gap-3.5 sm:gap-5">
+                  <Skeleton className="aspect-[2/3] w-28 sm:w-36 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1 space-y-3">
                     <Skeleton className="h-6 w-3/4 rounded-md" />
                     <Skeleton className="h-4 w-1/2 rounded-md" />
-                    <div className="grid grid-cols-2 gap-2 pt-2">
+                    <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
                       <Skeleton className="h-4 w-24 rounded-md" />
                       <Skeleton className="h-4 w-20 rounded-md" />
                       <Skeleton className="h-4 w-28 rounded-md" />
@@ -188,39 +198,39 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
             ) : subject ? (
               <div className={cn("space-y-6", fullscreen && "mx-auto max-w-5xl")}>
                 {/* 海报与关键元数据 Hero 卡片 */}
-                <div className="flex flex-col gap-5 sm:flex-row">
-                  <div className="relative aspect-[2/3] w-36 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-muted shadow-sm">
+                <div className="flex flex-row gap-3.5 sm:gap-5">
+                  <div className="relative aspect-[2/3] w-28 sm:w-36 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-muted shadow-sm">
                     <AnimeCover
                       url={toProxiedImageUrl(subject.images?.large || subject.images?.common)}
                       alt={title}
                       priority
                     />
                     {subject.rating?.score ? (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-warning/30 bg-background/90 px-1.5 py-0.5 font-mono text-[11px] font-bold text-rating shadow-xs backdrop-blur-xs">
-                        <Star className="size-3 fill-rating text-rating" />
+                      <div className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-warning/30 bg-background/90 px-1.5 py-0.5 font-mono text-[10px] sm:text-[11px] font-bold text-rating shadow-xs backdrop-blur-xs">
+                        <Star className="size-2.5 sm:size-3 fill-rating text-rating" />
                         {subject.rating.score}
                       </div>
                     ) : null}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
                     <div>
-                      <h1 className="font-serif text-xl font-bold leading-tight text-foreground">
+                      <h1 className="font-serif text-lg sm:text-xl font-bold leading-tight text-foreground">
                         {title}
                       </h1>
                       {subject.name && subject.name !== subject.name_cn ? (
-                        <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground truncate">
                           {subject.name}
                         </p>
                       ) : null}
                     </div>
 
                     {subject.rating?.score ? (
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-mono text-3xl font-extrabold text-rating">
+                      <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+                        <span className="font-mono text-2xl sm:text-3xl font-extrabold text-rating">
                           {subject.rating.score}
                         </span>
-                        <span className="font-mono text-xs text-muted-foreground">
+                        <span className="font-mono text-[11px] sm:text-xs text-muted-foreground">
                           {subject.rating.rank ? `全站 #${subject.rating.rank} · ` : ""}
                           {subject.rating.total
                             ? `${subject.rating.total.toLocaleString()} 人评分`
@@ -229,7 +239,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                       </div>
                     ) : null}
 
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    <dl className="grid grid-cols-1 gap-y-1.5 text-xs sm:grid-cols-2 sm:gap-x-4">
                       {subject.date ? (
                         <div className="flex items-baseline gap-2">
                           <dt className="text-muted-foreground">{dateLabel}:</dt>
@@ -298,12 +308,12 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                 ) : null}
 
                 {/* 模块 Tab 导航切换 */}
-                <div className="flex border-b border-border/70 text-xs font-bold">
+                <div className="flex items-center gap-1 overflow-x-auto border-b border-border/70 text-xs font-bold scrollbar-none">
                   <button
                     type="button"
                     onClick={() => setActiveTab("overview")}
                     className={cn(
-                      "flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 transition-colors",
+                      "flex shrink-0 whitespace-nowrap items-center gap-1.5 border-b-2 px-3 py-2.5 transition-colors",
                       activeTab === "overview"
                         ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground",
@@ -317,7 +327,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                       type="button"
                       onClick={() => setActiveTab("episodes")}
                       className={cn(
-                        "flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 transition-colors",
+                        "flex shrink-0 whitespace-nowrap items-center gap-1.5 border-b-2 px-3 py-2.5 transition-colors",
                         activeTab === "episodes"
                           ? "border-primary text-primary"
                           : "border-transparent text-muted-foreground hover:text-foreground",
@@ -331,7 +341,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                     type="button"
                     onClick={() => setActiveTab("characters")}
                     className={cn(
-                      "flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 transition-colors",
+                      "flex shrink-0 whitespace-nowrap items-center gap-1.5 border-b-2 px-3 py-2.5 transition-colors",
                       activeTab === "characters"
                         ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground",
@@ -344,7 +354,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                     type="button"
                     onClick={() => setActiveTab("comments")}
                     className={cn(
-                      "flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 transition-colors",
+                      "flex shrink-0 whitespace-nowrap items-center gap-1.5 border-b-2 px-3 py-2.5 transition-colors",
                       activeTab === "comments"
                         ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground",
@@ -412,7 +422,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
 
           {/* 底部吸底操作条 */}
           {subject ? (
-            <footer className="flex items-center justify-between border-t border-border/70 bg-card/85 px-6 py-3.5 backdrop-blur-md">
+            <footer className="flex items-center justify-between border-t border-border/70 bg-card/85 px-4 sm:px-6 py-3 sm:py-3.5 backdrop-blur-md">
               <a
                 href={BGM_WEB_ROUTES.subject(subject.id)}
                 target="_blank"

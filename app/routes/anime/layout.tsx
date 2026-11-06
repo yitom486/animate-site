@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Link, useNavigate, useNavigation, useOutlet, useParams, useSearchParams } from "react-router";
+import {
+  Link,
+  useNavigate,
+  useNavigation,
+  useOutlet,
+  useParams,
+  useSearchParams,
+} from "react-router";
 import { CalendarDays, MessageSquareText } from "lucide-react";
 import type { Route } from "./+types/layout";
 import { AnimeCard } from "~/components/anime-card";
@@ -316,7 +323,6 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
             ) : null}
           </div>
         </section>
-
       </div>
 
       {routeHasDetail ? (
@@ -332,10 +338,12 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
             aria-modal="true"
             aria-label="作品详情"
             className={cn(
-              "fixed z-50 flex flex-col overflow-hidden border border-border/70 bg-card shadow-2xl duration-250 ease-out",
-              expanded || isMobile
-                ? "inset-3 rounded-xl sm:inset-4 animate-in fade-in-0 zoom-in-95"
-                : "inset-y-0 right-0 h-full w-full max-w-2xl border-y-0 border-r-0 animate-in slide-in-from-right",
+              "fixed z-50 flex flex-col overflow-hidden bg-card shadow-2xl duration-250 ease-out",
+              isMobile
+                ? "inset-0 rounded-none border-0 animate-in fade-in-0"
+                : expanded
+                  ? "inset-4 rounded-xl border border-border/70 animate-in fade-in-0 zoom-in-95"
+                  : "inset-y-0 right-0 h-full w-full max-w-2xl border-l border-border/70 animate-in slide-in-from-right",
             )}
           >
             {outlet}

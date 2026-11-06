@@ -234,10 +234,7 @@ export default function BlogListPage({ loaderData }: Route.ComponentProps) {
         </div>
       </main>
 
-      <SubjectDetailDrawer
-        id={side.isOpen ? Number(side.subjectId) : null}
-        onClose={side.close}
-      />
+      <SubjectDetailDrawer id={side.isOpen ? Number(side.subjectId) : null} onClose={side.close} />
     </div>
   );
 }

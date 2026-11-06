@@ -62,13 +62,14 @@ try {
     .sort();
   for (const file of migrationFiles) {
     const schema = await readFile(`migrations/${file}`, "utf8");
-    await db.batch(
-      schema
-        .split(";")
-        .map((sql) => sql.trim())
-        .filter(Boolean)
-        .map((sql) => db.prepare(sql)),
-    );
+    const statements = schema
+      .replace(/--.*$/gm, "")
+      .split(";")
+      .map((sql) => sql.trim())
+      .filter(Boolean);
+    if (statements.length) {
+      await db.batch(statements.map((sql) => db.prepare(sql)));
+    }
   }
 
   const parsed = parseNewsRss(rss(item("guid-1")), "anime");
@@ -99,11 +100,19 @@ try {
   assert.ok(!withImage.includes("onclick"));
 
   assert.equal(
-    shouldDropNewsImage({ src: "https://cdn.example.com/share/facebook.png", width: "32", height: "32" }),
+    shouldDropNewsImage({
+      src: "https://cdn.example.com/share/facebook.png",
+      width: "32",
+      height: "32",
+    }),
     true,
   );
   assert.equal(
-    shouldDropNewsImage({ src: "https://cdn.example.com/photos/cover-large.jpg", width: "800", height: "450" }),
+    shouldDropNewsImage({
+      src: "https://cdn.example.com/photos/cover-large.jpg",
+      width: "800",
+      height: "450",
+    }),
     false,
   );
   const shareFiltered = sanitizeNewsHtml(
