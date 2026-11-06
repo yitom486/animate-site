@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { subjectDetailQuery } from "~/lib/subject-queries";
 import { Link } from "react-router";
 import {
+  ArrowLeft,
   ExternalLink,
   Film,
   Layers,
@@ -53,6 +54,17 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
   const activeId = id ?? cachedId;
   const isOpen = id != null;
 
+  // 抽屉展开时锁住底层页面滚动条，彻底杜绝移动端双滚动条与穿透滑动
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   const query = useQuery(subjectDetailQuery(activeId ? String(activeId) : ""));
   const data = query.data;
   const loading = query.isPending && !data;
@@ -96,13 +108,16 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
           )}
         />
 
-        {/* 右侧滑出沉浸式抽屉容器（移动端全屏，桌面端抽屉/全屏弹层） */}
+        {/* 右侧滑出沉浸式抽屉容器（移动端全面屏铺满，桌面端抽屉/全屏弹层） */}
         <DialogPrimitive.Popup
           className={cn(
             "fixed z-50 flex flex-col bg-card shadow-2xl outline-none duration-250 ease-out",
+            // 移动端/平板 (< lg): 全面屏沉浸式铺满 (inset-0)，无多余边框与内缩
+            "inset-0 rounded-none border-0",
+            // 桌面端 (lg+): 根据是否全屏切换侧边滑出抽屉或居中大弹层
             fullscreen
-              ? "inset-0 sm:inset-4 max-w-none sm:rounded-xl border-0 sm:border sm:border-border/70 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
-              : "inset-0 sm:inset-y-0 sm:right-0 sm:h-full sm:w-full sm:max-w-2xl border-0 sm:border-l sm:border-border/70 data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right",
+              ? "lg:inset-4 lg:mx-auto lg:max-w-5xl lg:rounded-xl lg:border lg:border-border/70 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+              : "lg:inset-y-0 lg:left-auto lg:right-0 lg:h-full lg:w-full lg:max-w-2xl lg:border-l lg:border-border/70 data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right",
           )}
         >
           {/* 无障碍隐藏描述 */}
@@ -111,9 +126,19 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
           </DialogPrimitive.Description>
 
           {/* 顶部固定标题与操作栏 */}
-          <header className="flex h-14 sm:h-16 shrink-0 items-center justify-between border-b border-border/70 bg-card/85 px-4 sm:px-6 backdrop-blur-md">
+          <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-card/85 px-4 sm:px-6 backdrop-blur-md">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary shrink-0">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                type="button"
+                onClick={onClose}
+                className="lg:hidden rounded-lg border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                aria-label="返回"
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+              <span className="hidden lg:flex size-7 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary shrink-0">
                 <Sparkles className="size-4" />
               </span>
               <div className="min-w-0">
@@ -134,7 +159,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                 size="icon-sm"
                 type="button"
                 onClick={() => setFullscreen((v) => !v)}
-                className="hidden sm:inline-flex rounded-lg border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                className="hidden lg:inline-flex rounded-lg border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
                 aria-label={fullscreen ? "退出全屏" : "展开为全屏"}
                 title={fullscreen ? "退出全屏" : "展开为全屏"}
               >
@@ -158,25 +183,27 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
           {/* 抽屉滚动内容体 */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             {loading ? (
-              <div className="space-y-6 animate-pulse">
+              <div className="space-y-5 animate-pulse">
                 <div className="flex flex-row gap-3.5 sm:gap-5">
                   <Skeleton className="aspect-[2/3] w-28 sm:w-36 shrink-0 rounded-xl" />
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 flex-1 space-y-2.5">
                     <Skeleton className="h-6 w-3/4 rounded-md" />
                     <Skeleton className="h-4 w-1/2 rounded-md" />
-                    <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
-                      <Skeleton className="h-4 w-24 rounded-md" />
-                      <Skeleton className="h-4 w-20 rounded-md" />
-                      <Skeleton className="h-4 w-28 rounded-md" />
-                      <Skeleton className="h-4 w-20 rounded-md" />
-                    </div>
-                    <div className="flex gap-1.5 pt-2">
-                      <Skeleton className="h-5 w-14 rounded-full" />
-                      <Skeleton className="h-5 w-16 rounded-full" />
-                      <Skeleton className="h-5 w-12 rounded-full" />
+                    <Skeleton className="h-7 w-28 rounded-md" />
+                    <div className="flex gap-1.5 pt-1">
+                      <Skeleton className="h-5 w-12 rounded-md" />
+                      <Skeleton className="h-5 w-14 rounded-md" />
+                      <Skeleton className="h-5 w-20 rounded-md" />
                     </div>
                   </div>
                 </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-12 rounded-full" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-24 w-full rounded-xl" />
                 <Skeleton className="h-28 w-full rounded-xl" />
                 <div className="flex gap-2">
                   <Skeleton className="h-8 w-24 rounded-lg" />
@@ -196,7 +223,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                 </Button>
               </div>
             ) : subject ? (
-              <div className={cn("space-y-6", fullscreen && "mx-auto max-w-5xl")}>
+              <div className={cn("space-y-5", fullscreen && "mx-auto max-w-5xl")}>
                 {/* 海报与关键元数据 Hero 卡片 */}
                 <div className="flex flex-row gap-3.5 sm:gap-5">
                   <div className="relative aspect-[2/3] w-28 sm:w-36 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-muted shadow-sm">
@@ -213,7 +240,7 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                     ) : null}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
+                  <div className="min-w-0 flex-1 space-y-2 sm:space-y-2.5">
                     <div>
                       <h1 className="font-serif text-lg sm:text-xl font-bold leading-tight text-foreground">
                         {title}
@@ -239,48 +266,74 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
                       </div>
                     ) : null}
 
-                    <dl className="grid grid-cols-1 gap-y-1.5 text-xs sm:grid-cols-2 sm:gap-x-4">
-                      {subject.date ? (
-                        <div className="flex items-baseline gap-2">
-                          <dt className="text-muted-foreground">{dateLabel}:</dt>
-                          <dd className="font-medium text-foreground">{subject.date}</dd>
-                        </div>
+                    {/* 快速核心属性标签行（与海报高度对齐，不额外拉长右栏） */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
+                      {subject.platform ? (
+                        <span className="rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 font-mono text-[11px] font-medium text-foreground">
+                          {subject.platform}
+                        </span>
                       ) : null}
                       {countValue ? (
-                        <div className="flex items-baseline gap-2">
-                          <dt className="text-muted-foreground">{countLabel}:</dt>
-                          <dd className="font-medium text-foreground">{countValue} 话</dd>
-                        </div>
+                        <span className="rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 font-mono text-[11px] font-medium text-foreground">
+                          {countValue} 话
+                        </span>
                       ) : null}
-                      {subject.platform ? (
-                        <div className="flex items-baseline gap-2">
-                          <dt className="text-muted-foreground">放送形式:</dt>
-                          <dd className="font-medium text-foreground">{subject.platform}</dd>
-                        </div>
+                      {subject.date ? (
+                        <span className="rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground">
+                          {subject.date}
+                        </span>
                       ) : null}
-                      {staffRows.slice(0, 3).map(([k, v]) => (
-                        <div key={k} className="flex items-baseline gap-2">
-                          <dt className="shrink-0 text-muted-foreground">{k}:</dt>
-                          <dd className="truncate font-medium text-foreground">{v}</dd>
-                        </div>
-                      ))}
-                    </dl>
+                    </div>
+                  </div>
+                </div>
 
-                    {subject.tags?.length ? (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {subject.tags.slice(0, 8).map((t) => (
-                          <Badge
-                            key={t.name}
-                            variant="secondary"
-                            className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-medium text-primary shadow-2xs"
-                          >
-                            {t.name}
-                            {t.count ? <span className="ml-1 opacity-60">{t.count}</span> : null}
-                          </Badge>
-                        ))}
+                {/* 标签墙：全宽展示，在移动端自然多行换行排列，彻底规避狭窄右栏挤压 */}
+                {subject.tags?.length ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {subject.tags.slice(0, 10).map((t) => (
+                      <Badge
+                        key={t.name}
+                        variant="secondary"
+                        className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-medium text-primary shadow-2xs"
+                      >
+                        {t.name}
+                        {t.count ? <span className="ml-1 opacity-60">{t.count}</span> : null}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
+
+                {/* 制作信息与元数据：独立卡片全宽网格布局，信息清晰规整 */}
+                <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 sm:p-4 shadow-2xs">
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                    {subject.date ? (
+                      <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
+                        <dt className="shrink-0 text-muted-foreground">{dateLabel}:</dt>
+                        <dd className="truncate font-medium text-foreground">{subject.date}</dd>
                       </div>
                     ) : null}
-                  </div>
+                    {countValue ? (
+                      <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
+                        <dt className="shrink-0 text-muted-foreground">{countLabel}:</dt>
+                        <dd className="truncate font-medium text-foreground">{countValue} 话</dd>
+                      </div>
+                    ) : null}
+                    {subject.platform ? (
+                      <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
+                        <dt className="shrink-0 text-muted-foreground">放送形式:</dt>
+                        <dd className="truncate font-medium text-foreground">{subject.platform}</dd>
+                      </div>
+                    ) : null}
+                    {staffRows.slice(0, 5).map(([k, v]) => (
+                      <div
+                        key={k}
+                        className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2"
+                      >
+                        <dt className="shrink-0 text-muted-foreground">{k}:</dt>
+                        <dd className="truncate font-medium text-foreground">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
 
                 {/* 剧情简介（常驻展示，支持折叠展开） */}
@@ -420,9 +473,9 @@ export function SubjectDetailDrawer({ id, onClose }: SubjectDetailDrawerProps) {
             ) : null}
           </div>
 
-          {/* 底部吸底操作条 */}
+          {/* 底部吸底操作条（安全区域适配） */}
           {subject ? (
-            <footer className="flex items-center justify-between border-t border-border/70 bg-card/85 px-4 sm:px-6 py-3 sm:py-3.5 backdrop-blur-md">
+            <footer className="flex shrink-0 items-center justify-between border-t border-border/70 bg-card/85 px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:py-3.5 backdrop-blur-md">
               <a
                 href={BGM_WEB_ROUTES.subject(subject.id)}
                 target="_blank"

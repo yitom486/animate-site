@@ -157,6 +157,17 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // 移动端详情覆盖层打开时锁定底层滚动，防止手势穿透与双滚动条
+  useEffect(() => {
+    if (routeHasDetail && isMobile) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [routeHasDetail, isMobile]);
+
   // 清除之前保存在 localStorage 的遗留偏好键
   useEffect(() => {
     try {

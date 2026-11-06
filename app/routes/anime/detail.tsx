@@ -317,7 +317,21 @@ function DetailOverview({
         </div>
       </div>
 
-      <dl className="mt-4 grid grid-cols-1 gap-y-1.5 border-t border-border/70 pt-3 text-xs sm:grid-cols-2 sm:gap-x-6 sm:text-sm">
+      {tags.length ? (
+        <div className="mt-3.5 flex flex-wrap gap-1.5">
+          {tags.map((t) => (
+            <Badge
+              key={t.name}
+              variant="secondary"
+              className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] sm:text-[11px] font-medium text-primary shadow-2xs"
+            >
+              {t.name}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+
+      <dl className="mt-3.5 grid grid-cols-1 gap-y-1.5 border-t border-border/70 pt-3 text-xs sm:grid-cols-2 sm:gap-x-6 sm:text-sm">
         <Row k="中文名" v={subject.name_cn} />
         <Row k="原名" v={subject.name} />
         {countValue ? <Row k={countLabel} v={String(countValue)} /> : null}
@@ -327,19 +341,6 @@ function DetailOverview({
         ))}
         <Row k="平台" v={subject.platform} />
       </dl>
-      {tags.length ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {tags.map((t) => (
-            <Badge
-              key={t.name}
-              variant="secondary"
-              className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-primary shadow-2xs"
-            >
-              {t.name}
-            </Badge>
-          ))}
-        </div>
-      ) : null}
 
       {/* 剧情简介（常驻展示，折叠态提供展开按钮） */}
       {subject.summary ? (
