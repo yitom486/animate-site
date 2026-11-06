@@ -11,6 +11,7 @@ import {
   MessageSquareText,
   Music,
   Newspaper,
+  Search,
   Tv,
 } from "lucide-react";
 import { SearchForm } from "~/components/search-form";
@@ -143,10 +144,10 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
             to="/"
             prefetch="intent"
             aria-label="亚域空间首页"
-            className="flex shrink-0 items-center gap-2.5 transition-transform hover:scale-[1.02]"
+            className="flex shrink-0 items-center gap-2 transition-transform hover:scale-[1.02]"
           >
-            <Leaf className="size-6 text-primary" aria-hidden />
-            <span className="hidden font-serif text-lg font-semibold tracking-wide sm:block">
+            <Leaf className="size-6 text-primary shrink-0" aria-hidden />
+            <span className="font-serif text-base font-semibold tracking-wide sm:text-lg">
               亚域空间
             </span>
           </Link>
@@ -201,8 +202,27 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
             </NavigationMenu>
           </nav>
 
-          {/* 搜索与主题切换 */}
-          <SearchForm variant="nav" defaultType={searchType} className="ml-auto max-w-sm flex-1" />
+          {/* 桌面端常驻搜索框（移动端隐藏，转移至移动端侧边抽屉栏） */}
+          <SearchForm
+            variant="nav"
+            defaultType={searchType}
+            className="ml-auto hidden max-w-sm flex-1 lg:flex"
+          />
+
+          {/* 移动端右侧快捷操作：搜索图标 + 主题切换 */}
+          <div className="ml-auto flex items-center gap-1 lg:hidden">
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="打开侧边栏搜索"
+              className="text-muted-foreground hover:text-primary"
+            >
+              <Search className="size-5" />
+            </Button>
+          </div>
+
           <ThemeSelect />
         </div>
       </header>
@@ -211,13 +231,22 @@ export function SiteNav({ activeType, searchType = SUBJECT_TYPE_ALL }: SiteNavPr
 
       {/* 移动端侧边抽屉导航 */}
       <DialogContent className="inset-y-0 left-0 top-0 flex h-dvh w-[min(90vw,24rem)] max-w-sm translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
-        <DialogHeader className="border-b border-border px-5 py-5 pr-12">
+        <DialogHeader className="border-b border-border px-5 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2 font-serif text-lg">
             <Leaf className="size-5 text-primary" />
             亚域空间
           </DialogTitle>
           <DialogDescription>作品分类、情报资讯与社区日志</DialogDescription>
         </DialogHeader>
+
+        {/* 侧边栏专属全功能搜索框 */}
+        <div className="border-b border-border/70 bg-muted/20 p-4">
+          <SearchForm
+            variant="drawer"
+            defaultType={searchType}
+            onSearchSubmit={() => setMobileOpen(false)}
+          />
+        </div>
 
         <nav aria-label="移动导航" className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
           {ALL_NAV_MENUS.map((menu) => (

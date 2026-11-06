@@ -14,10 +14,11 @@ import { cn } from "~/lib/utils";
 import { SUBJECT_TYPE_ALL, SUBJECT_TYPE_OPTIONS, type ListTypeValue } from "~/lib/bangumi/types";
 
 type SearchFormProps = {
-  variant?: "hero" | "nav";
+  variant?: "hero" | "nav" | "drawer";
   defaultType?: ListTypeValue | string;
   defaultQuery?: string;
   className?: string;
+  onSearchSubmit?: () => void;
 };
 
 export function SearchForm({
@@ -25,8 +26,10 @@ export function SearchForm({
   defaultType = SUBJECT_TYPE_ALL,
   defaultQuery = "",
   className,
+  onSearchSubmit,
 }: SearchFormProps) {
   const isHero = variant === "hero";
+  const isDrawer = variant === "drawer";
   const typeValue = defaultType || SUBJECT_TYPE_ALL;
   const location = useLocation();
   const [query, setQuery] = useState(defaultQuery);
@@ -47,18 +50,69 @@ export function SearchForm({
     if (isHero) setQuery(defaultQuery);
   }, [isHero, defaultQuery]);
 
+  if (isDrawer) {
+    return (
+      <Form
+        method="get"
+        action="/anime"
+        role="search"
+        onSubmit={() => onSearchSubmit?.()}
+        className={cn("w-full", className)}
+      >
+        <input type="hidden" name="view" value="search" />
+        <div className="flex h-11 w-full items-center gap-1.5 rounded-xl border border-border/70 bg-card px-2 shadow-2xs focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
+          <Select name="type" defaultValue={typeValue} items={SUBJECT_TYPE_OPTIONS}>
+            <SelectTrigger
+              size="sm"
+              aria-label="搜索类型"
+              className="h-8 shrink-0 border-0 bg-muted px-2 text-xs text-foreground shadow-none hover:bg-accent"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start" alignItemWithTrigger={false} className="min-w-36">
+              {SUBJECT_TYPE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Input
+            id="drawer-search-q"
+            name="q"
+            type="search"
+            required
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="搜索作品名、原名…"
+            enterKeyHint="search"
+            className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-foreground shadow-none focus-visible:ring-0 dark:bg-transparent placeholder:text-muted-foreground placeholder:text-xs"
+          />
+
+          <Button
+            type="submit"
+            size="icon-sm"
+            variant="default"
+            aria-label="搜索"
+            className="size-8 shrink-0 rounded-lg font-bold shadow-xs shadow-primary/20"
+          >
+            <Search className="size-4" />
+          </Button>
+        </div>
+      </Form>
+    );
+  }
+
   return (
     <Form
       method="get"
       action="/anime"
       role="search"
+      onSubmit={() => onSearchSubmit?.()}
       className={cn(isHero ? "w-full max-w-xl" : "min-w-0 w-full", className)}
     >
       <input type="hidden" name="view" value="search" />
-      {!isHero ? (
-        // 移动端顶栏隐藏 Select 以腾出输入空间，保留 hidden input 确保表单提交 type 参数
-        <input type="hidden" name="type" value={typeValue} className="sm:hidden" />
-      ) : null}
       <div
         className={cn(
           "flex min-w-0 items-center gap-1.5 sm:gap-2",
@@ -78,7 +132,7 @@ export function SearchForm({
               "shrink-0 border-0 bg-muted text-foreground shadow-none hover:bg-accent",
               isHero
                 ? "h-9 min-w-20 px-2 text-xs sm:h-10 sm:min-w-24 sm:px-3 sm:text-sm"
-                : "hidden h-8 min-w-[4.5rem] px-1.5 text-[11px] sm:inline-flex sm:min-w-20 sm:px-2 sm:text-xs",
+                : "h-8 min-w-[4.5rem] px-1.5 text-[11px] sm:min-w-20 sm:px-2 sm:text-xs",
             )}
           >
             <SelectValue />
