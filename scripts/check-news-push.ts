@@ -27,6 +27,12 @@ for (const body of [
 ])
   assert.throws(() => parseNewsPush(body));
 assert.equal(parseNewsPush({ items: [{ ...item, publishedAt: 0 }] }).articles.length, 0);
+for (const coverUrl of [null, undefined, ""]) {
+  const withMissingCover = parseNewsPush({
+    items: [{ ...item, coverUrl: coverUrl as unknown as string }],
+  });
+  assert.equal(withMissingCover.articles.length, 1);
+}
 const env = { NEWS_PUSH_TOKEN: "test-token" } as Parameters<typeof handleNewsPush>[1];
 assert.equal(
   (await handleNewsPush(new Request("https://example.com/feeds/push", { method: "POST" }), env))

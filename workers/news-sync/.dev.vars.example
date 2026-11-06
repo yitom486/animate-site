@@ -14,3 +14,7 @@ NEWS_EVENTS_RSS_URLS=""
 
 # Optional Bearer token if an upstream feed requires auth.
 NEWS_RSS_BEARER_TOKEN=""
+
+# Optional: purge lowbculture.com news CDN after push
+CF_ZONE_ID=
+CF_CACHE_PURGE_TOKEN=

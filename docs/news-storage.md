@@ -147,3 +147,12 @@ exactly the RSS upsert logic (including richer-content preservation); repeated r
 are safe by GUID. `batchId` is a correlation echo, not a separate deduplication ledger.
 The original RSS cron remains enabled as reconciliation/fallback. This endpoint writes
 to the existing production `NEWS_DB`; no Pages rebuild is required.
+
+## 下游成品推送契约（网站端）
+
+1. **可靠接收**：`POST /feeds/push` 仅在 D1 写入成功后返回 200；失败 503。
+2. **去重更新**：按稳定 `guid` 幂等；同 guid 若推送的 `publishedAt` 早于库内版本则跳过，避免旧稿盖新稿。
+3. **完整展示**：无封面稿可入库展示；`coverUrl` 可为 null/省略。
+4. **及时刷新**：资讯 API CDN `s-maxage` 约 60 秒；可选配置 `CF_ZONE_ID` + `CF_CACHE_PURGE_TOKEN` 在推送成功后按前缀清 ` /api/news` 与 `/news`。
+5. **RSS 兜底**：`celadon-news-sync` 仍每 15 分钟拉 RSS，与 push 共用 GUID upsert / source_url 合并。
+6. **保存期限**：站内约 30 天；润色端本机删稿不会删除网站副本。

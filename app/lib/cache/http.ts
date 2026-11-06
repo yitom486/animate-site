@@ -53,11 +53,11 @@ export const HTTP_CACHE = {
     sMaxAge: 180,
     staleWhileRevalidate: 60,
   },
-  /** 资讯：浏览器 1 分钟，CDN 10 分钟 */
+  /** 资讯：浏览器 30 秒，CDN 60 秒（push 后尽快可见） */
   news: {
-    maxAge: 60,
-    sMaxAge: 600,
-    staleWhileRevalidate: 120,
+    maxAge: 30,
+    sMaxAge: 60,
+    staleWhileRevalidate: 30,
   },
   /** Bangumi 日志列表 */
   blog: {

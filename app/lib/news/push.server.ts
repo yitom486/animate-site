@@ -18,7 +18,8 @@ function record(value: unknown): Record<string, unknown> {
 }
 function field(row: Record<string, unknown>, key: string, max: number, required = false) {
   const value = row[key];
-  if (value === undefined && !required) return "";
+  // Optional fields: null/undefined/"" mean "missing" (upstream often sends coverUrl: null).
+  if ((value === undefined || value === null) && !required) return "";
   if (typeof value !== "string" || value.length > max || (required && !value.trim()))
     throw new Error(`Invalid ${key}`);
   return value.trim();
@@ -109,6 +110,59 @@ async function readJson(request: Request) {
     reader.releaseLock();
   }
 }
+
+/** Skip payloads older than the stored publishedAt for the same guid (old version must not clobber new). */
+async function dropStalePushArticles(db: D1Database, articles: ParsedArticle[]) {
+  if (!articles.length) return articles;
+  const kept: ParsedArticle[] = [];
+  for (const article of articles) {
+    const row = await db
+      .prepare("SELECT published_at FROM news_articles WHERE guid = ?")
+      .bind(article.guid)
+      .first<{ published_at: number }>();
+    if (row && article.publishedAt < row.published_at) continue;
+    kept.push(article);
+  }
+  return kept;
+}
+
+async function touchNewsFeedsAfterPush(db: D1Database, articles: ParsedArticle[]) {
+  const channels = [...new Set(articles.map((a) => a.channel))];
+  const now = Date.now();
+  for (const channel of channels) {
+    await db.prepare("INSERT OR IGNORE INTO news_feeds (id) VALUES (?)").bind(channel).run();
+    await db
+      .prepare(
+        "UPDATE news_feeds SET checked_at = ?, success_at = ?, next_check_at = ?, error = NULL WHERE id = ?",
+      )
+      .bind(now, now, now + (channel === "events" ? 3600000 : 900000), channel)
+      .run();
+  }
+}
+
+/** Best-effort CDN purge; optional CF_CACHE_PURGE_TOKEN + CF_ZONE_ID secrets. */
+async function purgeNewsHttpCache(
+  env: NewsSyncEnv & { CF_CACHE_PURGE_TOKEN?: string; CF_ZONE_ID?: string },
+) {
+  const token = env.CF_CACHE_PURGE_TOKEN?.trim();
+  const zone = env.CF_ZONE_ID?.trim();
+  if (!token || !zone) return;
+  try {
+    await fetch(`https://api.cloudflare.com/client/v4/zones/${zone}/purge_cache`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prefixes: ["https://lowbculture.com/api/news", "https://lowbculture.com/news"],
+      }),
+    });
+  } catch {
+    console.error(JSON.stringify({ job: "news-push", error: "cache purge failed" }));
+  }
+}
+
 export async function handleNewsPush(
   request: Request,
   env: NewsSyncEnv & { NEWS_PUSH_TOKEN?: string },
@@ -133,13 +187,18 @@ export async function handleNewsPush(
     );
   }
   try {
-    const statements = await newsArticleUpsertStatements(env.NEWS_DB, parsed.articles);
+    const articles = await dropStalePushArticles(env.NEWS_DB, parsed.articles);
+    const staleSkipped = parsed.articles.length - articles.length;
+    const statements = await newsArticleUpsertStatements(env.NEWS_DB, articles);
     if (statements.length) await env.NEWS_DB.batch(statements);
+    await touchNewsFeedsAfterPush(env.NEWS_DB, articles);
+    await purgeNewsHttpCache(env);
     return Response.json({
       ok: true,
       received: parsed.received,
-      upserted: parsed.articles.length,
-      skipped: parsed.received - parsed.articles.length,
+      upserted: articles.length,
+      skipped: parsed.received - articles.length,
+      staleSkipped,
       ...(parsed.batchId ? { batchId: parsed.batchId } : {}),
     });
   } catch {
