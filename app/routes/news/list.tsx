@@ -74,7 +74,7 @@ export default function NewsListPage({ loaderData: { feed, channel } }: Route.Co
     <div className="celadon-page min-h-screen text-foreground">
       <SiteNav />
 
-      <main className="mx-auto max-w-5xl px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-5xl px-4 py-8 pb-16 sm:px-6 sm:py-10 lg:px-8">
         {/* 顶部 Hero 区域 */}
         <header className="space-y-3 pb-6">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">

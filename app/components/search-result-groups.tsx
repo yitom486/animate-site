@@ -22,7 +22,7 @@ export function SearchResultGroups({
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-5 p-3 sm:gap-6 sm:p-4">
       {groups.map((group) => (
         <section key={group.type} className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between gap-3">
@@ -46,7 +46,7 @@ export function SearchResultGroups({
               </Link>
             ) : null}
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
             {group.items.map((item, idx) => (
               <AnimeCard
                 key={item.id}

@@ -63,7 +63,13 @@ export function AnimePagination({
         </span>
       )}
 
-      <div className="flex items-center gap-1 px-1">
+      {/* 移动端紧凑型页码指示器 */}
+      <span className="px-2 font-mono text-xs font-bold text-foreground sm:hidden">
+        {page} / {totalPages}
+      </span>
+
+      {/* 桌面端完整数字分页导航 */}
+      <div className="hidden sm:flex items-center gap-1 px-1">
         {pages.map((p, i) =>
           p === "…" ? (
             <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-muted-foreground">

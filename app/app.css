@@ -193,6 +193,11 @@
     @apply bg-background text-foreground antialiased;
     min-height: 100vh;
   }
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   ::selection {
     background: var(--accent);
     color: var(--accent-foreground);

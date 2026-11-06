@@ -91,7 +91,7 @@ function CurrentTimeBar({
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-card p-3 sm:p-4 shadow-xs">
       <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary shadow-xs">
         <CalendarDays className="size-5" />
       </div>
@@ -215,7 +215,7 @@ function ScheduleCard({
       ref={ref}
       title={subtitle ? `${title} · ${subtitle}` : title}
       className={cn(
-        "group relative flex flex-col gap-4 overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-xs transition-all duration-300 ease-out sm:flex-row [content-visibility:auto] [contain-intrinsic-size:auto_200px]",
+        "group relative flex flex-col gap-3.5 overflow-hidden rounded-xl border border-border/70 bg-card p-3 sm:p-4 shadow-xs transition-all duration-300 ease-out sm:flex-row [content-visibility:auto] [contain-intrinsic-size:auto_200px]",
         "hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
         active && "border-primary/50 bg-card shadow-md shadow-primary/10 ring-2 ring-primary/40",
       )}
@@ -411,7 +411,7 @@ export function AnimeSchedule({ schedule, activeId, listParams }: AnimeScheduleP
   }, [selectedDayId]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-5 p-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 p-3 sm:gap-5 sm:p-4">
       <CurrentTimeBar
         totalCount={totalCount}
         selectedCount={selectedCount}

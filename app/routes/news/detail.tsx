@@ -67,7 +67,7 @@ export default function NewsDetailPage({ loaderData: { article } }: Route.Compon
     <div className="celadon-page min-h-screen text-foreground">
       <SiteNav />
 
-      <main className="mx-auto max-w-4xl px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-4xl px-4 py-8 pb-16 sm:px-6 sm:py-10 lg:px-8">
         <nav aria-label="返回导航" className="mb-6">
           <Link
             to={newsListHref(article.channel)}

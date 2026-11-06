@@ -240,14 +240,14 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <SiteNav activeType={type === SUBJECT_TYPE_ALL ? undefined : type} />
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden p-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden p-1.5 sm:p-3">
         <section
           className={cn(
             "flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-opacity duration-300",
             isMobile && routeHasDetail && "hidden",
           )}
         >
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 px-4 py-3 sm:px-5 sm:py-4">
             <div>
               <div className="mt-1 flex items-baseline gap-2">
                 <h2 className="font-serif text-xl font-bold text-foreground">{typeLabel}</h2>
@@ -297,7 +297,7 @@ export default function AnimeLayout({ loaderData }: Route.ComponentProps) {
             ) : items.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">暂无结果</p>
             ) : (
-              <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+              <div className="grid grid-cols-2 gap-3 p-3 sm:gap-4 sm:p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
                 {items.map((it, idx) => (
                   <AnimeCard
                     key={it.id}

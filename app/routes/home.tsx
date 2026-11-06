@@ -118,36 +118,39 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SiteNav />
-      <main className="relative mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8">
-        {/* 顶部柔和粉调弥散光晕，隔离在独立 GPU 合成层，避免滚动时反复重绘 */}
+      <main className="relative mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
+        {/* 顶部柔和粉调弥散光晕，限制在视口内防止撑破移动端宽度 */}
         <div
-          className="pointer-events-none absolute -top-20 left-1/2 -z-10 h-80 w-[640px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl transform-gpu will-change-transform"
+          className="pointer-events-none absolute -top-20 left-1/2 -z-10 h-80 w-full max-w-[640px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl transform-gpu will-change-transform overflow-hidden"
           aria-hidden
         />
 
         <section
-          className="grid gap-10 border-b border-border/70 py-12 sm:py-16 lg:grid-cols-[1.45fr_1fr] lg:gap-14"
+          className="grid gap-8 border-b border-border/70 py-8 sm:py-14 lg:grid-cols-[1.45fr_1fr] lg:gap-14"
           aria-labelledby="home-title"
         >
           <div>
-            <div className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-wider text-primary">
+            <div className="mb-3 sm:mb-4 flex items-center gap-2 text-xs font-semibold tracking-wider text-primary">
               <span className="h-px w-6 bg-primary" aria-hidden />
               作品索引 · 每日放送 · 社区交流
             </div>
             <h1
               id="home-title"
-              className="font-serif text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+              className="font-serif text-2xl font-bold tracking-tight text-foreground sm:text-4xl"
             >
               下一部想看的，
               <br className="hidden sm:block" />
               从这里找。
             </h1>
-            <p className="mt-4 max-w-lg text-sm leading-7 text-muted-foreground">
+            <p className="mt-3 sm:mt-4 max-w-lg text-xs sm:text-sm leading-6 sm:leading-7 text-muted-foreground">
               探索口碑新番、查看每日排期、直达正版播放与资源索引。动画、书籍、音乐、游戏，陪伴每个二次元爱好者的追番时光。
             </p>
-            <SearchForm variant="hero" className="mt-7" />
+            {/* 桌面端 Hero 搜索框（移动端彻底隐藏，搜索统一收纳至侧边栏抽屉与顶部搜索图标） */}
+            <div className="mt-7 hidden lg:block">
+              <SearchForm variant="hero" />
+            </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
               <span className="font-mono text-[11px]">Bangumi 开放数据直连</span>
               <span className="text-border">·</span>
