@@ -22,7 +22,10 @@ import {
   subjectCountLabel,
   subjectDateLabel,
 } from "~/lib/bangumi/subject-display";
+import { getBrowserQueryClient } from "~/lib/query-client";
+import { subjectDetailQuery } from "~/lib/subject-queries";
 import { cn } from "~/lib/utils";
+import type { ShouldRevalidateFunctionArgs } from "react-router";
 
 // 客户端详情缓存（存储在浏览器内存中，实现 0ms 切页）
 const clientDetailCache = createCache<DetailPayload>({
@@ -57,14 +60,28 @@ export async function clientLoader({ params, serverLoader }: Route.ClientLoaderA
   if (!id) return serverLoader();
 
   const cached = clientDetailCache.get(id);
-  if (cached) return cached;
+  if (cached) {
+    getBrowserQueryClient()?.setQueryData(subjectDetailQuery(id).queryKey, cached);
+    return cached;
+  }
 
   const data = await serverLoader();
   clientDetailCache.set(id, data);
+  getBrowserQueryClient()?.setQueryData(subjectDetailQuery(id).queryKey, data);
   return data;
 }
 
 clientLoader.hydrate = true;
+
+export function shouldRevalidate({
+  currentParams,
+  nextParams,
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formMethod && formMethod.toUpperCase() !== "GET") return defaultShouldRevalidate;
+  return currentParams.id !== nextParams.id;
+}
 
 export default function AnimeDetailRoute({ loaderData }: Route.ComponentProps) {
   const { subject, staff, episodes } = loaderData;

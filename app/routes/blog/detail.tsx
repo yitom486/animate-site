@@ -14,7 +14,10 @@ import {
 import { useSubjectSidePanel } from "~/lib/subject-side-panel";
 import { toProxiedImageUrl } from "~/lib/anime-meta";
 import { AnimeCover } from "~/components/anime-cover";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
+import { createRouteClientCache, readThroughRouteCache } from "~/lib/route-client-cache";
 import { cn } from "~/lib/utils";
+import type { ShouldRevalidateFunctionArgs } from "react-router";
 
 function BlogAuthorAvatar({ url, name }: { url?: string; name?: string }) {
   const [error, setError] = useState(false);
@@ -40,11 +43,37 @@ function BlogAuthorAvatar({ url, name }: { url?: string; name?: string }) {
   );
 }
 
+type BlogDetailData = {
+  post: Awaited<ReturnType<typeof fetchBgmBlogDetail>>;
+  section: NonNullable<ReturnType<typeof parseBlogSection>>;
+};
+
+const blogDetailClientCache = createRouteClientCache<BlogDetailData>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientBlogDetail,
+});
+
 export async function loader({ params }: Route.LoaderArgs) {
   const section = parseBlogSection(params.section);
   if (!section) throw new Response("未知日志板块", { status: 404 });
   const post = await fetchBgmBlogDetail(params.id);
   return { post, section };
+}
+
+export async function clientLoader({ params, serverLoader }: Route.ClientLoaderArgs) {
+  const key = `${params.section ?? ""}:${params.id ?? ""}`;
+  return readThroughRouteCache(blogDetailClientCache, key, () => serverLoader());
+}
+clientLoader.hydrate = true;
+
+export function shouldRevalidate({
+  currentParams,
+  nextParams,
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formMethod && formMethod.toUpperCase() !== "GET") return defaultShouldRevalidate;
+  return currentParams.section !== nextParams.section || currentParams.id !== nextParams.id;
 }
 
 export function meta({ data }: Route.MetaArgs) {

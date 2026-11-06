@@ -28,7 +28,6 @@ NEWS_ANIME_RSS_URLS=https://yitom486.github.io/celadon-news-feed/anime.xml,<OLD_
 NEWS_EVENTS_RSS_URLS=https://yitom486.github.io/celadon-news-feed/events.xml,<OLD_EVENTS_HTTPS>
 ```
 
-
 ## 数据与失败处理
 
 - `news_articles` 保存 GUID、GUID 的 SHA-256 站内 ID、频道、标题、原文链接、净化后的 HTML、摘要、可选 `image_url` 封面及发布/首次导入/更新时间。GUID 唯一；同频道规范化 `source_url` 相同的多 GUID 在同步结束时合并为更丰富的一条。`0002_news_image_url.sql` 为可空封面列；`0003_news_multi_feed.sql` 放宽 `news_feeds` id 并索引 `source_url`。
@@ -119,4 +118,3 @@ MCP OAuth 授权与 Wrangler 登录是两套凭据。部署时可以通过 MCP �
 - 详情页：仅在有 `image` 时保留中等宽度头图。
 - 同步 Worker：支持每频道多 RSS；同步后按 `source_url` 合并重复；打包产物见 `.wrangler/news-worker/`。
 - 旧私有 RSS 明文地址未从本地/API 恢复；需运维在 Secrets 中自行填入 `NEWS_*_RSS_URLS` 与 Bot feed 双订。
-

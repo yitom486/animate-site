@@ -49,11 +49,7 @@ function toItem(row: Omit<ArticleRow, "guid" | "content_html">): NewsItem {
   };
 }
 
-function channelSourceStatus(
-  feedId: NewsChannel,
-  states: FeedRow[],
-  pageItems: ArticleRow[],
-) {
+function channelSourceStatus(feedId: NewsChannel, states: FeedRow[], pageItems: ArticleRow[]) {
   const channelStates = states.filter((row) => newsChannelFromFeedId(row.id) === feedId);
   const anySuccess = channelStates.some((row) => Boolean(row.success_at));
   const anyOk = channelStates.some((row) => Boolean(row.success_at) && !row.error);
@@ -66,11 +62,7 @@ function channelSourceStatus(
     label: NEWS_FEEDS.find((feed) => feed.id === feedId)!.label,
     ok: anyOk,
     count: pageItems.filter((row) => row.channel === feedId).length,
-    error: anyOk
-      ? undefined
-      : anySuccess
-        ? "资讯同步暂时失败"
-        : "等待首次同步",
+    error: anyOk ? undefined : anySuccess ? "资讯同步暂时失败" : "等待首次同步",
     lastSuccessAt: lastSuccessAt ? new Date(lastSuccessAt).toISOString() : undefined,
   };
 }
@@ -151,4 +143,3 @@ export async function readHomeNews(db: D1Database, now = Date.now()): Promise<Ne
     hasMore: items.length < total,
   };
 }
-

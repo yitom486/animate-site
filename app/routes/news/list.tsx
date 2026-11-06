@@ -6,17 +6,63 @@ import { NewsArticleList, NewsSyncStatus } from "~/components/news-panel";
 import { Button } from "~/components/ui/button";
 import { newsDbFromContext, readNewsFeed } from "~/lib/news/db.server";
 import { newsListHref, parseNewsChannel } from "~/lib/news/config";
+import { seedNewsListQuery } from "~/lib/news/queries";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
+import { createRouteClientCache, readThroughRouteCache } from "~/lib/route-client-cache";
 import { cn } from "~/lib/utils";
+import type { ShouldRevalidateFunctionArgs } from "react-router";
+
+type NewsListData = {
+  feed: Awaited<ReturnType<typeof readNewsFeed>>;
+  channel: ReturnType<typeof parseNewsChannel>;
+};
+
+const newsListClientCache = createRouteClientCache<NewsListData>({
+  ttlMs: CACHE_TTL_LIST_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientNewsList,
+});
+
+function newsListCacheKey(channel: ReturnType<typeof parseNewsChannel>, page: number) {
+  return `${channel ?? "all"}:${page}`;
+}
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const channel = parseNewsChannel(url.searchParams.get("channel"));
+  const page = Number(url.searchParams.get("page")) || 1;
   const feed = await readNewsFeed(newsDbFromContext(context), {
     channel,
-    page: Number(url.searchParams.get("page")) || 1,
+    page,
     limit: 20,
   });
   return { feed, channel };
+}
+
+export async function clientLoader({ request, serverLoader }: Route.ClientLoaderArgs) {
+  const url = new URL(request.url);
+  const channel = parseNewsChannel(url.searchParams.get("channel"));
+  const page = Number(url.searchParams.get("page")) || 1;
+  const data = await readThroughRouteCache(
+    newsListClientCache,
+    newsListCacheKey(channel, page),
+    () => serverLoader(),
+  );
+  seedNewsListQuery(channel, page, data.feed);
+  return data;
+}
+clientLoader.hydrate = true;
+
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formMethod && formMethod.toUpperCase() !== "GET") return defaultShouldRevalidate;
+  return (
+    currentUrl.searchParams.get("channel") !== nextUrl.searchParams.get("channel") ||
+    currentUrl.searchParams.get("page") !== nextUrl.searchParams.get("page")
+  );
 }
 
 export function meta() {

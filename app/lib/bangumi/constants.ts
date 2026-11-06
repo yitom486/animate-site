@@ -23,4 +23,9 @@ export const CACHE_MAX_ENTRIES = {
   news: 32,
   clientList: 80,
   clientDetail: 60,
+  clientHome: 4,
+  clientNewsList: 24,
+  clientNewsDetail: 40,
+  clientBlogList: 24,
+  clientBlogDetail: 40,
 } as const;

@@ -19,7 +19,17 @@ import {
 } from "~/lib/bangumi/blog-section";
 import { useSubjectSidePanel, type SubjectSidePanelControls } from "~/lib/subject-side-panel";
 import { AnimeCover } from "~/components/anime-cover";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
+import { createRouteClientCache, readThroughRouteCache } from "~/lib/route-client-cache";
 import { cn } from "~/lib/utils";
+import type { ShouldRevalidateFunctionArgs } from "react-router";
+
+type BlogListData = Awaited<ReturnType<typeof fetchBlogListPage>> & { section: BlogSection };
+
+const blogListClientCache = createRouteClientCache<BlogListData>({
+  ttlMs: CACHE_TTL_LIST_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientBlogList,
+});
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const section = parseBlogSection(params.section);
@@ -29,6 +39,28 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const data = await fetchBlogListPage(section, page);
   return { ...data, section };
+}
+
+export async function clientLoader({ params, request, serverLoader }: Route.ClientLoaderArgs) {
+  const section = parseBlogSection(params.section) ?? "anime";
+  const page = Math.max(1, Number(new URL(request.url).searchParams.get("page")) || 1);
+  return readThroughRouteCache(blogListClientCache, `${section}:${page}`, () => serverLoader());
+}
+clientLoader.hydrate = true;
+
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  currentParams,
+  nextParams,
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formMethod && formMethod.toUpperCase() !== "GET") return defaultShouldRevalidate;
+  return (
+    currentParams.section !== nextParams.section ||
+    currentUrl.searchParams.get("page") !== nextUrl.searchParams.get("page")
+  );
 }
 
 export function meta({ data }: Route.MetaArgs) {

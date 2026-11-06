@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
   data,
@@ -10,6 +10,7 @@ import {
   ScrollRestoration,
   useNavigation,
   useRouteLoaderData,
+  type ShouldRevalidateFunctionArgs,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -28,6 +29,17 @@ export function loader({ request }: Route.LoaderArgs) {
       headers: { "Cache-Control": "private, no-cache" },
     },
   );
+}
+
+/** 主题由客户端 ThemeProvider 维护；普通 Link / 回退不必重跑 root loader。 */
+export function shouldRevalidate({
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formMethod && formMethod.toUpperCase() !== "GET") {
+    return defaultShouldRevalidate;
+  }
+  return false;
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -56,17 +68,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** 缓存命中的回退通常 <150ms；延迟显示避免闪一下像整页重载。 */
+const LOADER_DELAY_MS = 180;
+
 export default function App({ loaderData }: Route.ComponentProps) {
   // 每棵应用树独立实例：SSR 请求间不共享用户数据，浏览器路由切换时保留缓存。
   const [queryClient] = useState(createQueryClient);
   const navigation = useNavigation();
-  const isLoading = navigation.state !== "idle";
+  const [showLoader, setShowLoader] = useState(false);
+
+  useEffect(() => {
+    if (navigation.state === "idle") {
+      setShowLoader(false);
+      return;
+    }
+    const id = window.setTimeout(() => setShowLoader(true), LOADER_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [navigation.state]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider initialTheme={loaderData.theme}>
         <Outlet />
-        <HamsterLoader show={isLoading} />
+        <HamsterLoader show={showLoader} />
       </ThemeProvider>
     </QueryClientProvider>
   );

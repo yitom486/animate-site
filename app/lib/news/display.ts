@@ -88,4 +88,3 @@ export function pickNewsShowcase<T extends { image?: string }>(items: T[], limit
   const withoutImage = items.filter((item) => !item.image);
   return [...withImage, ...withoutImage].slice(0, limit);
 }
-

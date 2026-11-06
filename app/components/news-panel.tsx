@@ -1,12 +1,4 @@
-import {
-  ArrowRight,
-  Building2,
-  CalendarDays,
-  Clock,
-  MapPin,
-  Sparkles,
-  Tv,
-} from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, Clock, MapPin, Sparkles, Tv } from "lucide-react";
 import { Link } from "react-router";
 import type { NewsFeed, NewsItem } from "~/lib/news/types";
 import { NEWS_FEEDS, formatNewsDate, newsListHref } from "~/lib/news/config";

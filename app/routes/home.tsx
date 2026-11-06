@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, type ShouldRevalidateFunctionArgs } from "react-router";
 import {
   ArrowRight,
   BookOpen,
@@ -23,6 +23,8 @@ import { SUBJECT_TYPE } from "~/lib/bangumi/types";
 import { fetchCalendarSchedule } from "~/lib/bangumi/server/calendar.server";
 import { upstreamFromRequest } from "~/lib/upstream";
 import { getBangumiWeekdayId } from "~/lib/bangumi/calendar-utils";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
+import { createRouteClientCache, readThroughRouteCache } from "~/lib/route-client-cache";
 
 export function meta() {
   return [
@@ -73,10 +75,29 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 }
 
+type HomeLoaderData = Awaited<ReturnType<typeof loader>>;
+
+const homeClientCache = createRouteClientCache<HomeLoaderData>({
+  ttlMs: CACHE_TTL_LIST_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientHome,
+});
+
+const HOME_CACHE_KEY = "home";
+
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
-  return serverLoader();
+  // hydrate 时 serverLoader() 复用 SSR 载荷不打网；之后回退命中内存缓存。
+  return readThroughRouteCache(homeClientCache, HOME_CACHE_KEY, () => serverLoader());
 }
 clientLoader.hydrate = true;
+
+export function shouldRevalidate({
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formMethod && formMethod.toUpperCase() !== "GET") return defaultShouldRevalidate;
+  // 首页无 URL 参数依赖；回退 / 再进入时靠 clientLoader 缓存，避免无意义重拉。
+  return false;
+}
 
 const CATEGORIES = [
   { type: SUBJECT_TYPE.anime, label: "动画", desc: "番剧、剧场版与短片", icon: Tv },

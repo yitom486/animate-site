@@ -12,8 +12,15 @@ export async function fetchQueryJson<T>(url: string, signal: AbortSignal): Promi
   return response.json() as Promise<T>;
 }
 
+/** 浏览器端单例：供 clientLoader 把路由数据写入 TanStack Query，回退时组件复用。 */
+let browserQueryClient: QueryClient | null = null;
+
+export function getBrowserQueryClient(): QueryClient | null {
+  return browserQueryClient;
+}
+
 export function createQueryClient() {
-  return new QueryClient({
+  const client = new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 5 * 60 * 1000,
@@ -27,4 +34,8 @@ export function createQueryClient() {
       },
     },
   });
+  if (typeof window !== "undefined") {
+    browserQueryClient = client;
+  }
+  return client;
 }

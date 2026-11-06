@@ -129,15 +129,13 @@ try {
   assert.equal(feed.total, 2, "不同频道可共享相同原文 URL");
   assert.ok(feed.sources.every((source) => source.ok));
   assert.equal(feed.items[0].image, undefined);
-  assert.equal(
-    normalizeSourceUrl("https://CDN.Example.com/path/"),
-    "https://cdn.example.com/path",
-  );
+  assert.equal(normalizeSourceUrl("https://CDN.Example.com/path/"), "https://cdn.example.com/path");
   assert.deepEqual(
     newsSourceUrls("anime", {
       NEWS_ANIME_RSS_URL: "https://feeds.example.test/anime.xml",
       NEWS_ANIME_RSS_URL_SECONDARY: "https://feeds.example.test/anime-b.xml",
-      NEWS_ANIME_RSS_URLS: "https://feeds.example.test/anime.xml\nhttps://feeds.example.test/anime-c.xml",
+      NEWS_ANIME_RSS_URLS:
+        "https://feeds.example.test/anime.xml\nhttps://feeds.example.test/anime-c.xml",
     }),
     [
       "https://feeds.example.test/anime.xml",
@@ -373,7 +371,11 @@ try {
   });
   assert.equal(multi.filter((row) => row.status === "updated").length, 3);
   const multiIds = multi.map((row) => row.id);
-  assert.equal(multiIds.filter((id) => id.startsWith("anime:")).length, 2, "多源动漫使用 hash feed id");
+  assert.equal(
+    multiIds.filter((id) => id.startsWith("anime:")).length,
+    2,
+    "多源动漫使用 hash feed id",
+  );
   assert.ok(multiIds.includes("events"), "单源漫展仍使用频道 id");
   assert.ok(!multiIds.includes("anime"), "本轮多源同步不再写入裸 anime id");
   const shared = await db
@@ -394,7 +396,8 @@ try {
       channel: "anime",
       title: "更长的标题给展示",
       source_url: "https://example.com/x",
-      content_html: "原报道配图 · 来源：Anime! Anime!" + "<p>很长但没有图的旧消毒正文</p>".repeat(20),
+      content_html:
+        "原报道配图 · 来源：Anime! Anime!" + "<p>很长但没有图的旧消毒正文</p>".repeat(20),
       excerpt: "很长但没有图",
       image_url: "https://cdn.example.com/x.jpg",
       published_at: 1,

@@ -16,12 +16,43 @@ import { newsDbFromContext, readNewsArticle } from "~/lib/news/db.server";
 import { formatNewsDate, newsListHref } from "~/lib/news/config";
 import { prepareNewsContent } from "~/lib/news/parse.server";
 import { parseNewsItemMeta } from "~/lib/news/display";
+import { seedNewsDetailQuery } from "~/lib/news/queries";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_DETAIL_MS } from "~/lib/bangumi/constants";
+import { createRouteClientCache, readThroughRouteCache } from "~/lib/route-client-cache";
 import { cn } from "~/lib/utils";
+import type { ShouldRevalidateFunctionArgs } from "react-router";
+
+type NewsDetailData = {
+  article: NonNullable<Awaited<ReturnType<typeof readNewsArticle>>> & { contentHtml: string };
+};
+
+const newsDetailClientCache = createRouteClientCache<NewsDetailData>({
+  ttlMs: CACHE_TTL_DETAIL_MS,
+  maxEntries: CACHE_MAX_ENTRIES.clientNewsDetail,
+});
 
 export async function loader({ params, context }: Route.LoaderArgs) {
   const article = await readNewsArticle(newsDbFromContext(context), params.id);
   if (!article) throw new Response("资讯不存在或已超过 30 天保留期", { status: 404 });
   return { article: { ...article, contentHtml: prepareNewsContent(article.contentHtml) } };
+}
+
+export async function clientLoader({ params, serverLoader }: Route.ClientLoaderArgs) {
+  const id = params.id ?? "";
+  const data = await readThroughRouteCache(newsDetailClientCache, id, () => serverLoader());
+  seedNewsDetailQuery(data.article);
+  return data;
+}
+clientLoader.hydrate = true;
+
+export function shouldRevalidate({
+  currentParams,
+  nextParams,
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formMethod && formMethod.toUpperCase() !== "GET") return defaultShouldRevalidate;
+  return currentParams.id !== nextParams.id;
 }
 
 export function meta({ data }: Route.MetaArgs) {
