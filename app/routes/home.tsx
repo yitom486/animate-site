@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, type ShouldRevalidateFunctionArgs } from "react-router";
 import {
   ArrowRight,
@@ -22,8 +22,9 @@ import { buildDetailUrl, buildListHref } from "~/lib/bangumi/params";
 import { SUBJECT_TYPE } from "~/lib/bangumi/types";
 import { fetchCalendarSchedule } from "~/lib/bangumi/server/calendar.server";
 import { upstreamFromRequest } from "~/lib/upstream";
-import { getBangumiWeekdayId } from "~/lib/bangumi/calendar-utils";
+import { getBangumiWeekdayId, shanghaiDateKey } from "~/lib/bangumi/calendar-utils";
 import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
+import { preloadHotAnimeLists } from "~/lib/bangumi/list-client-cache";
 import { createRouteClientCache, readThroughRouteCache } from "~/lib/route-client-cache";
 
 export function meta() {
@@ -82,11 +83,10 @@ const homeClientCache = createRouteClientCache<HomeLoaderData>({
   maxEntries: CACHE_MAX_ENTRIES.clientHome,
 });
 
-const HOME_CACHE_KEY = "home";
-
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
-  // hydrate 时 serverLoader() 复用 SSR 载荷不打网；之后回退命中内存缓存。
-  return readThroughRouteCache(homeClientCache, HOME_CACHE_KEY, () => serverLoader());
+  // 键含上海日：跨午夜自动失效；hydrate 时 serverLoader() 复用 SSR 载荷。
+  const key = `home:${shanghaiDateKey()}`;
+  return readThroughRouteCache(homeClientCache, key, () => serverLoader());
 }
 clientLoader.hydrate = true;
 
@@ -111,6 +111,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   const { todayItems, hotItems, todayCn, totalSchedule } = loaderData;
   const [drawerId, setDrawerId] = useState<number | null>(null);
   const emptyListParams = new URLSearchParams();
+
+  // 预热放送周表 + 排行榜：点进高流量页 / 回退时 clientLoader 直接命中。
+  useEffect(() => {
+    preloadHotAnimeLists();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">

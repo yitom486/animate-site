@@ -27,4 +27,10 @@ export type {
   WithCacheOptions,
 } from "./types";
 export { createCache, withCache } from "./memory";
-export { buildCacheControl, publicCacheHeaders, HTTP_CACHE } from "./http";
+export {
+  buildCacheControl,
+  publicCacheHeaders,
+  calendarCacheHeaders,
+  listHttpCacheHeaders,
+  HTTP_CACHE,
+} from "./http";

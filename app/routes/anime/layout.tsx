@@ -11,24 +11,17 @@ import { AnimeRankFilter } from "~/components/anime-rank-filter";
 import { SearchResultGroups } from "~/components/search-result-groups";
 import { SiteNav } from "~/components/site-nav";
 import { cn } from "~/lib/utils";
-import { createCache } from "~/lib/cache";
 import {
   buildDetailUrl,
   buildListHref,
-  listCacheKey,
   LIST_REVALIDATE_KEYS,
   mergeListParams,
 } from "~/lib/bangumi/params";
+import { readAnimeListCache, rememberAnimeList } from "~/lib/bangumi/list-client-cache";
 import { loadCachedAnimeListFromRequest } from "~/lib/bangumi/server/list-load.server";
 import { SUBJECT_TYPE, SUBJECT_TYPE_ALL, type AnimeListResult } from "~/lib/bangumi/types";
-import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "~/lib/bangumi/constants";
 import { COVER_PRIORITY_COUNT } from "~/lib/anime-meta";
 import { isAbortLike, throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
-
-const clientCache = createCache<AnimeListResult>({
-  ttlMs: CACHE_TTL_LIST_MS,
-  maxEntries: CACHE_MAX_ENTRIES.clientList,
-});
 
 export async function loader({ request }: Route.LoaderArgs) {
   try {
@@ -43,14 +36,13 @@ export async function clientLoader({
   serverLoader,
 }: Route.ClientLoaderArgs): Promise<AnimeListResult> {
   const url = new URL(request.url);
-  const key = listCacheKey(url.searchParams);
 
-  const cached = clientCache.get(key);
+  const cached = readAnimeListCache(url.searchParams);
   if (cached) return cached;
 
   try {
     const data = (await serverLoader()) as AnimeListResult;
-    clientCache.set(key, data);
+    rememberAnimeList(url.searchParams, data);
     return data;
   } catch (error) {
     if (isAbortLike(error)) throw error;

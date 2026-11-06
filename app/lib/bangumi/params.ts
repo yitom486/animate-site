@@ -9,6 +9,7 @@ import {
   type ListView,
   type SubjectTypeValue,
 } from "./types";
+import { shanghaiDateKey } from "./calendar-utils";
 import { subjectCatLabel } from "./subject-categories";
 
 const LIST_PARAM_KEYS = [
@@ -171,7 +172,7 @@ export function buildDetailUrl(id: string | number, listParams: URLSearchParams)
 export function listCacheKey(searchParams: URLSearchParams): string {
   const query = parseListQuery(searchParams);
   // 结构化编码避免 q/tag 中的 &、= 与字段分隔符发生碰撞。
-  return `list:v3:${JSON.stringify([
+  return `list:v4:${JSON.stringify([
     query.type,
     query.view,
     query.sort,
@@ -182,7 +183,8 @@ export function listCacheKey(searchParams: URLSearchParams): string {
     query.month,
     query.series,
     query.platform,
-    query.view === "calendar" ? 1 : query.page,
+    // 放送列表按上海日历日分键：跨日后 L1/L2/客户端自动换日，不依赖 UTC。
+    query.view === "calendar" ? shanghaiDateKey() : query.page,
   ])}`;
 }
 

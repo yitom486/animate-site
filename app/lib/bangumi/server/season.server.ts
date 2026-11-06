@@ -1,7 +1,8 @@
-/** 当前动画季（1/4/7/10 月）的 air_date 过滤，用于近似「近期注目」 */
+import { getShanghaiParts } from "../calendar-utils";
+
+/** 当前动画季（1/4/7/10 月）的 air_date 过滤，用于近似「近期注目」；按 Asia/Shanghai。 */
 export function getCurrentAnimeSeasonAirDateFilter(now = new Date()): string[] {
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
+  const { year: y, month: m } = getShanghaiParts(now);
 
   let startMonth: number;
   let endMonth: number;
@@ -20,7 +21,7 @@ export function getCurrentAnimeSeasonAirDateFilter(now = new Date()): string[] {
   }
 
   const start = `${y}-${String(startMonth).padStart(2, "0")}-01`;
-  const lastDay = new Date(y, endMonth, 0).getDate();
+  const lastDay = new Date(Date.UTC(y, endMonth, 0)).getUTCDate();
   const end = `${y}-${String(endMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
   return [`>=${start}`, `<=${end}`];

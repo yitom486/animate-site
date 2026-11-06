@@ -1,9 +1,11 @@
+import { data } from "react-router";
 import type { Route } from "./+types/anime.comments.$id";
 import {
   fetchSubjectComments,
   fetchCommentsPage,
   fetchReviewsPage,
 } from "~/lib/bangumi/server/comments.server";
+import { HTTP_CACHE, publicCacheHeaders } from "~/lib/cache";
 import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 
 /**
@@ -21,9 +23,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const upstream = upstreamFromRequest(request);
 
   try {
-    if (kind === "comments") return await fetchCommentsPage(id, offset, undefined, upstream);
-    if (kind === "reviews") return await fetchReviewsPage(id, offset, undefined, upstream);
-    return await fetchSubjectComments(id, upstream);
+    const payload =
+      kind === "comments"
+        ? await fetchCommentsPage(id, offset, undefined, upstream)
+        : kind === "reviews"
+          ? await fetchReviewsPage(id, offset, undefined, upstream)
+          : await fetchSubjectComments(id, upstream);
+    return data(payload, { headers: publicCacheHeaders(HTTP_CACHE.comments) });
   } catch (error) {
     throwRouteUpstreamError(error);
   }

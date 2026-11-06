@@ -1,7 +1,9 @@
+import { data } from "react-router";
 import type { Route } from "./+types/anime.downloads.$id";
 import { fetchCachedDetail } from "~/lib/bangumi/server/detail.server";
 import type { InfoboxItem } from "~/lib/anime-meta";
 import { fetchDownloads } from "~/lib/downloads";
+import { HTTP_CACHE, publicCacheHeaders } from "~/lib/cache";
 import { throwRouteUpstreamError, upstreamFromRequest } from "~/lib/upstream";
 
 /** 从 infobox「别名」取各类译名作为补充搜索关键词 */
@@ -27,7 +29,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       Boolean,
     ) as string[];
 
-    return fetchDownloads(keywords);
+    const payload = await fetchDownloads(keywords);
+    return data(payload, { headers: publicCacheHeaders(HTTP_CACHE.downloads) });
   } catch (error) {
     throwRouteUpstreamError(error);
   }

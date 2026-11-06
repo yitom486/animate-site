@@ -1,3 +1,6 @@
+import { createCache, withCache } from "~/lib/cache";
+import { shanghaiDateKey } from "../calendar-utils";
+import { CACHE_MAX_ENTRIES, CACHE_TTL_LIST_MS } from "../constants";
 import { bgmGetLegacy } from "./client.server";
 import { BGM_API_ROUTES } from "./api-routes.server";
 import { trimSubjects } from "./trim.server";
@@ -11,8 +14,13 @@ type CalendarResponse = Array<{
   items: RawSubject[];
 }>;
 
-/** GET /calendar — 按星期分组，组内按评分降序 */
-export async function fetchCalendarSchedule(options?: UpstreamRequestOptions): Promise<{
+const calendarCache = createCache<{ schedule: CalendarDayGroup[]; total: number }>({
+  // 键已带上海日历日；TTL 覆盖当日反复访问即可，跨日靠 key 失效。
+  ttlMs: CACHE_TTL_LIST_MS * 3,
+  maxEntries: CACHE_MAX_ENTRIES.list,
+});
+
+async function fetchCalendarScheduleUncached(options?: UpstreamRequestOptions): Promise<{
   schedule: CalendarDayGroup[];
   total: number;
 }> {
@@ -28,4 +36,17 @@ export async function fetchCalendarSchedule(options?: UpstreamRequestOptions): P
 
   const total = schedule.reduce((n, d) => n + d.items.length, 0);
   return { schedule, total };
+}
+
+/** GET /calendar — 按星期分组，组内按评分降序；L1+L2，键含上海日。 */
+export async function fetchCalendarSchedule(options?: UpstreamRequestOptions): Promise<{
+  schedule: CalendarDayGroup[];
+  total: number;
+}> {
+  const key = `calendar:v1:${shanghaiDateKey()}`;
+  return withCache(calendarCache, key, () => fetchCalendarScheduleUncached(options), {
+    signal: options?.signal,
+    useEdge: true,
+    onStatus: options?.onCacheStatus,
+  });
 }

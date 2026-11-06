@@ -8,9 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { getShanghaiParts } from "~/lib/bangumi/calendar-utils";
 import { buildListHref } from "~/lib/bangumi/params";
 
-const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_YEAR = getShanghaiParts().year;
 const FIRST_ANIME_YEAR = 1960;
 const YEAR_OPTIONS = [
   { value: "all", label: "全部年份" },

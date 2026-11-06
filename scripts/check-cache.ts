@@ -3,10 +3,17 @@ import {
   createCache,
   withCache,
   publicCacheHeaders,
+  calendarCacheHeaders,
+  listHttpCacheHeaders,
   HTTP_CACHE,
   type CacheStatus,
 } from "../app/lib/cache";
 import { listCacheKey, parseListQuery } from "../app/lib/bangumi/params";
+import {
+  getBangumiWeekdayId,
+  msUntilNextShanghaiMidnight,
+  shanghaiDateKey,
+} from "../app/lib/bangumi/calendar-utils";
 
 function deferred() {
   let resolve!: () => void;
@@ -168,6 +175,7 @@ try {
   );
   assert.notEqual(key({ view: "search", q: "a" }), key({ view: "search", q: "b" }));
   assert.notEqual(key({ sort: "rank", page: "1" }), key({ sort: "rank", page: "2" }));
+  assert.ok(key({ view: "calendar" }).includes("list:v4:"));
   assert.equal(parseListQuery(new URLSearchParams("page=Infinity")).page, 1);
   assert.equal(parseListQuery(new URLSearchParams("page=2.8")).page, 2);
   assert.equal(
@@ -206,6 +214,22 @@ try {
   } finally {
     globalThis.fetch = originalFetch;
   }
+  // Asia/Shanghai：放送日键与午夜 TTL，避免 Worker UTC 串日。
+  assert.match(shanghaiDateKey(), /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(getBangumiWeekdayId() >= 1 && getBangumiWeekdayId() <= 7);
+  assert.ok(msUntilNextShanghaiMidnight() > 0);
+  assert.ok(msUntilNextShanghaiMidnight() <= 24 * 60 * 60 * 1000);
+  const calHeaders = new Headers(calendarCacheHeaders());
+  const calCc = calHeaders.get("Cache-Control") ?? "";
+  assert.match(calCc, /s-maxage=\d+/);
+  assert.ok(
+    Number((/s-maxage=(\d+)/.exec(calCc) ?? [])[1]) <= (HTTP_CACHE.calendar.sMaxAge ?? 600),
+  );
+  assert.match(
+    new Headers(listHttpCacheHeaders(new URLSearchParams("sort=rank"))).get("Cache-Control") ?? "",
+    /s-maxage=900/,
+  );
+
   console.log(
     "缓存检查通过：LRU/TTL、并发合并、失败重试、取消隔离、边缘写入等待、跨 isolate L2 命中、缓存键与 API 诊断头。",
   );

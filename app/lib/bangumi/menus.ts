@@ -16,6 +16,7 @@ import type { LucideIcon } from "lucide-react";
 import { ANIME_CAT, SUBJECT_TYPE } from "./types";
 import { buildListHref } from "./params";
 import { blogListPath } from "./blog-section";
+import { getShanghaiParts } from "./calendar-utils";
 import {
   BOOK_CAT,
   BOOK_CAT_LABEL,
@@ -37,9 +38,9 @@ export type MenuGroup = {
   links: MenuLink[];
 };
 
-const now = new Date();
-const CURRENT_YEAR = String(now.getFullYear());
-const CURRENT_MONTH = String(now.getMonth() + 1);
+const shanghai = getShanghaiParts();
+const CURRENT_YEAR = String(shanghai.year);
+const CURRENT_MONTH = String(shanghai.month);
 
 function animeLinks(): MenuLink[] {
   const links: MenuLink[] = [
