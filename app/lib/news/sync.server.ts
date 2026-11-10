@@ -10,6 +10,7 @@ import {
   type NewsSourceSecrets,
 } from "./settings.server";
 import { normalizeSourceUrl } from "./url";
+import { decorativeNewsImageSql, usableNewsCoverUrl } from "./cover";
 import { STALE_NEWS_REVISION_SQL } from "./revision";
 
 const MAX_FEED_BYTES = 2 * 1024 * 1024;
@@ -28,6 +29,10 @@ type ArticleMergeRow = {
   updated_at: number;
   push_version?: number | null;
 };
+
+function mergedCoverUrl(primary: string | null | undefined, fallback: string | null | undefined) {
+  return usableNewsCoverUrl(primary) ?? usableNewsCoverUrl(fallback) ?? null;
+}
 
 async function readFeedBody(response: Response) {
   if (Number(response.headers.get("Content-Length")) > MAX_FEED_BYTES)
@@ -95,8 +100,8 @@ export function chooseNewsMergeKeeper(a: ArticleMergeRow, b: ArticleMergeRow): A
   const aCeladon = preferCeladonGuid(a.guid);
   const bCeladon = preferCeladonGuid(b.guid);
   if (aCeladon !== bCeladon) return aCeladon ? a : b;
-  const aImage = Boolean(a.image_url);
-  const bImage = Boolean(b.image_url);
+  const aImage = Boolean(usableNewsCoverUrl(a.image_url));
+  const bImage = Boolean(usableNewsCoverUrl(b.image_url));
   if (aImage !== bImage) return aImage ? a : b;
   return a.first_seen_at <= b.first_seen_at ? a : b;
 }
@@ -109,7 +114,7 @@ export function mergeNewsArticlePair(a: ArticleMergeRow, b: ArticleMergeRow): Ar
     return {
       ...keeper,
       source_url: normalizeSourceUrl(keeper.source_url),
-      image_url: keeper.image_url || other.image_url,
+      image_url: mergedCoverUrl(keeper.image_url, other.image_url),
       first_seen_at: Math.min(keeper.first_seen_at, other.first_seen_at),
     };
   const contentHtml = preferNewsContentHtml(keeper.content_html, other.content_html);
@@ -127,7 +132,7 @@ export function mergeNewsArticlePair(a: ArticleMergeRow, b: ArticleMergeRow): Ar
     source_url: normalizeSourceUrl(keeper.source_url || other.source_url),
     content_html: contentHtml,
     excerpt: excerptSource,
-    image_url: keeper.image_url || other.image_url,
+    image_url: mergedCoverUrl(keeper.image_url, other.image_url),
     published_at: Math.min(keeper.published_at, other.published_at),
     first_seen_at: Math.min(keeper.first_seen_at, other.first_seen_at),
     updated_at: Math.max(keeper.updated_at, other.updated_at),
@@ -223,7 +228,7 @@ export async function newsArticleUpsertStatements(
       article.sourceUrl,
       article.contentHtml,
       article.excerpt,
-      article.imageUrl ?? null,
+      usableNewsCoverUrl(article.imageUrl) ?? null,
       article.publishedAt,
       now,
       now,
@@ -258,7 +263,15 @@ export async function newsArticleUpsertStatements(
               THEN news_articles.excerpt
               WHEN length(excluded.excerpt) >= length(news_articles.excerpt)
               THEN excluded.excerpt ELSE news_articles.excerpt END,
-            image_url=COALESCE(excluded.image_url, news_articles.image_url),
+            image_url=CASE
+              WHEN excluded.image_url IS NOT NULL AND excluded.image_url != ''
+                AND NOT (${decorativeNewsImageSql("excluded.image_url")})
+              THEN excluded.image_url
+              WHEN news_articles.image_url IS NOT NULL AND news_articles.image_url != ''
+                AND NOT (${decorativeNewsImageSql("news_articles.image_url")})
+              THEN news_articles.image_url
+              ELSE NULL
+            END,
             published_at=excluded.published_at,
             updated_at=excluded.updated_at,
             push_version=COALESCE(excluded.push_version, news_articles.push_version)

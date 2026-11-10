@@ -1,6 +1,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { NEWS_FEEDS, NEWS_RETENTION_MS, type NewsChannel } from "./config";
 import { newsChannelFromFeedId } from "./settings.server";
+import { usableNewsCoverUrl } from "./cover";
 import type { NewsArticle, NewsFeed, NewsItem } from "./types";
 
 export type NewsEnv = { NEWS_DB: D1Database };
@@ -45,7 +46,7 @@ function toItem(row: Omit<ArticleRow, "guid" | "content_html">): NewsItem {
     publishedAt: new Date(row.published_at).toISOString(),
     source: NEWS_FEEDS.find((feed) => feed.id === row.channel)!.label,
     locale: "zh",
-    image: row.image_url || undefined,
+    image: usableNewsCoverUrl(row.image_url),
   };
 }
 
@@ -74,17 +75,14 @@ export async function readNewsFeed(
     page?: number;
     limit?: number;
     now?: number;
-    preferImage?: boolean;
   } = {},
 ): Promise<NewsFeed> {
-  const { channel, now = Date.now(), preferImage = false } = options;
+  const { channel, now = Date.now() } = options;
   const limit = Math.min(40, Math.max(1, Math.floor(options.limit ?? 24)));
   const page = Math.min(10000, Math.max(1, Math.floor(options.page ?? 1)));
   const where = "published_at >= ? AND published_at <= ?" + (channel ? " AND channel = ?" : "");
   const bindings = [now - NEWS_RETENTION_MS, now, ...(channel ? [channel] : [])];
-  const orderBy = preferImage
-    ? "(image_url IS NULL OR image_url = '') ASC, published_at DESC, id DESC"
-    : "published_at DESC, id DESC";
+  const orderBy = "published_at DESC, id DESC";
   const [rows, count, states] = await db.batch([
     db
       .prepare(
@@ -122,12 +120,10 @@ export async function readNewsArticle(
   return row ? { ...toItem(row), guid: row.guid, contentHtml: row.content_html } : null;
 }
 
-/** 首页为两个频道分别取数，避免高频动漫消息挤掉较早发布的漫展；优先带封面的条目填满配额。 */
+/** 首页为两个频道分别取数，避免高频动漫消息挤掉较早发布的漫展；排序与资讯中心相同。 */
 export async function readHomeNews(db: D1Database, now = Date.now()): Promise<NewsFeed> {
   const feeds = await Promise.all(
-    NEWS_FEEDS.map((feed) =>
-      readNewsFeed(db, { channel: feed.id, limit: 12, now, preferImage: true }),
-    ),
+    NEWS_FEEDS.map((feed) => readNewsFeed(db, { channel: feed.id, limit: 12, now })),
   );
   const items = feeds.flatMap((feed) => feed.items);
   const total = feeds.reduce((sum, feed) => sum + feed.total, 0);

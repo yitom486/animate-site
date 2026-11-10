@@ -23,6 +23,7 @@ import {
 } from "../app/lib/news/sync.server";
 import { newsSourceUrls } from "../app/lib/news/settings.server";
 import { pickNewsShowcase } from "../app/lib/news/display";
+import { usableNewsCoverUrl } from "../app/lib/news/cover";
 import { normalizeSourceUrl } from "../app/lib/news/url";
 import { handleNewsPush } from "../app/lib/news/push.server";
 import { isStaleNewsRevision } from "../app/lib/news/revision";
@@ -140,6 +141,49 @@ try {
     extractCoverImageUrl('<p><img src="https://cdn.example.com/from-body.jpg" alt="" /></p>'),
     "https://cdn.example.com/from-body.jpg",
   );
+  assert.equal(
+    shouldDropNewsImage({
+      src: "https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png",
+    }),
+    true,
+  );
+  assert.equal(
+    usableNewsCoverUrl("https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png"),
+    undefined,
+  );
+  assert.equal(
+    usableNewsCoverUrl("https://cdn.example.com/photos/cover-large.jpg"),
+    "https://cdn.example.com/photos/cover-large.jpg",
+  );
+  const qrFirstRss = rss(
+    item(
+      "qr-cover",
+      '<p><img src="https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png" alt="" /><img src="https://www.gxdm.net/data/attachment/portal/202407/16/story.jpg" alt="现场" /></p>',
+      date,
+      '<media:thumbnail url="https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png" /><media:content url="https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png" medium="image" /><media:content url="https://www.gxdm.net/data/attachment/portal/202407/16/story.jpg" medium="image" />',
+    ),
+  );
+  assert.equal(
+    parseNewsRss(qrFirstRss, "events")[0].imageUrl,
+    "https://www.gxdm.net/data/attachment/portal/202407/16/story.jpg",
+  );
+  assert.equal(
+    extractCoverImageUrl(
+      '<p><img src="https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png" alt="" /><img src="https://cdn.example.com/real-cover.jpg" alt="" /></p>',
+    ),
+    "https://cdn.example.com/real-cover.jpg",
+  );
+  assert.equal(
+    extractCoverImageUrl(
+      '<p><img src="https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png" alt="" /></p>',
+    ),
+    undefined,
+  );
+  const qrFiltered = sanitizeNewsHtml(
+    '<p>报道</p><figure><img src="https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png" alt="qr"></figure><figure><img src="https://cdn.example.com/story.jpg" alt="现场" width="800" height="450"></figure>',
+  );
+  assert.ok(qrFiltered.includes('src="https://cdn.example.com/story.jpg"'));
+  assert.ok(!qrFiltered.includes("ewm.png"));
 
   const md = "## 资讯归纳\n\n正文 **加粗**，看图 ![x](https://cdn.example.com/m.jpg)";
   assert.equal(looksLikeMarkdown(md), true);
@@ -181,7 +225,7 @@ try {
       ],
       2,
     ).map((row) => row.id),
-    ["2", "1"],
+    ["1", "2"],
   );
   const id = await newsArticleId("anime-1");
   assert.ok((await readNewsArticle(db, id, now))?.contentHtml.includes("正文"));
@@ -484,10 +528,45 @@ try {
   assert.equal(merged.image_url, "https://cdn.example.com/y.jpg");
   assert.ok(merged.content_html.includes("long body here"));
 
-  // Prefer-image home ordering fills quota with covers first.
+  const mergedDecorative = mergeNewsArticlePair(
+    {
+      id: "a",
+      guid: "celadon:deco",
+      channel: "events",
+      title: "资料更新标题更长一些",
+      source_url: "https://example.com/deco",
+      content_html: "<p>新正文</p>",
+      excerpt: "新正文",
+      image_url: null,
+      published_at: 2,
+      first_seen_at: 2,
+      updated_at: 2,
+      push_version: 2,
+    },
+    {
+      id: "b",
+      guid: "urn:sha256:deco",
+      channel: "events",
+      title: "旧稿",
+      source_url: "https://example.com/deco",
+      content_html: "<p>旧正文</p>",
+      excerpt: "旧正文",
+      image_url: "https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png",
+      published_at: 1,
+      first_seen_at: 1,
+      updated_at: 1,
+    },
+  );
+  assert.equal(mergedDecorative.image_url, null, "合并时不得保留装饰封面");
+
   const preferHome = await readHomeNews(db, multiNow);
   const animeHome = preferHome.items.filter((row) => row.channel === "anime");
-  assert.ok(animeHome.some((row) => row.image));
+  const animeList = (await readNewsFeed(db, { channel: "anime", now: multiNow, limit: 12 })).items;
+  assert.deepEqual(
+    animeHome.map((row) => row.id),
+    animeList.map((row) => row.id),
+    "首页与资讯中心按同一发布时间排序",
+  );
 
   const collapseAgain = await collapseDuplicateNewsArticles(db, multiNow);
   assert.equal(collapseAgain.collapsed, 0);
@@ -632,8 +711,122 @@ try {
     "稳定 GUID 重复同步不增加文章",
   );
 
+  const homeNow = Date.now();
+  const decorativeCover = "https://www.gxdm.net/template/dean_nova_160625/deancss/ewm.png";
+  const realCover = "https://cdn.example.com/event-poster.jpg";
+  await db.batch(
+    await newsArticleUpsertStatements(
+      db,
+      [
+        {
+          guid: "home-old-with-cover",
+          channel: "events",
+          title: "旧的有图漫展",
+          sourceUrl: "https://example.com/home-old-with-cover",
+          contentHtml: '<p><img src="https://cdn.example.com/event-poster.jpg" alt="" /></p>',
+          excerpt: "旧的有图漫展",
+          imageUrl: realCover,
+          publishedAt: homeNow - 3_600_000,
+        },
+        {
+          guid: "home-new-without-cover",
+          channel: "events",
+          title: "新的无图漫展",
+          sourceUrl: "https://example.com/home-new-without-cover",
+          contentHtml: "<p>只有文字的新活动</p>",
+          excerpt: "只有文字的新活动",
+          publishedAt: homeNow - 60_000,
+        },
+        {
+          guid: "home-deco-cover",
+          channel: "events",
+          title: "带二维码旧稿",
+          sourceUrl: "https://example.com/home-deco-cover",
+          contentHtml: "<p>装饰图旧稿</p>",
+          excerpt: "装饰图旧稿",
+          imageUrl: decorativeCover,
+          publishedAt: homeNow - 120_000,
+        },
+      ],
+      homeNow,
+    ),
+  );
+  const rawDeco = await db
+    .prepare("SELECT image_url FROM news_articles WHERE guid = ?")
+    .bind("home-deco-cover")
+    .first<{ image_url: string | null }>();
+  assert.equal(rawDeco?.image_url, null, "写入时即丢弃装饰封面");
+
+  await db
+    .prepare("UPDATE news_articles SET image_url = ? WHERE guid = ?")
+    .bind(decorativeCover, "home-deco-cover")
+    .run();
+  await db.batch(
+    await newsArticleUpsertStatements(
+      db,
+      [
+        {
+          guid: "home-deco-cover",
+          channel: "events",
+          title: "带二维码旧稿",
+          sourceUrl: "https://example.com/home-deco-cover",
+          contentHtml: "<p>装饰图旧稿更新</p>",
+          excerpt: "装饰图旧稿更新",
+          publishedAt: homeNow - 120_000,
+        },
+      ],
+      homeNow,
+    ),
+  );
+  const afterUpsert = await db
+    .prepare("SELECT image_url FROM news_articles WHERE guid = ?")
+    .bind("home-deco-cover")
+    .first<{ image_url: string | null }>();
+  assert.equal(afterUpsert?.image_url, null, "upsert 不得用 COALESCE 保留装饰封面");
+
+  await db
+    .prepare("UPDATE news_articles SET image_url = ? WHERE guid = ?")
+    .bind(decorativeCover, "home-deco-cover")
+    .run();
+  const displayed = (await readNewsFeed(db, { channel: "events", now: homeNow })).items.find(
+    (row) => row.title === "带二维码旧稿",
+  );
+  assert.equal(displayed?.image, undefined, "展示层过滤已入库的装饰封面");
+
+  const migrationSql = await readFile("migrations/0006_clear_decorative_news_covers.sql", "utf8");
+  const migrationStatements = migrationSql
+    .replace(/--.*$/gm, "")
+    .split(";")
+    .map((sql) => sql.trim())
+    .filter(Boolean);
+  await db.batch(migrationStatements.map((sql) => db.prepare(sql)));
+  const afterMigration = await db
+    .prepare("SELECT image_url FROM news_articles WHERE guid = ?")
+    .bind("home-deco-cover")
+    .first<{ image_url: string | null }>();
+  assert.equal(afterMigration?.image_url, null, "迁移只清空装饰封面，不删稿");
+  assert.ok(
+    await db.prepare("SELECT id FROM news_articles WHERE guid = ?").bind("home-deco-cover").first(),
+    "迁移后稿件仍在",
+  );
+
+  const homeEvents = (await readHomeNews(db, homeNow)).items.filter(
+    (row) => row.channel === "events",
+  );
+  const listEvents = (await readNewsFeed(db, { channel: "events", now: homeNow, limit: 12 })).items;
+  assert.deepEqual(
+    homeEvents.map((row) => row.id),
+    listEvents.map((row) => row.id),
+    "首页漫展栏与资讯中心前几条一致",
+  );
+  assert.equal(homeEvents[0]?.title, "新的无图漫展");
+  assert.equal(homeEvents[1]?.title, "带二维码旧稿");
+  assert.equal(homeEvents[2]?.title, "旧的有图漫展");
+  assert.equal(homeEvents[0]?.image, undefined);
+  assert.equal(homeEvents[2]?.image, realCover);
+
   console.log(
-    "资讯检查通过：真实本地 D1、GUID、双源合并、图片/Markdown、ETag/304、失败保留、租约/事务/清理，以及 RSS/推送版本、短新正文、原子防回滚与版本化去重。",
+    "资讯检查通过：真实本地 D1、GUID、双源合并、图片/Markdown、ETag/304、失败保留、租约/事务/清理，以及 RSS/推送版本、短新正文、原子防回滚与版本化去重、首页排序与装饰封面过滤。",
   );
 } finally {
   await proxy.dispose();

@@ -2,6 +2,7 @@ import { ArrowRight, Building2, CalendarDays, Clock, MapPin, Sparkles, Tv } from
 import { Link } from "react-router";
 import type { NewsFeed, NewsItem } from "~/lib/news/types";
 import { NEWS_FEEDS, formatNewsDate, newsListHref } from "~/lib/news/config";
+import { usableNewsCoverUrl } from "~/lib/news/cover";
 import { pickNewsShowcase, parseNewsItemMeta } from "~/lib/news/display";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
@@ -78,6 +79,7 @@ function NewsThumb({ src, alt }: { src: string; alt: string }) {
  */
 export function NewsCard({ item }: { item: NewsItem }) {
   const meta = parseNewsItemMeta(item);
+  const cover = usableNewsCoverUrl(item.image);
   const isEvent = item.channel === "events";
 
   return (
@@ -165,7 +167,7 @@ export function NewsCard({ item }: { item: NewsItem }) {
         </div>
       </div>
 
-      {item.image ? <NewsThumb src={item.image} alt="" /> : null}
+      {cover ? <NewsThumb src={cover} alt="" /> : null}
     </Link>
   );
 }
