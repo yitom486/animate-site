@@ -6,6 +6,7 @@ import { looksLikeMarkdown, renderNewsMarkdown } from "./markdown.server";
 import { normalizeSourceUrl } from "./url";
 import { isNewsVideoLink, parseNewsIframeUrl } from "./video";
 import { parseNewsVersion } from "./revision";
+import { hasDecorativeNewsImageHint, isDecorativeNewsImageUrl } from "./cover";
 
 export type ParsedArticle = {
   guid: string;
@@ -29,20 +30,13 @@ function isHttpsUrl(value: string) {
   }
 }
 
-/** 社交分享按钮 / SNS 小图标 / 链接卡片缩略图，不是报道配图。 */
-const SHARE_IMAGE_HINT =
-  /facebook|twitter|x\.com|line\.me|hatena|googleplus|google\+?plus|linkedin|pinterest|reddit|whatsapp|telegram|weibo|weixin|share[_-]?button|sharer|bookmark|sns[_/-]|\/share\/|\/social\/|icon[_-]?share/i;
-
-const PLACEHOLDER_IMAGE_HINT =
-  /(?:^|[\\/_-])(?:no[_-]?image|noimage|placeholder|spacer|blank|1x1|pixel)(?:[\\/_.-]|$)/i;
-
 function parsePositiveInt(value: string | undefined) {
   if (!value) return undefined;
   const n = Number.parseInt(value, 10);
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
-/** Drop share widgets, 1x1 trackers, and "no image" placeholders. */
+/** Drop share widgets, QR/template chrome, 1x1 trackers, and "no image" placeholders. */
 export function shouldDropNewsImage(attrs: {
   src?: string;
   width?: string;
@@ -51,14 +45,8 @@ export function shouldDropNewsImage(attrs: {
 }) {
   const src = (attrs.src ?? "").trim();
   if (!src) return true;
-  let pathname = src;
-  try {
-    pathname = new URL(src).pathname;
-  } catch {
-    // keep raw src for filename checks
-  }
-  const haystack = `${src} ${pathname} ${attrs.alt ?? ""}`;
-  if (SHARE_IMAGE_HINT.test(haystack) || PLACEHOLDER_IMAGE_HINT.test(haystack)) return true;
+  if (isDecorativeNewsImageUrl(src)) return true;
+  if (hasDecorativeNewsImageHint(attrs.alt ?? "")) return true;
   const width = parsePositiveInt(attrs.width);
   const height = parsePositiveInt(attrs.height);
   if ((width != null && width <= 48) || (height != null && height <= 48)) return true;
@@ -274,7 +262,8 @@ function asList(value: unknown): unknown[] {
 
 function pickHttpsImage(candidate: string | undefined) {
   if (!candidate) return undefined;
-  return isHttpsUrl(candidate) ? candidate : undefined;
+  if (!isHttpsUrl(candidate) || isDecorativeNewsImageUrl(candidate)) return undefined;
+  return candidate;
 }
 
 function imageFromEnclosureOrMedia(row: Record<string, unknown>) {
@@ -304,8 +293,11 @@ function imageFromEnclosureOrMedia(row: Record<string, unknown>) {
 export function extractCoverImageUrl(html: string, row?: Record<string, unknown>) {
   const fromFeed = row ? imageFromEnclosureOrMedia(row) : undefined;
   if (fromFeed) return fromFeed;
-  const match = html.match(/<img[^>]+src=["'](https:\/\/[^"']+)["']/i);
-  return match?.[1];
+  for (const match of html.matchAll(/<img[^>]+src=["'](https:\/\/[^"']+)["']/gi)) {
+    const url = pickHttpsImage(match[1]);
+    if (url) return url;
+  }
+  return undefined;
 }
 
 export function makeExcerpt(contentHtml: string) {

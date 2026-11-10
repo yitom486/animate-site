@@ -10,6 +10,7 @@ import {
 import { renderNewsMarkdown } from "./markdown.server";
 import { newsArticleUpsertStatements } from "./sync.server";
 import { normalizeSourceUrl } from "./url";
+import { usableNewsCoverUrl } from "./cover";
 import { isStaleNewsRevision, parseNewsVersion } from "./revision";
 
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -63,7 +64,9 @@ export function parseNewsPush(value: unknown, now = Date.now()) {
     if (!contentHtml)
       throw new Error("Article needs nonempty contentHtml, contentMarkdown or excerpt");
     const cover = field(row, "coverUrl", 8192);
-    const imageUrl = cover ? webUrl(cover, true) : extractCoverImageUrl(contentHtml);
+    const imageUrl =
+      usableNewsCoverUrl(cover ? webUrl(cover, true) : undefined) ??
+      extractCoverImageUrl(contentHtml);
     if (seen.has(guid) || publishedAt < now - NEWS_RETENTION_MS) continue;
     seen.add(guid);
     articles.push({

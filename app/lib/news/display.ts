@@ -82,9 +82,7 @@ export function parseNewsItemMeta(item: NewsItem): ParsedNewsMeta {
   return { cleanExcerpt: clean || excerpt };
 }
 
-/** Pick showcase items: prefer covers first, then fill remaining slots by recency order given. */
-export function pickNewsShowcase<T extends { image?: string }>(items: T[], limit: number): T[] {
-  const withImage = items.filter((item) => Boolean(item.image));
-  const withoutImage = items.filter((item) => !item.image);
-  return [...withImage, ...withoutImage].slice(0, limit);
+/** Pick the first N items in the given order (already published_at DESC from the feed). */
+export function pickNewsShowcase<T>(items: T[], limit: number): T[] {
+  return items.slice(0, limit);
 }
